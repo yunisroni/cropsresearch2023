@@ -6,7 +6,7 @@ output: html_document
 ---
 
 # 1. Deskripsi
-Tujuan penelitian adalah menghasilkan model prediksi tanaman pangan melalui analisis big data. Temuan dari penelitian ini akan menjadi landasan penting dalam pembangunan sistem big data nasional yang difokuskan pada bidang pertanian, sehingga dapat mendukung program pemerintah dalam pengambilan keputusan untuk meningkatkan ketahanan pangan nasional
+Tujuan penelitian adalah menghasilkan model prediksi tanaman pangan melalui analisis big data. Temuan dari penelitian ini akan menjadi landasan penting dalam pembangunan sistem big data nasional yang difokuskan pada bidang pertanian, sehingga dapat mendukung program pemerintah dalam pengambilan keputusan untuk meningkatkan ketahanan pangan nasional. Untuk pengujian dan analisis akan menggunakan dataset tanaman pangan yang ada di wilayah Sumatera Utara. Data tanaman pangan yang akan di analisis meliputi: tanaman Jagung, Kacang Hijau, Kacang Kedelai, Kacang Tanah, Ubi Jalar, Ubi Kayu dan Padi, serta data curah hujan.
 
 # 2. Load Library
 ```{r}
@@ -14,5 +14,57 @@ library(dplyr)
 library(ggplot2)
 library(lubridate)
 library(summarytools)
+library(readxl)
 ```
+
+# 3. Obstain - Load Dataset - Padi
+```{r}
+padi_sumut <- read_excel("dataset/bps-Padi.xlsx")
+padi_sumut
+```
+# 4. Scrub Data
+Proses Scrub yang akan dilakukan adalah merubah type data dan menghapus data yang tidak penting atau data yang kosng (not available). Berdasarkan data_sumut dapat dilihat bahwa type data dari kolom Tahun adalah double, rata-rata produksi, produksi dan luas panen bertype karakter. Maka untuk mendukung proses analisis maka type data Tahun harus dirubah ke type Date, dan data yg bertype karakter dirubah kedalam type numeric
+
+## a. Merubah type data
+```{r}
+# Merubah type data karakter menjadi numeric
+padi_sumut$`Rata-rata produksi` <- as.numeric(padi_sumut$`Rata-rata produksi`)
+padi_sumut$Produksi <- as.numeric(padi_sumut$Produksi)
+padi_sumut$`Luas Panen` <- as.numeric(padi_sumut$`Luas Panen`)
+padi_sumut
+```
+
+```{r}
+# Merubah type Tahun menjadi Date
+padi_sumut$Tahun <- make_date(padi_sumut$Tahun)
+glimpse(padi_sumut)
+```
+```{r}
+# Merubah nama variabel Kabupaten Kota, Rata-rata Produksi dan Luas Panen
+names(padi_sumut)[names(padi_sumut) == "Kabupaten Kota"] <- "Kabupaten_kota"
+names(padi_sumut)[names(padi_sumut) == "Rata-rata produksi"] <- "Rata_rata_produksi"
+names(padi_sumut)[names(padi_sumut) == "Luas Panen"] <- "Luas_panen"
+glimpse(padi_sumut)
+```
+```{r}
+tail(padi_sumut)
+head(padi_sumut)
+```
+## B. Menghapus Data Kosong
+```{r}
+# Menampikan variabel dengan baris kosong
+colSums(is.na(padi_sumut))
+```
+```{r}
+# Menghapus data NA's
+padisumut_clean <- na.omit(padi_sumut)
+summary(padisumut_clean)
+```
+```{r}
+colSums(is.na(padisumut_clean))
+```
+Semua data NA's sudah dihapus, sekarang data final yang siap dianalisis adalah sebanyak 370 baris observasi dengan 5 kolom variabel. Data padi di wilayah sumut mulai dari Tahun 2010 - 2020 dengan frekuensi data per Tahun.
+
+
+
 
