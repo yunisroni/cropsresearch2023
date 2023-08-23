@@ -1,0 +1,18 @@
+---
+title: "crops_analysis"
+author: "Roni Yunis"
+date: "2023-08-23"
+output: html_document
+---
+
+# 1. Deskripsi
+Tujuan penelitian adalah menghasilkan model prediksi tanaman pangan melalui analisis big data. Temuan dari penelitian ini akan menjadi landasan penting dalam pembangunan sistem big data nasional yang difokuskan pada bidang pertanian, sehingga dapat mendukung program pemerintah dalam pengambilan keputusan untuk meningkatkan ketahanan pangan nasional
+
+# 2. Load Library
+```{r}
+library(dplyr)
+library(ggplot2)
+library(lubridate)
+library(summarytools)
+```
+
