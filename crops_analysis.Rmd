@@ -50,7 +50,7 @@ glimpse(padi_sumut)
 tail(padi_sumut)
 head(padi_sumut)
 ```
-## B. Menghapus Data Kosong
+## b. Menghapus Data Kosong
 ```{r}
 # Menampikan variabel dengan baris kosong
 colSums(is.na(padi_sumut))
@@ -63,8 +63,35 @@ summary(padisumut_clean)
 ```{r}
 colSums(is.na(padisumut_clean))
 ```
-Semua data NA's sudah dihapus, sekarang data final yang siap dianalisis adalah sebanyak 370 baris observasi dengan 5 kolom variabel. Data padi di wilayah sumut mulai dari Tahun 2010 - 2020 dengan frekuensi data per Tahun.
+Semua data NA's sudah dihapus. Data padi di wilayah sumut mulai dari Tahun 2010 - 2020 dengan frekuensi data per Tahun. Dalam dataset padisumut_clean masih terdapat data dari provinsi Sumatera Utara keseluruhan. Agar memudahkan dalam tahap analisis selanjutnya maka data padisumut_clean yang diambil hanya berdasarkan kabupaten/kota saja. Sekarang data final yang siap dianalisis adalah sebanyak 359 baris observasi dengan 5 kolom variabel
 
+```{r}
+padisumutfilter <- padisumut_clean[padisumut_clean$Kabupaten_kota != "Sumatera Utara",]
+padisumutfilter
+```
 
+# 5. Eksplorasi Data Analisis (EDA)
+
+```{r}
+plot <- ggplot(padisumutfilter, aes(x = Tahun, y = Produksi, group = Kabupaten_kota, color = Kabupaten_kota)) +
+  geom_line() +
+  labs(title = "Jumlah Produksi Padi", x = "Tahun", y = "Produksi Padi (Ha)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "right")
+plot
+
+```
+
+```{r}
+# Calculate total production per Kabupaten_kota
+totproduksi <- padisumutfilter %>% 
+  mutate(first_date_month = floor_date(Tahun, unit = "year")) %>% 
+  group_by(Kabupaten_kota) %>% 
+  summarise(jumlahproduksi = sum(Produksi)) %>% 
+  arrange(jumlahproduksi)
+totproduksi
+```
+Jumlah produksi padi terbanyak dalam kurun waktu 2010 - 2020 adalah dari Kabupaten Simalungun dengan Jumlah Produksi 4814941.97
 
 
