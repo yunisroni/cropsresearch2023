@@ -17,15 +17,16 @@ library(summarytools)
 library(readxl)
 ```
 
-# 3. Obstain - Load Dataset - Padi
+# 3. Data Padi
+## Obstain - Load Dataset
 ```{r}
 padi_sumut <- read_excel("dataset/bps-Padi.xlsx")
 padi_sumut
 ```
-# 4. Scrub Data
+## Scrub Data
 Proses Scrub yang akan dilakukan adalah merubah type data dan menghapus data yang tidak penting atau data yang kosng (not available). Berdasarkan data_sumut dapat dilihat bahwa type data dari kolom Tahun adalah double, rata-rata produksi, produksi dan luas panen bertype karakter. Maka untuk mendukung proses analisis maka type data Tahun harus dirubah ke type Date, dan data yg bertype karakter dirubah kedalam type numeric
 
-## a. Merubah type data
+### a. Merubah type data
 ```{r}
 # Merubah type data karakter menjadi numeric
 padi_sumut$`Rata-rata produksi` <- as.numeric(padi_sumut$`Rata-rata produksi`)
@@ -50,7 +51,7 @@ glimpse(padi_sumut)
 tail(padi_sumut)
 head(padi_sumut)
 ```
-## b. Menghapus Data Kosong
+### b. Menghapus Data Kosong
 ```{r}
 # Menampikan variabel dengan baris kosong
 colSums(is.na(padi_sumut))
@@ -70,8 +71,8 @@ padisumutfilter <- padisumut_clean[padisumut_clean$Kabupaten_kota != "Sumatera U
 padisumutfilter
 ```
 
-# 5. Eksplorasi Data Analisis (EDA)
-
+## Eksplorasi Data Analisis (EDA)
+### Jumlah Produksi Padi per Kabupaten/Kota
 ```{r}
 plot <- ggplot(padisumutfilter, aes(x = Tahun, y = Produksi, group = Kabupaten_kota, color = Kabupaten_kota)) +
   geom_line() +
@@ -84,7 +85,7 @@ plot
 ```
 
 ```{r}
-# Calculate total production per Kabupaten_kota
+# Hitung total produksi per kabupaten/kota
 totproduksi <- padisumutfilter %>% 
   mutate(first_date_month = floor_date(Tahun, unit = "year")) %>% 
   group_by(Kabupaten_kota) %>% 
@@ -92,6 +93,61 @@ totproduksi <- padisumutfilter %>%
   arrange(jumlahproduksi)
 totproduksi
 ```
-Jumlah produksi padi terbanyak dalam kurun waktu 2010 - 2020 adalah dari Kabupaten Simalungun dengan Jumlah Produksi 4814941.97
 
+```{r}
+# Turn off dplyr summarise() warning
+options(dplyr.summarise.inform = FALSE)
+
+# Hitung total produksi per kabupaten/tahun
+totproduksi <- padisumutfilter %>% 
+  group_by(Tahun, Kabupaten_kota, .drop = FALSE) %>%  # Add .drop argument
+  summarise(total_produksi = sum(Produksi))
+
+totproduksi
+```
+### Tren Produksi Padi per Kabupaten/Kota
+```{r}
+# Visualisasi Tren Produksi Padi
+plot <- ggplot(totproduksi, aes(x = Tahun, y = total_produksi, color = Kabupaten_kota)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Tren Produksi Padi", x = "Tahun", y = "Total Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "right")
+plot
+```
+### Perbandingan Produksi Padi per Kabupaten/Kota
+```{r}
+
+# Hitung total produksi padi per Kabupaten/Kota
+totproduksi_kabkota <- padisumutfilter %>% 
+  group_by(Kabupaten_kota) %>% 
+  summarise(total_produksi = sum(Produksi))
+
+# Visualisasi dengan barplot
+plot <- ggplot(totproduksi_kabkota, aes(x = Kabupaten_kota, y = total_produksi, fill = Kabupaten_kota)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Perbandingan Produksi Padi antara Kabupaten/Kota", x = "Kabupaten/Kota", y = "Total Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "none")  # hilangkan legend
+
+# Rotasi sumbu x agar mudah dibaca
+plot + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+```
+Perbandingan produksi padi dalam kurun waktu 2010 - 2020 adalah dari Kabupaten Simalungun dengan Jumlah Produksi 4814941.97 ton
+
+
+## Model
+## Interpretasi
+
+# 4. Data Jagung
+# 5. Data Kacang Hijau
+# 6. Data Kacang Kedelai
+# 7. Data Kacang Tanah
+# 8. Data Ubi Jalar
+# 9. Data Ubi Kayu
 
