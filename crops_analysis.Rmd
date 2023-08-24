@@ -15,6 +15,9 @@ library(ggplot2)
 library(lubridate)
 library(summarytools)
 library(readxl)
+library(cluster)
+library(scales)
+library(factoextra)
 ```
 
 # 3. Data Padi
@@ -74,13 +77,13 @@ padisumutfilter
 ## Eksplorasi Data Analisis (EDA)
 ### Jumlah Produksi Padi per Kabupaten/Kota
 ```{r}
-plot <- ggplot(padisumutfilter, aes(x = Tahun, y = Produksi, group = Kabupaten_kota, color = Kabupaten_kota)) +
+plot_1 <- ggplot(padisumutfilter, aes(x = Tahun, y = Produksi, group = Kabupaten_kota, color = Kabupaten_kota)) +
   geom_line() +
   labs(title = "Jumlah Produksi Padi", x = "Tahun", y = "Produksi Padi (Ha)") +
   scale_y_continuous(labels = scales::comma) +
   theme_minimal() +
   theme(legend.position = "right")
-plot
+plot_1
 
 ```
 
@@ -108,14 +111,14 @@ totproduksi
 ### Tren Produksi Padi per Kabupaten/Kota
 ```{r}
 # Visualisasi Tren Produksi Padi
-plot <- ggplot(totproduksi, aes(x = Tahun, y = total_produksi, color = Kabupaten_kota)) +
+plot_2 <- ggplot(totproduksi, aes(x = Tahun, y = total_produksi, color = Kabupaten_kota)) +
   geom_line() +
   geom_point() +
   labs(title = "Tren Produksi Padi", x = "Tahun", y = "Total Produksi (Ton)") +
   scale_y_continuous(labels = scales::comma) +
   theme_minimal() +
   theme(legend.position = "right")
-plot
+plot_2
 ```
 ### Perbandingan Produksi Padi per Kabupaten/Kota
 ```{r}
@@ -126,7 +129,7 @@ totproduksi_kabkota <- padisumutfilter %>%
   summarise(total_produksi = sum(Produksi))
 
 # Visualisasi dengan barplot
-plot <- ggplot(totproduksi_kabkota, aes(x = Kabupaten_kota, y = total_produksi, fill = Kabupaten_kota)) +
+plot_3 <- ggplot(totproduksi_kabkota, aes(x = Kabupaten_kota, y = total_produksi, fill = Kabupaten_kota)) +
   geom_bar(stat = "identity") +
   labs(title = "Perbandingan Produksi Padi antara Kabupaten/Kota", x = "Kabupaten/Kota", y = "Total Produksi (Ton)") +
   scale_y_continuous(labels = scales::comma) +
@@ -134,15 +137,272 @@ plot <- ggplot(totproduksi_kabkota, aes(x = Kabupaten_kota, y = total_produksi, 
   theme(legend.position = "none")  # hilangkan legend
 
 # Rotasi sumbu x agar mudah dibaca
-plot + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+plot_3 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 
 ```
-Perbandingan produksi padi dalam kurun waktu 2010 - 2020 adalah dari Kabupaten Simalungun dengan Jumlah Produksi 4814941.97 ton
+Perbandingan produksi padi dalam kurun waktu 2010 - 2020 adalah dari Kabupaten Simalungun yang terbanyak dengan Jumlah Produksi Padi sebesar 4814941.97 Ton
 
+### Perbandingan Rata-rata produksi Padi per Kabupaten/Kota
+```{r}
+# Turn off dplyr summarise() warning
+options(dplyr.summarise.inform = FALSE)
+
+# Melihat tren rata-rata produksi padi
+rataproduksi <- padisumutfilter %>% 
+  group_by(Tahun, Kabupaten_kota, .drop = FALSE) %>%  # Add .drop argument
+  summarise(Rata_rata_produksi = sum(Rata_rata_produksi))
+rataproduksi
+```
+```{r}
+
+# Hitung total rata-rata produksi padi per Kabupaten/Kota
+totrataproduksi_kabkota <- padisumutfilter %>% 
+  group_by(Kabupaten_kota) %>% 
+  summarise(total_rataproduksi = sum(Rata_rata_produksi))
+
+# Visualisasi dengan barplot
+plot_4 <- ggplot(totrataproduksi_kabkota, aes(x = Kabupaten_kota, y = total_rataproduksi, fill = Kabupaten_kota)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Perbandingan Rata_rata Produksi Padi antara Kabupaten/Kota", x = "Kabupaten/Kota", y = "Rata_rata Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "none")  # hilangkan legend
+
+# Rotasi sumbu x agar mudah dibaca
+plot_4 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+```
+### Korelasi Luas Panen dan Produksi Padi
+```{r}
+# Visualisasi korelasi luas panen dan produksi padi
+plot_5 <- ggplot(padisumutfilter, aes(x = Luas_panen, y = Produksi, color = Kabupaten_kota)) +
+  geom_point() +
+  labs(title = "Korelasi Produksi dan Luas Panen", x = "Luas Panen", y = "Produksi") +
+  theme_minimal() +
+  theme(legend.position = "right")
+plot_5
+```
+```{r}
+# Hitung Pearson correlation coefficient
+correlation_padi <- cor(padisumutfilter$Luas_panen, padisumutfilter$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson Luas Panen dan Produksi:", correlation_padi)
+```
+Berdasarkan grafik diatas bisa lihat bahwa ada korelasi antara luas panen dan produksi. Hubungan korelasi adalah positif dengan nilai korelasi sebesar 0,99, sehingga bisa disimpulkan bahwa jika semakin banyak luas panen maka akan meningkat jumlah produksi padi.
+
+
+### Perbandingan Rata-rata produksi dengan Produksi Padi
+```{r}
+# Create a boxplot using ggplot2
+plot_6 <- ggplot(padisumutfilter, aes(x = Kabupaten_kota, y = Produksi - Rata_rata_produksi, fill = Kabupaten_kota)) +
+  geom_boxplot() +
+  labs(title = "Perbandingan Produksi dan Rata-rata Produksi per Kabupaten/Kota", x = "Kabupaten/Kota", y = "Selisih Produksi") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+# Rotasi sumbu x agar mudah dibaca
+plot_6 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+### Melihat pola musiman dalam data untuk produksi padi
+```{r}
+# Convert Tahun to Date format
+padisumutfilter$Tahun <- as.Date(paste0(padisumutfilter$Tahun, "-01-01"))
+
+# Create ACF plot
+acf_plot <- acf(padisumutfilter$Produksi, main = "ACF Plot of Produksi Padi")
+
+# Print ACF plot
+print(acf_plot)
+
+# Create periodogram
+periodogram_plot <- spectrum(padisumutfilter$Produksi, main = "Periodogram of Produksi Padi")
+
+# Print periodogram
+periodogram_plot
+```
+Berdasarkan Periodogram Produksi Padi bisa dilihat bahwa ada fluktuasi yang berulang dalam data sehingga bisa disimpulkan adanya pola musiman. Melihat hal ini maka akan dilakukan analisis prediksi yang lebih lanjut dan komplek. 
 
 ## Model
+### a. Clustering
+
+```{r}
+# Filter data produksi terbanyak berdasarkan tahun
+grouped_data <- padisumutfilter %>%
+  group_by(Tahun) %>%
+  arrange(desc(Produksi)) %>%
+  summarise(Total_Produksi = sum(Produksi))
+grouped_data
+            
+```
+Berdasarkan hasil diatas bisa dilihat jumlah total produksi terbanyak ada pada Tahun 2017, yaitu sebanyak 5136186 Ton
+
+```{r}
+# Menyiapkan data, untuk pengujian klastering data yang ambil adalah data tahun 2017 saja
+datapadi2017 <- padisumutfilter %>% 
+  filter(Tahun == "2017-01-01")
+```
+
+```{r}
+# Memilih variabel klastering
+clustering_data <- datapadi2017 %>% 
+ select(Produksi, Rata_rata_produksi, Luas_panen)
+```
+
+```{r}
+# Tentukan skala dari variabel
+scale_data <- as.data.frame(scale(clustering_data))
+```
+
+```{r}
+# Elbow method to find the optimal number of clusters
+set.seed(123)
+fviz_nbclust(scale_data, kmeans, method = "wss")
+```
+```{r}
+# Silhouette method to find the optimal number of clusters
+silhouette_scores <- sapply(2:10, function(k) {
+  kmeans_result <- kmeans(scale_data, centers = k)
+  mean_silhouette <- mean(silhouette(kmeans_result$cluster, dist(scale_data)))
+  return(mean_silhouette)
+})
+
+# Plot silhouette scores
+plot(2:10, silhouette_scores, type = "b", pch = 19, xlab = "Number of clusters", ylab = "Mean Silhouette Score")
+
+# Find the optimal number of clusters based on the highest silhouette score
+optimal_k <- which.max(silhouette_scores) + 1
+cat("Optimal number of clusters:", optimal_k)
+```
+
+
+
+```{r}
+# Klastering dengan K-Means
+set.seed(123)
+k <- 10 # jumlah klaster
+kmeans_result <- kmeans(scale_data, centers = k)
+```
+
+```{r}
+# tambahkan label ke dalam data frame
+datapadi2017$Cluster <- as.factor(kmeans_result$cluster)
+```
+
+```{r}
+# Create a scatter plot using ggplot2
+plot_8 <- ggplot(datapadi2017, aes(x = Rata_rata_produksi, y = Produksi, color = factor(Cluster))) +
+  geom_point() +
+  labs(title = "Hasil Clustering Produksi Padi", x = "Rata-rata Produksi", y = "Produksi") +
+  scale_color_discrete(name = "Cluster") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal()
+plot_8
+```
+```{r}
+# Menghitung jumlah klaster per kabupaten/kota
+
+cluster_counts_per_kabupaten <- datapadi2017 %>%
+  group_by(Kabupaten_kota, Cluster) %>%
+  count()
+
+cluster_counts_per_kabupaten
+```
+```{r}
+# Hitung jumlah kabupaten setiap klaster
+cluster_kabupaten_counts <- datapadi2017 %>%
+  filter(Cluster %in% c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)) %>%
+  group_by(Cluster) %>%
+  summarise(Jumlah_Kabupaten = n())
+
+cluster_kabupaten_counts
+```
+
+```{r}
+# Create a scatter plot using ggplot2
+plot_9 <- ggplot(datapadi2017, aes(x = Rata_rata_produksi, y = Produksi, label = Kabupaten_kota)) +
+  geom_point(aes(color = factor(Cluster))) +
+  geom_text(vjust = -0.5, hjust = 0, size = 3, show.legend = FALSE) +
+  labs(title = "Hasil Clustering Produksi Padi", x = "Rata-rata Produksi", y = "Produksi") +
+  scale_color_discrete(name = "Cluster") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal()
+plot_9
+```
+```{r}
+# Hitung rata-rata produksi per klaster
+cluster_avg <- datapadi2017 %>%
+  group_by(Cluster) %>%
+  summarise(Avg_Produksi = mean(Produksi))
+
+cluster_avg
+```
+```{r}
+kmeans_result$centers
+```
+```{r}
+# Definisikan kriteria klaster
+low_criteria <- quantile(cluster_avg$Avg_Produksi, 0.33)
+high_criteria <- quantile(cluster_avg$Avg_Produksi, 0.66)
+
+# Berikan label untuk masing-masing klaster
+cluster_avg_kriteria <- cluster_avg %>%
+  mutate(Category = ifelse(Avg_Produksi < low_criteria, "Rendah",
+                           ifelse(Avg_Produksi > high_criteria, "Tinggi", "Sedang")))
+cluster_avg_kriteria
+```
+
+Berdasarkan hasil perhitungan nilai centroid dari klaster, maka bisa disimpulkan bahwa:
+1. Klaster 1,2 dan 4: adalah klaster yang termasuk kategori rendah 
+2. Klaster 6,8 dan 9: adalah klaster yang termasuk kategori sedang
+3. Klaster 3,5,7 dan 10: adalah klaster yang termasuk kategori tinggi
+
+Klaster Produksi Padi
+1. Pematangsiantar
+2. Nias barat, Nias Utara, Binjai, Medan
+3. Tapanuli Selatan, batu bara, Tapanuli Utra, labuhan batu, Labuhan batu utara
+4. Pakpak barat
+5. Mandailing natal
+6. Dairi, Karo, humbang hasundutan
+7. Langkat, deli serdang, simalungun, serdang bedagai
+8. Nias, samosir, padang sidempuan, gunung sitoli, tanjung balai, tebing tinggi, labuhan batu selatan
+9. Toba, Asahan
+10. Padang lawas utara, nias selatan, padang lawas, tapanuli tengah, 
+
+```{r}
+# Evaluasi Clustering dengan Inertia
+
+# Jumlah klaster yang diuji
+k_values <- 2:10
+
+# Hitung nilai Inertia untuk setiap klaster
+inertia_values <- sapply(k_values, function(k) {
+  kmeans_result <- kmeans(clustering_data, centers = k)
+  kmeans_result$tot.withinss
+})
+
+inertia_df <- data.frame(K = k_values, Inertia = inertia_values)
+inertia_df
+```
+Berdasarkan hasil evaluasi dengan Inertia, didapatkan bahwa jumlah klaster yang tepat untuk pengujian klaster yang dilakukan adalah 10, karena nilai Inertia yang paling rendah
+
+```{r}
+kmeans_result$centers
+```
+
+### a. Regresi Liner
+Tujuan dari analisis ini adalah unutk mencari tahu sejauh mana perubahan dalam rata-rata produksi dan/atau luas panen dapat mempengaruhi perubahan dalam jumlah produksi padi. Adapun hipotesis yang dapat dikembangkan adalah:
+1. Rata-rata produksi berpengaruh signifikan terhadap jumlah produksi padi.
+2. Luas panen berpengaruh signifikan terhadap jumlah produksi padi.
+3. Rata-rata produksi dan luas panen berpengaruh signifikan terhadap jumlah produksi padi.
+
+
+
 ## Interpretasi
+
 
 # 4. Data Jagung
 # 5. Data Kacang Hijau
