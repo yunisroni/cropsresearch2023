@@ -18,6 +18,9 @@ library(readxl)
 library(cluster)
 library(scales)
 library(factoextra)
+library(mclust)
+library(vars)
+library(forecast)
 ```
 
 # 3. Data Padi
@@ -294,9 +297,9 @@ datapadi2017$Cluster <- as.factor(kmeans_result$cluster)
 
 ```{r}
 # Create a scatter plot using ggplot2
-plot_8 <- ggplot(datapadi2017, aes(x = Rata_rata_produksi, y = Produksi, color = factor(Cluster))) +
+plot_8 <- ggplot(datapadi2017, aes(x = Luas_panen, y = Produksi, color = factor(Cluster))) +
   geom_point() +
-  labs(title = "Hasil Clustering Produksi Padi", x = "Rata-rata Produksi", y = "Produksi") +
+  labs(title = "Hasil Clustering Produksi Padi", x = "Luas Panen", y = "Produksi") +
   scale_color_discrete(name = "Cluster") +
   scale_y_continuous(labels = scales::comma) +
   theme_minimal()
@@ -323,10 +326,10 @@ cluster_kabupaten_counts
 
 ```{r}
 # Create a scatter plot using ggplot2
-plot_9 <- ggplot(datapadi2017, aes(x = Rata_rata_produksi, y = Produksi, label = Kabupaten_kota)) +
+plot_9 <- ggplot(datapadi2017, aes(x = Luas_panen, y = Produksi, label = Kabupaten_kota)) +
   geom_point(aes(color = factor(Cluster))) +
   geom_text(vjust = -0.5, hjust = 0, size = 3, show.legend = FALSE) +
-  labs(title = "Hasil Clustering Produksi Padi", x = "Rata-rata Produksi", y = "Produksi") +
+  labs(title = "Hasil Clustering Produksi Padi", x = "Luas Panen", y = "Produksi") +
   scale_color_discrete(name = "Cluster") +
   scale_y_continuous(labels = scales::comma) +
   theme_minimal()
@@ -360,18 +363,18 @@ Berdasarkan hasil perhitungan nilai centroid dari klaster, maka bisa disimpulkan
 2. Klaster 6,8 dan 9: adalah klaster yang termasuk kategori sedang
 3. Klaster 3,5,7 dan 10: adalah klaster yang termasuk kategori tinggi
 
-Klaster Produksi Padi
-1. Pematangsiantar
-2. Nias barat, Nias Utara, Binjai, Medan
-3. Tapanuli Selatan, batu bara, Tapanuli Utra, labuhan batu, Labuhan batu utara
-4. Pakpak barat
-5. Mandailing natal
-6. Dairi, Karo, humbang hasundutan
-7. Langkat, deli serdang, simalungun, serdang bedagai
-8. Nias, samosir, padang sidempuan, gunung sitoli, tanjung balai, tebing tinggi, labuhan batu selatan
-9. Toba, Asahan
-10. Padang lawas utara, nias selatan, padang lawas, tapanuli tengah, 
 
+```{r}
+# Menghitung jumlah klaster per kelompok kabupaten/kota
+kabupaten_per_cluster <- datapadi2017 %>%
+  group_by(Cluster) %>%
+  summarise(Kabupaten_kota = list(unique(Kabupaten_kota)))
+
+# Menampilkan nama kabupaten/kota dari setiap klaster
+for (i in 1:10) {
+  cat(paste("Klaster", i, ":", kabupaten_per_cluster$Kabupaten_kota[[i]], "\n"))
+}
+```
 ```{r}
 # Evaluasi Clustering dengan Inertia
 
@@ -389,15 +392,293 @@ inertia_df
 ```
 Berdasarkan hasil evaluasi dengan Inertia, didapatkan bahwa jumlah klaster yang tepat untuk pengujian klaster yang dilakukan adalah 10, karena nilai Inertia yang paling rendah
 
+
 ```{r}
-kmeans_result$centers
+akurasi_klastering <- (kmeans_result$betweenss/kmeans_result$totss)*100
+akurasi_klastering
+```
+Akurasi klaster bisa diketahui dengan menghitung rasio dari jumlah kuadrat antar klaster dengan
+jumlah kuadrat total. Sehingga nilai akurasi dari model klastering adalah 95,85
+
+```{r}
+# Membaca dataset
+data <- datapadi2017[, 3:5]
+
+# Menentukan jumlah cluster yang diinginkan
+num_clusters <- 10
+
+# Membuat model GMM
+gmm_model <- Mclust(data, G = num_clusters)
+
+# Mendapatkan hasil klastering
+cluster_assignment <- gmm_model$classification
+
+# Menampilkan hasil klastering
+cat("Cluster Assignment for Each Data Point:\n")
+cluster_assignment
+
+# Plot hasil klastering
+plot(data, col = cluster_assignment, pch = 19, main = "GMM Clustering")
+
 ```
 
-### a. Regresi Liner
+Pengujian Klaster dengan Kombinasi K-Means dan GMM
+```{r}
+# Memilih fitur untuk klaster
+features <- datapadi2017[, c("Produksi", "Luas_panen", "Rata_rata_produksi")]
+
+# Menstardisasi fitur
+scaled_features <- scale(features)
+
+# Klaster dengan K-Means
+kmeans_result <- kmeans(scaled_features, centers = 10)
+
+# Tentukan nilai Klaster
+cluster_assignment <- kmeans_result$cluster
+
+# Tambahkan nilai klaster ke data aktual
+clustered_data <- cbind(datapadi2017, Cluster = cluster_assignment)
+
+# Performansi GMM clustering untuk setiap klaster
+gmm_clusters <- list()
+for (cluster_id in unique(cluster_assignment)) {
+  cluster_data <- scaled_features[cluster_assignment == cluster_id, ]
+  gmm_result <- Mclust(cluster_data)
+  gmm_clusters[[cluster_id]] <- gmm_result$classification
+}
+
+# Tampilkan hasil klaster
+for (cluster_id in unique(cluster_assignment)) {
+  cat("Cluster", cluster_id, ":", gmm_clusters[[cluster_id]], "\n")
+}
+
+# Kombinasi GMM cluster dengan Dataset aktual
+final_clustered_data <- clustered_data
+for (cluster_id in unique(cluster_assignment)) {
+  final_clustered_data$GMM_Cluster[final_clustered_data$Cluster == cluster_id] <- gmm_clusters[[cluster_id]]
+}
+
+# Tampilkan hasil final klaster
+final_clustered_data
+```
+
+
+```{r}
+# Remove duplicate columns from the dataset
+final_clustered_data <- final_clustered_data[, !duplicated(names(final_clustered_data))]
+
+# Visualize the clustered data
+ggplot(final_clustered_data, aes(x = Rata_rata_produksi, y = Luas_panen, color = factor(GMM_Cluster), label = Kabupaten_kota)) +
+  geom_point() +
+  geom_text(check_overlap = TRUE, vjust = -0.5) +  # Add district names
+  xlab("Rata-rata Produksi (Ton)") +
+  ylab("Luas Panen (Hektar)") +
+  ggtitle("K-Means & GMM Clustering Rata-Rata Produksi Padi") +
+  theme_minimal() +
+  scale_color_discrete(name = "cluster")
+```
+```{r}
+# Hitung Silhouette Score untuk melihat seberapa baik klaster yang dilakukan
+silhouette_score <- silhouette(cluster_assignment, dist(scaled_features))
+silhouette_score
+```
+Secara keseluruhan nilai Silhouette Score yang positif dan mendekati 1 menunjukkan bahwa klastering yang dilakukan memiliki hasil yang baik dalam memisahkan objek-objek ke dalam kelompok-kelompok yang berbeda.
+
+
+### b. Regresi Liner
 Tujuan dari analisis ini adalah unutk mencari tahu sejauh mana perubahan dalam rata-rata produksi dan/atau luas panen dapat mempengaruhi perubahan dalam jumlah produksi padi. Adapun hipotesis yang dapat dikembangkan adalah:
 1. Rata-rata produksi berpengaruh signifikan terhadap jumlah produksi padi.
 2. Luas panen berpengaruh signifikan terhadap jumlah produksi padi.
 3. Rata-rata produksi dan luas panen berpengaruh signifikan terhadap jumlah produksi padi.
+
+```{r}
+# Load dataset padi
+head(padisumutfilter)
+```
+```{r}
+# Pilih variabel yang akan diukur pengaruh
+datapadisumut <- padisumutfilter %>% 
+  select(Rata_rata_produksi, Produksi, Luas_panen)
+```
+
+Model 1: Pengaruh rata-rata produksi terhadap jumlah produksi
+```{r}
+model_1 <- lm(Produksi ~ Rata_rata_produksi, data = datapadisumut)
+summary(model_1)
+```
+```{r}
+# Visualisasi hasil regresi model_1
+ggplot(datapadisumut, aes(x = Rata_rata_produksi, y = Produksi)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE, color = "blue") +
+  labs(x = "Rata-rata Produksi", y = "Jumlah Produksi") +
+  ggtitle("Hubungan Antara Rata-rata Produksi dan Jumlah Produksi") +
+  theme_minimal()
+```
+
+
+Berdasarkan hasil di atas, kita dapat menyimpulkan bahwa rata-rata produksi padi memiliki pengaruh yang signifikan terhadap jumlah produksi. Nilai R-squared yang relatif rendah menunjukkan bahwa masih ada variabilitas dalam jumlah produksi yang tidak dijelaskan oleh rata-rata produksi, dan mungkin ada faktor lain yang juga mempengaruhi hasil produksi padi.
+
+Model 2: Pengaruh luas panen terhadap jumlah produksi
+```{r}
+model_2 <- lm(Produksi ~ Luas_panen, data = datapadisumut)
+summary(model_2)
+```
+```{r}
+# Visualisasi hasil regresi model_1
+ggplot(datapadisumut, aes(x = Luas_panen, y = Produksi)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE, color = "blue") +
+  labs(x = "Luas Panen", y = "Jumlah Produksi") +
+  ggtitle("Hubungan Antara Luas Panen dan Jumlah Produksi") +
+  theme_minimal()
+```
+Berdasarkan hasil diatas, dapat disimpulkan bahwa luas panen memiliki pengaruh yang signifikan terhadap produksi padi. Nilai R-squared yang mendekati 1 (0.9861) menunjukkan bahwa model regresi ini mampu menjelaskan sekitar 98.61% variasi dalam "Produksi" berdasarkan variabel independen "Luas_panen".
+
+Model 3: Pengaruh luas panen dan rata-rata produksi terhadap jumlah produksi
+```{r}
+model_3 <- lm(Produksi ~ Luas_panen + Rata_rata_produksi, data = datapadisumut)
+summary(model_3)
+```
+```{r}
+# Visualisasi Model_3
+ggplot(datapadisumut, aes(x = Produksi, y = predict(model_3))) +
+  geom_point() +
+  geom_smooth(method = "lm", color = "red", se = FALSE) +
+  labs(title = "Produksi Padi vs. Prediksi Produksi Padi",
+       x = "Observed Produksi",
+       y = "Predicted Produksi")
+```
+Berdasarkan hasil diatas dapat disimpulkan bahwa kedua variabel independen, yaitu "Luas_panen" dan "Rata_rata_produksi", memiliki pengaruh yang signifikan terhadap "Produksi". Nilai R-squared yang tinggi (0.988) menunjukkan bahwa model ini mampu menjelaskan sekitar 98.8% variasi dalam "Produksi" berdasarkan "Luas_panen" dan "Rata_rata_produksi".
+
+
+Model Klaster dan Regresi untuk Mengungkap Tren Produksi Padi
+```{r}
+# Siapkan data set. Dataset yangd digunakan adalah data padi 2017
+set.seed(123)
+
+# K-Means Clustering
+k <- 10
+kmeans_result <- kmeans(datapadi2017[, c("Produksi", "Luas_panen")], centers = k)
+datapadi2017$Cluster <- kmeans_result$cluster
+
+# Visualisasi Hasil Klaster
+plot_11 <- ggplot(datapadi2017, aes(x = Luas_panen, y = Produksi, label = Kabupaten_kota)) +
+  geom_point(aes(color = factor(Cluster))) +
+  geom_text(vjust = -0.5, hjust = 0, size = 3, show.legend = FALSE) +
+  labs(title = "Hasil Clustering Produksi Beras", x = "Luas Panen", y = "Produksi") +
+  scale_color_discrete(name = "Cluster") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal()
+
+# Model Regresi Liner
+lm_model <- lm(Produksi ~ Rata_rata_produksi + Luas_panen, data = datapadi2017)
+
+# Tampilkan hasil model regresi
+summary(lm_model)
+
+# Visualisasi hasil regresi dan klaster produksi padi
+plot_lm <- ggplot(datapadi2017, aes(x = Luas_panen, y = Produksi, label = Kabupaten_kota)) +
+  geom_point(aes(color = factor(Cluster))) +
+  geom_text(vjust = -0.5, hjust = 0, size = 3, show.legend = FALSE) +
+  geom_smooth(method = "lm", se = FALSE, color = "blue") +
+  labs(title = "Hubungan Luas Panen dan Produksi", x = "Luas Panen", y = "Produksi") +
+  scale_color_discrete(name = "Cluster") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal()
+
+# Tampilkan hasil visualisasi dari kedua model
+plot_11
+plot_lm
+
+```
+
+```{r}
+akurasi_klastering2 <- (kmeans_result$betweenss/kmeans_result$totss)*100
+akurasi_klastering2
+```
+
+### c. Model VAR
+Tujuan adalah untuk mengidentifikasi apakah perubahan curah hujan dapat mempengaruhi produksi padi. Akan melakukan prediksi curah hujan dan produksi padi dimasa depan berdasarkan pola hubungan historis antara 2 variabel. Mengidentifikasi apakah perubahan dalam curah hujan dalam satu periode dapat memiliki efek jangka pendek atau panjang terhadap produksi padi.
+
+```{r}
+# Load data curah hujan
+rainfall <- read.csv("dataset/climateserv-statistical.csv")
+head(rainfall)
+```
+```{r}
+# Merubah type variabel DateTime menjadi Date
+rainfall$DateTime <- as.Date(rainfall$DateTime)
+glimpse(rainfall)
+```
+```{r}
+# Merubah nama variabel
+names(rainfall)[names(rainfall) == "DateTime"] <- "date"
+names(rainfall)[names(rainfall) == "UCSB.CHIRPS.Rainfall..avg"] <- "rainfallavg"
+glimpse(rainfall)
+```
+```{r}
+head(rainfall)
+tail(rainfall)
+```
+```{r}
+# Mengambil rata-rata curah hujan per tahun
+rainfall_yearly <- rainfall %>%
+  mutate(year = lubridate::year(date)) %>%
+  group_by(year) %>%
+  summarise(avg_rainfall = mean(rainfallavg))
+rainfall_yearly  
+```
+
+```{r}
+# Merubah type tahun menjadi date
+rainfall_yearly$year <- make_date(rainfall_yearly$year)
+rainfall_yearly
+```
+
+```{r}
+# Filter data for "Sumatera Utara" kabupaten
+sumut_data <- padi_sumut %>%
+  filter(Kabupaten_kota == "Sumatera Utara")
+sumut_data
+```
+
+```{r}
+# Mengabungkan kedua dataset
+merged_data <- merge(sumut_data, rainfall_yearly, by.x = "Tahun", by.y = "year")
+merged_data
+```
+
+```{r}
+# Pilih variabel yang akan diprediksi
+# dalam pengujian ini akan dilihat apakah ada pengaruh curah hujan terhadap peningkatan rata-rata produksi
+data_for_var <- merged_data[, c("Produksi", "avg_rainfall")]
+```
+
+Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam format time series (ts)
+
+```{r}
+ts_data <- ts(data_for_var, start = c(2010,1), frequency = 1)
+ts_data
+```
+```{r}
+# VAR Model
+var_model_1 <- VAR(ts_data, p = 2) # jumlah order dari model VAR
+summary(var_model_1)
+```
+```{r}
+# Membuat model regresi linier
+regression_model <- lm(Produksi ~ avg_rainfall, data = data_for_var)
+
+# Ringkasan hasil model
+summary(regression_model)
+```
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+correlation <- cor(data_for_var$Produksi, data_for_var$avg_rainfall)
+correlation
+```
 
 
 
