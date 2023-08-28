@@ -666,6 +666,8 @@ ts_data
 var_model_1 <- VAR(ts_data, p = 2) # jumlah order dari model VAR
 summary(var_model_1)
 ```
+Kalau dilihat dari hasil model VAR diatas, maka bisa disimpulkan bahwa tidak ada dampak curah hujan terhadap peningkatan produksi padi.
+
 ```{r}
 # Membuat model regresi linier
 regression_model <- lm(Produksi ~ avg_rainfall, data = data_for_var)
@@ -673,13 +675,15 @@ regression_model <- lm(Produksi ~ avg_rainfall, data = data_for_var)
 # Ringkasan hasil model
 summary(regression_model)
 ```
+Dilihat dari model regresi juga kelihatan bahwa tidak ada pengaruh curah hujan terhadap produksi padi
+
 
 ```{r}
 # Menghitung koefisien korelasi Pearson
 correlation <- cor(data_for_var$Produksi, data_for_var$avg_rainfall)
 correlation
 ```
-
+Dilihat dari hubungan atau korelasi, korelasi curah hujan dan produksi padi sangat rendah atau tidak ada korelasi.
 
 
 ## Interpretasi
