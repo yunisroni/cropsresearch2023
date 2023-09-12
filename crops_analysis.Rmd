@@ -1041,6 +1041,7 @@ palawijasumut_jagung
 totproduksi_jagung_kabkota <- palawijasumut_jagung %>% 
   group_by(Kabupaten_Kota) %>% 
   summarise(total_produksi = sum(Produksi))
+totproduksi_jagung_kabkota
 
 # Visualisasi dengan barplot
 plot_jagung_3 <- ggplot(totproduksi_jagung_kabkota, aes(x = Kabupaten_Kota, y = total_produksi, fill = Kabupaten_Kota)) +
@@ -1055,53 +1056,77 @@ plot_jagung_3 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
 
-Perbandingan produksi padi dalam kurun waktu 2010 - 2020 adalah dari Kabupaten Simalungun yang terbanyak dengan Jumlah Produksi Padi sebesar 4814941.97 Ton
+Perbandingan produksi Jagung dalam kurun waktu 2010 - 2022 adalah dari Kabupaten Karo yang terbanyak dengan Jumlah Produksi Jagung sebesar 11164760.42	 Ton
 
-### Perbandingan Rata-rata produksi Padi per Kabupaten/Kota
+### Perbandingan Rata-rata produksi Jagung per Kabupaten/Kota
 ```{r}
 # Turn off dplyr summarise() warning
 options(dplyr.summarise.inform = FALSE)
 
 # Melihat tren rata-rata produksi padi
-rataproduksi <- padisumutfilter %>% 
-  group_by(Tahun, Kabupaten_kota, .drop = FALSE) %>%  # Add .drop argument
+rataproduksi_jagung <- palawijasumut_jagung %>% 
+  group_by(Tahun, Kabupaten_Kota, .drop = FALSE) %>%  # Add .drop argument
   summarise(Rata_rata_produksi = sum(Rata_rata_produksi))
-rataproduksi
+rataproduksi_jagung
 ```
 
 
 ```{r}
 
-# Hitung total rata-rata produksi padi per Kabupaten/Kota
-totrataproduksi_kabkota <- padisumutfilter %>% 
-  group_by(Kabupaten_kota) %>% 
+# Hitung total rata-rata produksi Jagung per Kabupaten/Kota
+totrataproduksi_jagung_kabkota <- palawijasumut_jagung %>% 
+  group_by(Kabupaten_Kota) %>% 
   summarise(total_rataproduksi = sum(Rata_rata_produksi))
 
 # Visualisasi dengan barplot
-plot_4 <- ggplot(totrataproduksi_kabkota, aes(x = Kabupaten_kota, y = total_rataproduksi, fill = Kabupaten_kota)) +
+plot_jagung_4 <- ggplot(totrataproduksi_jagung_kabkota, aes(x = Kabupaten_Kota, y = total_rataproduksi, fill = Kabupaten_Kota)) +
   geom_bar(stat = "identity") +
-  labs(title = "Perbandingan Rata_rata Produksi Padi antara Kabupaten/Kota", x = "Kabupaten/Kota", y = "Rata_rata Produksi (Ton)") +
+  labs(title = "Perbandingan Rata_rata Produksi Jagung antara Kabupaten/Kota", x = "Kabupaten/Kota", y = "Rata_rata Produksi (Ton)") +
   scale_y_continuous(labels = scales::comma) +
   theme_minimal() +
   theme(legend.position = "none")  # hilangkan legend
 
 # Rotasi sumbu x agar mudah dibaca
-plot_4 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+plot_jagung_4 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 
 ```
 
-### Korelasi Luas Panen dan Produksi Padi
+### Korelasi Luas Panen dan Produksi Jagung
 ```{r}
-# Visualisasi korelasi luas panen dan produksi padi
-plot_5 <- ggplot(padisumutfilter, aes(x = Luas_panen, y = Produksi, color = Kabupaten_kota)) +
+# Visualisasi korelasi luas panen dan produksi Jagung
+plot_jagung_5 <- ggplot(palawijasumut_jagung, aes(x = Luas_Panen, y = Produksi, color = Kabupaten_Kota)) +
   geom_point() +
   labs(title = "Korelasi Produksi dan Luas Panen", x = "Luas Panen (Ha)", y = "Produksi (Ton)") +
   scale_y_continuous(labels = scales::comma) +
   theme_minimal() +
   theme(legend.position = "right")
-plot_5
+plot_jagung_5
 ```
+```{r}
+# Hitung Pearson correlation coefficient
+correlation_jagung <- cor(palawijasumut_jagung$Luas_Panen, palawijasumut_jagung$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson Luas Panen dan Produksi:", correlation_jagung)
+```
+Berdasarkan grafik diatas bisa lihat bahwa ada korelasi antara luas panen dan produksi. Hubungan korelasi adalah positif dengan nilai korelasi sebesar 0,62, sehingga bisa disimpulkan bahwa jika semakin banyak luas panen maka akan meningkat jumlah produksi padi.
+
+
+### Perbandingan Rata-rata produksi dengan Produksi Padi
+```{r}
+# Create a boxplot using ggplot2
+plot_jagung_6 <- ggplot(palawijasumut_jagung, aes(x = Kabupaten_Kota, y = Produksi - Rata_rata_produksi, fill = Kabupaten_Kota)) +
+  geom_boxplot() +
+  labs(title = "Perbandingan Produksi dan Rata-rata Produksi per Kabupaten/Kota", x = "Kabupaten/Kota", y = "Selisih Produksi") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+# Rotasi sumbu x agar mudah dibaca
+plot_jagung_6 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
 
 
 # 5. Data Kacang Hijau
