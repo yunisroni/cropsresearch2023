@@ -1,0 +1,177 @@
+---
+title: "Crop Recomemendation"
+author: "Roni Yunis"
+date: "2023-08-29"
+output: html_document
+---
+
+```{r}
+#Library to be used 
+library(dplyr)
+library(cluster) # clustering algorithms
+library(factoextra)
+library(caret)
+library(class)
+```
+
+```{r}
+#import data
+data <-read.csv("dataset/NC4/Crop_recommendation.csv", header = TRUE, sep = ',') #READING FILE
+head(data) #VIEWING DATA
+cor.test(data$rainfall,data$temperature)
+```
+
+```{r}
+#CLEANING DATA FOR USING IT TO BUILD MODEL
+dim(data) #NUMBER OF DATA AND COLOUMN
+colSums(is.na(data))
+summary(data)
+vec <- colnames(data)
+for(i in 1:7){
+  boxplot(data[,i], main = paste0("Boxplot For ", vec[i])) #PLOTING ALL DATA
+}
+
+#DETECTING OUTLIERS AND REMOVING THEM FOR ACCURACY
+outliers <- function(x) {
+  
+  Q1 <- quantile(x, probs=.25)
+  Q3 <- quantile(x, probs=.75)
+  iqr = Q3-Q1
+  
+  upper_limit = Q3 + (iqr*1.5)
+  lower_limit = Q1 - (iqr*1.5)
+  
+  x > upper_limit | x < lower_limit
+}
+remove_outliers <- function(df, cols = names(df)) {
+  for (col in cols) {
+    df <- df[!outliers(df[[col]]),]
+  }
+  df
+}
+data <- remove_outliers(data, c('N',
+                                'P',
+                                'K',
+                                'temperature',
+                                'rainfall',
+                                'ph',
+                                'humidity'))
+
+head(data) #CHECKING IF REMOVED
+dim(data) #CHECKING THE CHANGES IN DATA
+
+```
+
+```{r}
+#LABELING DATA
+data$label [data$label == 'rice'] <- 0
+data$label [data$label == 'maize'] <- 1
+data$label [data$label == 'chickpea'] <- 2
+data$label [data$label == 'kidneybeans'] <- 3
+data$label [data$label == 'pigeonpeas'] <- 4
+data$label [data$label == 'mothbeans'] <- 5
+data$label [data$label == 'mungbean'] <- 6
+data$label [data$label == 'blackgram'] <- 7
+data$label [data$label == 'lentil'] <- 8
+data$label [data$label == 'pomegranate'] <- 9
+data$label [data$label == 'banana'] <- 10
+data$label [data$label == 'mango'] <- 11
+data$label [data$label == 'grapes'] <- 12
+data$label [data$label == 'watermelon'] <- 13
+data$label [data$label == 'muskmelon'] <- 14
+data$label [data$label == 'apple'] <- 15
+data$label [data$label == 'orange'] <- 16
+data$label [data$label == 'papaya'] <- 17
+data$label [data$label == 'coconut'] <- 18
+data$label [data$label == 'cotton'] <- 19
+data$label [data$label == 'jute'] <- 20
+data$label [data$label == 'coffee'] <- 21
+data$label <- as.numeric(data$label)
+head(data)
+
+```
+
+```{r}
+#FOR DATA ANALYSIS
+M <- cor(data[,c(1:8)])
+corrplot::corrplot(M)
+boxplot(data$temperature~ data$label, #PLOTTING LABEL AGAINST AVERAGE TEMPERATURE
+        main = "Average temperature",
+        xlab = "Label",
+        ylab = "Temperature",
+        col = "cyan")
+boxplot(data$ph ~ data$label, #PLOTTING LABEL AGAINST AVERAGE Ph
+        main = "Average Ph ",
+        xlab = "Label",
+        ylab = "Ph",
+        col = "dark green")
+res <- data %>% #change res name to something different
+  group_by(label) %>%
+  summarise(Average_humidity = mean(humidity))
+res2 <- data %>%
+  group_by(label) %>%
+  summarise(Average_rainfall = mean(rainfall))
+ggplot(data = res,
+       mapping = aes(x = label,
+                     y = Average_humidity,
+                     fill = label)) +
+  geom_bar(stat="identity", position = "dodge") +
+  labs(title = "Average Humidity By Crop Label")
+ggplot(data = res2,
+       mapping = aes(x = label,
+                     y = Average_rainfall,
+                     fill = label)) +
+  geom_bar(stat="identity", position = "dodge") +
+  labs(title = "Average Rainfall By Crop Label")
+
+```
+
+```{r}
+#K MEANS
+data_1 <- scale(data[,c(1:8)])
+k2 <- kmeans(data_1,
+             centers = 4,
+             nstart = 25)
+str(k2)
+fviz_cluster(k2,
+             data = data_1)
+```
+
+```{r}
+#KNN ALGORITHM
+data$lable <- as.numeric(factor(data$label))
+unique(data$label)
+set.seed(123)
+dat.d <- sample(1:nrow(data),
+                size = nrow(data) * 0.7,
+                replace = FALSE) #random selection of 70% data.
+train <- data[dat.d,] # 70% TRAINING DATA
+test <- data[-dat.d,] #30% TESTING DATA
+train.labels <- data[dat.d,9]
+test.labels <- data[-dat.d,9]
+NROW(train.labels)
+nrow(train)
+i = 1
+k.optm = 1
+for (i in 1:28){
+  knn.mod <- knn(train = na.omit(train),
+                 test = na.omit(test),
+                 cl = na.omit(train.labels),
+                 k = i)
+  k.optm[i] <- 100 * sum(test.labels == knn.mod) / NROW(test.labels)
+  k = i
+  cat(k,'=',k.optm[i],'\n')
+}
+plot(k.optm,
+     type="b",
+     xlab="K- Value",
+     ylab="Accuracy level")
+model_trained <- knn(train = train,
+                     test = test,
+                     cl = train.labels,
+                     k = 16)
+tab <- table(model_trained ,
+             test.labels)
+confusionMatrix(tab)
+```
+

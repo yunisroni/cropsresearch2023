@@ -21,6 +21,9 @@ library(factoextra)
 library(mclust)
 library(vars)
 library(forecast)
+library(prophet)
+library(caret)
+library(timetk)
 ```
 
 # 3. Data Padi
@@ -182,7 +185,8 @@ plot_4 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
 # Visualisasi korelasi luas panen dan produksi padi
 plot_5 <- ggplot(padisumutfilter, aes(x = Luas_panen, y = Produksi, color = Kabupaten_kota)) +
   geom_point() +
-  labs(title = "Korelasi Produksi dan Luas Panen", x = "Luas Panen", y = "Produksi") +
+  labs(title = "Korelasi Produksi dan Luas Panen", x = "Luas Panen (Ha)", y = "Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
   theme_minimal() +
   theme(legend.position = "right")
 plot_5
@@ -229,9 +233,9 @@ periodogram_plot
 ```
 Berdasarkan Periodogram Produksi Padi bisa dilihat bahwa ada fluktuasi yang berulang dalam data sehingga bisa disimpulkan adanya pola musiman. Melihat hal ini maka akan dilakukan analisis prediksi yang lebih lanjut dan komplek. 
 
-## Model
-### a. Clustering
 
+## Model
+### a. Clustering Produksi Padi
 ```{r}
 # Filter data produksi terbanyak berdasarkan tahun
 grouped_data <- padisumutfilter %>%
@@ -286,7 +290,7 @@ cat("Optimal number of clusters:", optimal_k)
 ```{r}
 # Klastering dengan K-Means
 set.seed(123)
-k <- 10 # jumlah klaster
+k <- 8 # jumlah klaster
 kmeans_result <- kmeans(scale_data, centers = k)
 ```
 
@@ -317,7 +321,7 @@ cluster_counts_per_kabupaten
 ```{r}
 # Hitung jumlah kabupaten setiap klaster
 cluster_kabupaten_counts <- datapadi2017 %>%
-  filter(Cluster %in% c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)) %>%
+  filter(Cluster %in% c(1, 2, 3, 4, 5, 6, 7, 8)) %>%
   group_by(Cluster) %>%
   summarise(Jumlah_Kabupaten = n())
 
@@ -329,7 +333,7 @@ cluster_kabupaten_counts
 plot_9 <- ggplot(datapadi2017, aes(x = Luas_panen, y = Produksi, label = Kabupaten_kota)) +
   geom_point(aes(color = factor(Cluster))) +
   geom_text(vjust = -0.5, hjust = 0, size = 3, show.legend = FALSE) +
-  labs(title = "Hasil Clustering Produksi Padi", x = "Luas Panen", y = "Produksi") +
+  labs(title = "Hasil Clustering Produksi Padi", x = "Luas Panen (Ha)", y = "Produksi (Ton)") +
   scale_color_discrete(name = "Cluster") +
   scale_y_continuous(labels = scales::comma) +
   theme_minimal()
@@ -348,8 +352,8 @@ kmeans_result$centers
 ```
 ```{r}
 # Definisikan kriteria klaster
-low_criteria <- quantile(cluster_avg$Avg_Produksi, 0.33)
-high_criteria <- quantile(cluster_avg$Avg_Produksi, 0.66)
+low_criteria <- quantile(cluster_avg$Avg_Produksi, 0.25)
+high_criteria <- quantile(cluster_avg$Avg_Produksi, 0.75)
 
 # Berikan label untuk masing-masing klaster
 cluster_avg_kriteria <- cluster_avg %>%
@@ -359,9 +363,9 @@ cluster_avg_kriteria
 ```
 
 Berdasarkan hasil perhitungan nilai centroid dari klaster, maka bisa disimpulkan bahwa:
-1. Klaster 1,2 dan 4: adalah klaster yang termasuk kategori rendah 
-2. Klaster 6,8 dan 9: adalah klaster yang termasuk kategori sedang
-3. Klaster 3,5,7 dan 10: adalah klaster yang termasuk kategori tinggi
+1. Klaster 4 dan 8: adalah klaster yang termasuk kategori rendah 
+2. Klaster 1,2,5 dan 6: adalah klaster yang termasuk kategori sedang
+3. Klaster 3 dan 7: adalah klaster yang termasuk kategori tinggi
 
 
 ```{r}
@@ -371,7 +375,7 @@ kabupaten_per_cluster <- datapadi2017 %>%
   summarise(Kabupaten_kota = list(unique(Kabupaten_kota)))
 
 # Menampilkan nama kabupaten/kota dari setiap klaster
-for (i in 1:10) {
+for (i in 1:8) {
   cat(paste("Klaster", i, ":", kabupaten_per_cluster$Kabupaten_kota[[i]], "\n"))
 }
 ```
@@ -379,7 +383,7 @@ for (i in 1:10) {
 # Evaluasi Clustering dengan Inertia
 
 # Jumlah klaster yang diuji
-k_values <- 2:10
+k_values <- 2:8
 
 # Hitung nilai Inertia untuk setiap klaster
 inertia_values <- sapply(k_values, function(k) {
@@ -390,7 +394,7 @@ inertia_values <- sapply(k_values, function(k) {
 inertia_df <- data.frame(K = k_values, Inertia = inertia_values)
 inertia_df
 ```
-Berdasarkan hasil evaluasi dengan Inertia, didapatkan bahwa jumlah klaster yang tepat untuk pengujian klaster yang dilakukan adalah 10, karena nilai Inertia yang paling rendah
+Berdasarkan hasil evaluasi dengan Inertia, didapatkan bahwa jumlah klaster yang tepat untuk pengujian klaster yang dilakukan adalah 8, karena nilai Inertia yang paling rendah
 
 
 ```{r}
@@ -398,7 +402,7 @@ akurasi_klastering <- (kmeans_result$betweenss/kmeans_result$totss)*100
 akurasi_klastering
 ```
 Akurasi klaster bisa diketahui dengan menghitung rasio dari jumlah kuadrat antar klaster dengan
-jumlah kuadrat total. Sehingga nilai akurasi dari model klastering adalah 95,85
+jumlah kuadrat total. Sehingga nilai validitas dari model klastering adalah 93,85
 
 ```{r}
 # Membaca dataset
@@ -431,7 +435,7 @@ features <- datapadi2017[, c("Produksi", "Luas_panen", "Rata_rata_produksi")]
 scaled_features <- scale(features)
 
 # Klaster dengan K-Means
-kmeans_result <- kmeans(scaled_features, centers = 10)
+kmeans_result <- kmeans(scaled_features, centers = 8)
 
 # Tentukan nilai Klaster
 cluster_assignment <- kmeans_result$cluster
@@ -483,6 +487,9 @@ silhouette_score <- silhouette(cluster_assignment, dist(scaled_features))
 silhouette_score
 ```
 Secara keseluruhan nilai Silhouette Score yang positif dan mendekati 1 menunjukkan bahwa klastering yang dilakukan memiliki hasil yang baik dalam memisahkan objek-objek ke dalam kelompok-kelompok yang berbeda.
+
+#### 2. Data Curah Hujan
+
 
 
 ### b. Regresi Liner
@@ -558,7 +565,7 @@ Model Klaster dan Regresi untuk Mengungkap Tren Produksi Padi
 set.seed(123)
 
 # K-Means Clustering
-k <- 10
+k <- 8
 kmeans_result <- kmeans(datapadi2017[, c("Produksi", "Luas_panen")], centers = k)
 datapadi2017$Cluster <- kmeans_result$cluster
 
@@ -582,7 +589,7 @@ plot_lm <- ggplot(datapadi2017, aes(x = Luas_panen, y = Produksi, label = Kabupa
   geom_point(aes(color = factor(Cluster))) +
   geom_text(vjust = -0.5, hjust = 0, size = 3, show.legend = FALSE) +
   geom_smooth(method = "lm", se = FALSE, color = "blue") +
-  labs(title = "Hubungan Luas Panen dan Produksi", x = "Luas Panen", y = "Produksi") +
+  labs(title = "Hubungan Luas Panen dan Produksi", x = "Luas Panen (Ha)", y = "Produksi (Ton)") +
   scale_color_discrete(name = "Cluster") +
   scale_y_continuous(labels = scales::comma) +
   theme_minimal()
@@ -651,7 +658,7 @@ merged_data
 
 ```{r}
 # Pilih variabel yang akan diprediksi
-# dalam pengujian ini akan dilihat apakah ada pengaruh curah hujan terhadap peningkatan rata-rata produksi
+# dalam pengujian ini akan dilihat apakah ada pengaruh curah hujan terhadap peningkatan produksi
 data_for_var <- merged_data[, c("Produksi", "avg_rainfall")]
 ```
 
@@ -686,10 +693,417 @@ correlation
 Dilihat dari hubungan atau korelasi, korelasi curah hujan dan produksi padi sangat rendah atau tidak ada korelasi.
 
 
+### d. Prediksi Produksi Padi dengan ML
+
+```{r}
+# Menghitung total produksi untuk setiap tahun
+summary_data <- padisumut_clean %>%
+  group_by(Tahun) %>%
+  summarise(total_produksi = sum(Produksi))
+summary_data
+```
+
+```{r}
+# Membuat bar chart atau line chart
+ggplot(summary_data, aes(x = Tahun, y = total_produksi)) +
+  geom_line() +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  labs(title = "Perubahan Jumlah Produksi Padi dari 2010 - 2020",
+       x = "Tahun",
+       y = "Total Produksi")
+```
+
+
+```{r}
+# Ekplorasi Data
+summary_data %>% 
+  plot_time_series(.date_var = Tahun,
+                   .value = total_produksi,
+                   .line_size = 1,
+                   .smooth_size = 0.5,
+                   .smooth_alpha = 0.4,
+                   .interactive = TRUE, 
+                   .x_lab = "Tahun", 
+                   .y_lab = "Jumlah Produksi Padi (Ton)", 
+                   .title = "Hasil Produksi Padi di Sumatera Utara (2010-2020)")
+```
+
+```{r}
+# Uji Augmented Dickey-Fuller (ADF) untuk stasioneritas
+library(tseries)
+data <-  summary_data$total_produksi
+adf_test <- adf.test(data)
+adf_test
+```
+
+
+```{r}
+library(modeltime.resample)
+resamples_tscv <- time_series_cv(
+    data        = summary_data,
+    assess      = "2 year",
+    initial     = "7 years",
+    skip        = "1 year",
+    slice_limit = 3
+)
+```
+```{r}
+resamples_tscv %>%
+    tk_time_series_cv_plan() %>%
+    plot_time_series_cv_plan(.date_var = Tahun, 
+                             .value = total_produksi, 
+                             .interactive = TRUE)
+```
+
+1. Model ARIMA
+```{r}
+library(parsnip)
+model_fit_arima <- arima_reg() %>%
+    set_engine(engine = "auto_arima") %>% 
+    fit(formula = total_produksi ~ Tahun, 
+        data = summary_data)
+
+model_fit_arima 
+```
+
+2. Model ETS
+```{r}
+model_fit_ets <- exp_smoothing() %>%
+    set_engine(engine = "ets") %>% 
+    fit(formula = total_produksi ~ Tahun, 
+        data = summary_data)
+
+model_fit_ets
+```
+3. Model Prophet
+```{r}
+model_fit_prophet <- prophet_reg() %>%
+    set_engine(engine = "prophet") %>%
+    fit(formula = total_produksi ~ Tahun, 
+        data = summary_data)
+
+model_fit_prophet
+```
+
+```{r}
+# Menggabungkan Model
+models_tbl <- modeltime_table(model_fit_arima,
+                              model_fit_prophet,
+                              model_fit_ets)
+
+models_tbl
+```
+
+4. Pelatihan dan Evaluasi Model
+```{r}
+resamples_fitted <- models_tbl %>%
+    modeltime_fit_resamples(resamples = resamples_tscv)
+
+resamples_fitted
+```
+
+
+```{r}
+# Evaluasi Model
+resamples_fitted %>%
+    modeltime_resample_accuracy() %>%
+    table_modeltime_accuracy(.title = "Tabel Evaluasi", 
+                             .interactive = FALSE)
+```
+
+```{r}
+resamples_fitted %>%
+    plot_modeltime_resamples(.interactive = TRUE)
+```
+
+
+```{r}
+models_tbl %>% 
+  modeltime_residuals(new_data = summary_data) %>% 
+  modeltime_residuals_test()
+```
+
+```{r}
+# Prediksi Masa Depan
+refit_tbl <- resamples_fitted %>%
+    modeltime_refit(data = summary_data)
+```
+```{r}
+forecast <- refit_tbl %>%
+    modeltime_forecast(h = "1 years", 
+                       actual_data = summary_data) 
+
+forecast 
+```
+
+```{r}
+# Visualisasi Hasil Forecasting
+forecast %>%
+    plot_modeltime_forecast(.interactive = TRUE)
+```
+
+
+```{r}
+# Cross Validation Model Prophet
+# Membaca data dan mempersiapkan dataset
+data <- summary_data %>% 
+  rename(
+    ds = "Tahun",
+    y = "total_produksi"
+  )
+data
+# Buat fungsi untuk menghitung metrik evaluasi yang dibutuhkan
+compute_metrics <- function(actual, forecast) {
+  mae <- mean(abs(actual - forecast))
+  mape <- mean(abs((actual - forecast) / actual) * 100)
+  mase <- mean(abs(actual - forecast) / mean(abs(diff(actual))))
+  smape <- mean(200 * abs(forecast - actual) / (abs(forecast) + abs(actual)))
+  rmse <- sqrt(mean((actual - forecast)^2))
+  metrics <- c(mae, mape, mase, smape, rmse)
+  return(metrics)
+}
+
+# Cross-validation dengan Prophet
+set.seed(123)
+num_folds <- 5
+folds <- cut(1:nrow(data), breaks = num_folds, labels = FALSE)
+
+prophet_metrics <- matrix(NA, num_folds, 5)  # Ganti 6 dengan jumlah metrik evaluasi
+for (fold in 1:num_folds) {
+  train_data <- data[folds != fold, ]
+  test_data <- data[folds == fold, ]
+  
+  # Train Prophet model
+  prophet_model <- prophet(train_data)
+  
+  # Prediksi dengan model
+  future <- make_future_dataframe(prophet_model, periods = nrow(test_data))
+  forecast <- predict(prophet_model, future)
+  
+  # Hitung metrik evaluasi
+  prophet_metrics[fold, ] <- compute_metrics(test_data$y, forecast$yhat)
+}
+
+# Mengubah hasil metrik evaluasi menjadi persentase
+prophet_metrics <- prophet_metrics / 100
+
+# Hasil metrik evaluasi cross-validation untuk Prophet
+colnames(prophet_metrics) <- c("MAE", "MAPE", "MASE", "SMAPE", "RMSE")
+mean_metrics <- colMeans(prophet_metrics, na.rm = TRUE)
+print("Cross-Validation Metrics for Prophet:")
+hasil_validasi <- format(mean_metrics, scientific = FALSE)
+hasil_validasi
+
+```
+
+```{r}
+# Ubah metrik evaluasi menjadi Coefficient of Determination (R-squared)
+compute_r_squared <- function(actual, forecast) {
+  rsq <- 1 - sum((actual - forecast)^2) / sum((actual - mean(actual))^2)
+  return(rsq)
+}
+
+# Uji beberapa transformasi data dan hitung kembali R-squared
+# Contoh: menggunakan log transformasi
+log_transformed_actual <- log(test_data$y)
+log_transformed_forecast <- log(forecast$yhat)
+new_rsq <- compute_r_squared(log_transformed_actual, log_transformed_forecast)
+print(new_rsq)
+
+```
 ## Interpretasi
+Berdasarkan hasil tersebut bisa disimpulkan bahwa:
+a)	Untuk melakukan evaluasi hasil kluster dalam penelitian ini menggunakan Percentage of Variance Explained, ini adalah salah satu metrik yang digunakan untuk mengevaluasi sejauh mana kluster yang dihasilkan oleh model dapat menjelaskan variasi dalam data. Berdasarkan hasil evaluasi terhadap model kluster yang sudah dilakukan didapatkan bahwa nilai validitas kluster dari model adalah 93,85, hal ini menunjukkan bahwa sekitar 93,85% dari variasi dalam data dijelaskan oleh variasi antara kluster yang dihasilkan oleh model dianggap cukup tinggi.
+b)	Nilai R-Square yang tinggi yaitu sebesar 0,988 dalam model regresi menunjukkan bahwa model dapat menjelaskan 98,8% variasi dalam produksi padi berdasarkan luas panen dan rata-rata produksi.
+c)	Untuk mengukur kinerja dan keandalan model Prophet dalam memprediksi produksi padi secara lebih objektif, maka dalam penelitian akan dilakukan Cross Validation. Cross Validation dapat digunakan untuk menghindari Overfitting atau kesalahan saat melakukan prediksi dengan data pengujian atau data yang baru(7)(8). Berdasarkan Cross Validation yang sudah dilakukan didapatkan bahwa model Prophet memiliki performa yang bervariasi dalam memprediksi data, dengan beberapa metrik MAE: 22,108.09 dan SMAPE=0,3299022 yang lebih rendah, sementara metrik lain seperti MASE=0,1281631 mengidentifikasikan performa yang baik.
+d)	Melihat hasil dari tiga model prediksi memiliki nilai prediksi yang berbeda, maka langkah selanjutnya adalah perlu melakukan uji asumsi disamping melihat perbedaan nilai error dari evaluasi model yang sudah dilakukan sebelumnya. Berdasarkan hasil uji asumsi atas tiga model, dapat dijelaskan bahwa data berdistribusi normal, tidak ada autokorelasi atau korelasi serial dalam residu, sehingga ketiga model dapat digunakan dan cocok untuk memprediksi nilai produksi padi yang akan datang.
 
 
 # 4. Data Jagung
+## Obstain - Load Dataset Palawija
+```{r}
+palawija_sumut <- read_excel("dataset/dataset_palawija_Sumut.xlsx")
+palawija_sumut
+```
+
+## Scrub Data Palawija
+Proses Scrub yang akan dilakukan adalah merubah type data dan menghapus data yang tidak penting atau data yang kosng (not available). Berdasarkan data palawija_sumut dapat dilihat bahwa type data dari kolom Tahun adalah double, rata-rata produksi, produksi dan luas panen bertype karakter. Maka untuk mendukung proses analisis maka type data Tahun harus dirubah ke type Date, dan data yg bertype karakter dirubah kedalam type numeric.
+
+```{r}
+glimpse(palawija_sumut)
+```
+
+
+### a. Merubah type data
+```{r}
+# Merubah type data karakter menjadi numeric
+palawija_sumut$`Rata-rata_produksi` <- as.numeric(palawija_sumut$`Rata-rata_produksi`)
+palawija_sumut$Produksi <- as.numeric(palawija_sumut$Produksi)
+palawija_sumut$Luas_Panen <- as.numeric(palawija_sumut$Luas_Panen)
+palawija_sumut
+```
+
+```{r}
+# Merubah type Tahun menjadi Date
+palawija_sumut$Tahun <- make_date(palawija_sumut$Tahun)
+glimpse(palawija_sumut)
+```
+
+
+```{r}
+# Merubah nama variabel Rata-rata Produksi
+names(palawija_sumut)[names(palawija_sumut) == "Rata-rata_produksi"] <- "Rata_rata_produksi"
+glimpse(palawija_sumut)
+```
+### b. Menghapus Data Kosong
+```{r}
+# Menampikan variabel dengan baris kosong
+colSums(is.na(palawija_sumut))
+```
+
+
+```{r}
+# Menghapus data NA's
+palawijasumut_clean <- na.omit(palawija_sumut)
+summary(palawijasumut_clean)
+```
+```{r}
+colSums(is.na(palawijasumut_clean))
+glimpse(palawijasumut_clean)
+
+```
+```{r}
+# Mengambil semua data kecuali data Kabupaten "Sumatera Utara"
+palawijasumutfilter <- palawijasumut_clean[palawijasumut_clean$Kabupaten_Kota != "Sumatera Utara",]
+palawijasumutfilter
+```
+
+## Eksplorasi Data Analisis (EDA)
+### Jumlah Produksi Jagung per Kabupaten/Kota
+```{r}
+plot_jagung_1 <- ggplot(palawijasumutfilter, aes(x = Tahun, y = Produksi, group = Kabupaten_Kota, color = Kabupaten_Kota)) +
+  geom_line() +
+  labs(title = "Jumlah Produksi Jagung", x = "Tahun", y = "Produksi Jagung (Ha)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "right")
+plot_jagung_1
+
+```
+
+```{r}
+# Hitung total produksi per kabupaten/kota
+totproduksi_jagung <- palawijasumutfilter %>% 
+  mutate(first_date_month = floor_date(Tahun, unit = "year")) %>% 
+  group_by(Kabupaten_Kota) %>% 
+  summarise(jumlahproduksi = sum(Produksi)) %>% 
+  arrange(jumlahproduksi)
+totproduksi_jagung
+```
+```{r}
+# Turn off dplyr summarise() warning
+options(dplyr.summarise.inform = FALSE)
+
+# Hitung total produksi per kabupaten/tahun
+totproduksi_jagung <- palawijasumutfilter %>% 
+  group_by(Tahun, Kabupaten_Kota, .drop = FALSE) %>%  # Add .drop argument
+  summarise(total_produksi = sum(Produksi))
+
+totproduksi_jagung
+```
+
+### Tren Produksi Jagung per Kabupaten/Kota
+```{r}
+# Visualisasi Tren Produksi Jagung
+plot_jagung_2 <- ggplot(totproduksi_jagung, aes(x = Tahun, y = total_produksi, color = Kabupaten_Kota)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Tren Produksi Jagung", x = "Tahun", y = "Total Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "right")
+plot_jagung_2
+```
+### Perbandingan Produksi Jagung per Kabupaten/Kota
+```{r}
+# Ambil data tanaman pangan Jagung
+palawijasumut_jagung <- palawijasumutfilter[palawijasumutfilter$Nama_Palawija == "Jagung",]
+```
+
+```{r}
+palawijasumut_jagung
+```
+
+
+```{r}
+# Hitung total produksi Jagung per Kabupaten/Kota
+totproduksi_jagung_kabkota <- palawijasumut_jagung %>% 
+  group_by(Kabupaten_Kota) %>% 
+  summarise(total_produksi = sum(Produksi))
+
+# Visualisasi dengan barplot
+plot_jagung_3 <- ggplot(totproduksi_jagung_kabkota, aes(x = Kabupaten_Kota, y = total_produksi, fill = Kabupaten_Kota)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Perbandingan Produksi Jagung antara Kabupaten/Kota", x = "Kabupaten/Kota", y = "Total Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "none")  # hilangkan legend
+
+# Rotasi sumbu x agar mudah dibaca
+plot_jagung_3 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+Perbandingan produksi padi dalam kurun waktu 2010 - 2020 adalah dari Kabupaten Simalungun yang terbanyak dengan Jumlah Produksi Padi sebesar 4814941.97 Ton
+
+### Perbandingan Rata-rata produksi Padi per Kabupaten/Kota
+```{r}
+# Turn off dplyr summarise() warning
+options(dplyr.summarise.inform = FALSE)
+
+# Melihat tren rata-rata produksi padi
+rataproduksi <- padisumutfilter %>% 
+  group_by(Tahun, Kabupaten_kota, .drop = FALSE) %>%  # Add .drop argument
+  summarise(Rata_rata_produksi = sum(Rata_rata_produksi))
+rataproduksi
+```
+
+
+```{r}
+
+# Hitung total rata-rata produksi padi per Kabupaten/Kota
+totrataproduksi_kabkota <- padisumutfilter %>% 
+  group_by(Kabupaten_kota) %>% 
+  summarise(total_rataproduksi = sum(Rata_rata_produksi))
+
+# Visualisasi dengan barplot
+plot_4 <- ggplot(totrataproduksi_kabkota, aes(x = Kabupaten_kota, y = total_rataproduksi, fill = Kabupaten_kota)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Perbandingan Rata_rata Produksi Padi antara Kabupaten/Kota", x = "Kabupaten/Kota", y = "Rata_rata Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "none")  # hilangkan legend
+
+# Rotasi sumbu x agar mudah dibaca
+plot_4 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+```
+
+### Korelasi Luas Panen dan Produksi Padi
+```{r}
+# Visualisasi korelasi luas panen dan produksi padi
+plot_5 <- ggplot(padisumutfilter, aes(x = Luas_panen, y = Produksi, color = Kabupaten_kota)) +
+  geom_point() +
+  labs(title = "Korelasi Produksi dan Luas Panen", x = "Luas Panen (Ha)", y = "Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "right")
+plot_5
+```
+
+
 # 5. Data Kacang Hijau
 # 6. Data Kacang Kedelai
 # 7. Data Kacang Tanah
