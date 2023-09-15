@@ -995,7 +995,7 @@ plot_jagung_1
 ```{r}
 # Hitung total produksi per kabupaten/kota
 totproduksi_jagung <- palawijasumutfilter %>% 
-  mutate(first_date_month = floor_date(Tahun, unit = "year")) %>% 
+  #mutate(first_date_month = floor_date(Tahun, unit = "year")) %>% 
   group_by(Kabupaten_Kota) %>% 
   summarise(jumlahproduksi = sum(Produksi)) %>% 
   arrange(jumlahproduksi)
@@ -1012,7 +1012,9 @@ totproduksi_jagung <- palawijasumutfilter %>%
 
 totproduksi_jagung
 ```
-
+```{r}
+summary(totproduksi_jagung)
+```
 ### Tren Produksi Jagung per Kabupaten/Kota
 ```{r}
 # Visualisasi Tren Produksi Jagung
@@ -1125,6 +1127,392 @@ plot_jagung_6 <- ggplot(palawijasumut_jagung, aes(x = Kabupaten_Kota, y = Produk
 
 # Rotasi sumbu x agar mudah dibaca
 plot_jagung_6 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+### Melihat pola musiman dalam data untuk produksi jagung
+
+```{r}
+# Convert Tahun to Date format
+palawijasumut_jagung$tahun <- as.Date(paste0(palawijasumut_jagung$Tahun, "-01-01"))
+
+# Create ACF plot
+acf_plot <- acf(palawijasumut_jagung$Produksi, main = "ACF Plot of Produksi Jagung")
+
+# Print ACF plot
+print(acf_plot)
+
+# Create periodogram
+periodogram_plot_jagung <- spectrum(palawijasumut_jagung$Produksi, main = "Periodogram of Produksi Jagung")
+
+# Print periodogram
+periodogram_plot_jagung
+```
+
+## Model
+### a. Clustering Produksi Padi
+```{r}
+# Filter data produksi terbanyak berdasarkan tahun
+grouped_data_jagung <- palawijasumut_jagung %>%
+  group_by(Tahun) %>%
+  arrange(desc(Produksi)) %>%
+  summarise(Total_Produksi = sum(Produksi))
+grouped_data_jagung
+            
+```
+Berdasarkan hasil diatas bisa dilihat jumlah total produksi terbanyak ada pada Tahun 2013, yaitu sebanyak 5000925 Ton
+
+```{r}
+# Menyiapkan data, untuk pengujian klastering data yang ambil adalah data tahun 2013 saja
+datajagung2013 <- palawijasumut_jagung %>% 
+  filter(Tahun == "2013-01-01")
+datajagung2013
+```
+
+```{r}
+# Memilih variabel klastering
+cluster_data_jagung <- datajagung2013 %>% 
+  dplyr::select(Produksi, Rata_rata_produksi, Luas_Panen)
+
+```
+
+```{r}
+# Tentukan skala dari variabel
+scale_data <- as.data.frame(scale(cluster_data_jagung))
+```
+
+```{r}
+# Elbow method to find the optimal number of clusters
+set.seed(123)
+fviz_nbclust(scale_data, kmeans, method = "wss")
+```
+
+
+```{r}
+# Silhouette method to find the optimal number of clusters
+silhouette_scores <- sapply(2:10, function(k) {
+  kmeans_result <- kmeans(scale_data, centers = k)
+  mean_silhouette <- mean(silhouette(kmeans_result$cluster, dist(scale_data)))
+  return(mean_silhouette)
+})
+
+# Plot silhouette scores
+plot(2:10, silhouette_scores, type = "b", pch = 19, xlab = "Number of clusters", ylab = "Mean Silhouette Score")
+
+# Find the optimal number of clusters based on the highest silhouette score
+optimal_k <- which.max(silhouette_scores) + 1
+cat("Optimal number of clusters:", optimal_k)
+```
+
+
+
+```{r}
+# Klastering dengan K-Means
+set.seed(123)
+k <- 8 # jumlah klaster
+kmeans_result <- kmeans(scale_data, centers = k)
+```
+
+```{r}
+# tambahkan label ke dalam data frame
+datajagung2013$Cluster <- as.factor(kmeans_result$cluster)
+```
+
+```{r}
+# Create a scatter plot using ggplot2
+plot_jagung_8 <- ggplot(datajagung2013, aes(x = Luas_Panen, y = Produksi, color = factor(Cluster))) +
+  geom_point() +
+  labs(title = "Hasil Clustering Produksi Jagung", x = "Luas Panen", y = "Produksi") +
+  scale_color_discrete(name = "Cluster") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal()
+plot_jagung_8
+```
+
+
+```{r}
+# Menghitung jumlah klaster per kabupaten/kota
+
+cluster_counts_per_kabupaten <- datajagung2013 %>%
+  group_by(Kabupaten_Kota, Cluster) %>%
+  count()
+
+cluster_counts_per_kabupaten
+```
+
+
+
+```{r}
+# Hitung jumlah kabupaten setiap klaster
+cluster_kabupaten_counts <- datajagung2013 %>%
+  filter(Cluster %in% c(1, 2, 3, 4, 5, 6, 7, 8)) %>%
+  group_by(Cluster) %>%
+  summarise(Jumlah_Kabupaten = n())
+
+cluster_kabupaten_counts
+```
+
+```{r}
+# Create a scatter plot using ggplot2
+plot_jagung_9 <- ggplot(datajagung2013, aes(x = Luas_Panen, y = Produksi, label = Kabupaten_Kota)) +
+  geom_point(aes(color = factor(Cluster))) +
+  geom_text(vjust = -0.5, hjust = 0, size = 3, show.legend = FALSE) +
+  labs(title = "Hasil Clustering Produksi Jagung", x = "Luas Panen (Ha)", y = "Produksi (Ton)") +
+  scale_color_discrete(name = "Cluster") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal()
+plot_jagung_9
+```
+```{r}
+# Hitung rata-rata produksi per klaster
+cluster_avg <- datajagung2013 %>%
+  group_by(Cluster) %>%
+  summarise(Avg_Produksi = mean(Produksi))
+
+cluster_avg
+```
+
+
+```{r}
+kmeans_result$centers
+```
+
+```{r}
+# Definisikan kriteria klaster
+low_criteria <- quantile(cluster_avg$Avg_Produksi, 0.25)
+high_criteria <- quantile(cluster_avg$Avg_Produksi, 0.75)
+
+# Berikan label untuk masing-masing klaster
+cluster_avg_kriteria <- cluster_avg %>%
+  mutate(Category = ifelse(Avg_Produksi < low_criteria, "Rendah",
+                           ifelse(Avg_Produksi > high_criteria, "Tinggi", "Sedang")))
+cluster_avg_kriteria
+```
+
+Berdasarkan hasil perhitungan nilai centroid dari klaster, maka bisa disimpulkan bahwa:
+1. Klaster 2 dan 3: adalah klaster yang termasuk kategori rendah 
+2. Klaster 1,4,5 dan 8: adalah klaster yang termasuk kategori sedang
+3. Klaster 6 dan 7: adalah klaster yang termasuk kategori tinggi
+
+
+```{r}
+# Menghitung jumlah klaster per kelompok kabupaten/kota
+kabupaten_per_cluster <- datajagung2013 %>%
+  group_by(Cluster) %>%
+  summarise(Kabupaten_Kota = list(unique(Kabupaten_Kota)))
+
+# Menampilkan nama kabupaten/kota dari setiap klaster
+for (i in 1:8) {
+  cat(paste("Klaster", i, ":", kabupaten_per_cluster$Kabupaten_Kota[[i]], "\n"))
+}
+```
+```{r}
+# Evaluasi Clustering dengan Inertia
+
+# Jumlah klaster yang diuji
+k_values <- 2:8
+
+# Hitung nilai Inertia untuk setiap klaster
+inertia_values <- sapply(k_values, function(k) {
+  kmeans_result <- kmeans(cluster_data_jagung, centers = k)
+  kmeans_result$tot.withinss
+})
+
+inertia_df <- data.frame(K = k_values, Inertia = inertia_values)
+inertia_df
+```
+Berdasarkan hasil evaluasi dengan Inertia, didapatkan bahwa jumlah klaster yang tepat untuk pengujian klaster yang dilakukan adalah 8, karena nilai Inertia yang paling rendah
+
+
+```{r}
+akurasi_klastering_jagung <- (kmeans_result$betweenss/kmeans_result$totss)*100
+akurasi_klastering_jagung
+```
+Akurasi klaster bisa diketahui dengan menghitung rasio dari jumlah kuadrat antar klaster dengan
+jumlah kuadrat total. Sehingga nilai validitas dari model klastering adalah 97,21
+
+### b. Regresi Liner
+Tujuan dari analisis ini adalah untuk mencari tahu sejauh mana perubahan dalam rata-rata produksi dan/atau luas panen dapat mempengaruhi perubahan dalam jumlah produksi jagung. Adapun hipotesis yang dapat dikembangkan adalah:
+1. Rata-rata produksi berpengaruh signifikan terhadap jumlah produksi jagung.
+2. Luas panen berpengaruh signifikan terhadap jumlah produksi jagung.
+3. Rata-rata produksi dan luas panen berpengaruh signifikan terhadap jumlah produksi jagung.
+
+```{r}
+# Load dataset padi
+head(palawijasumut_jagung)
+
+```
+
+
+```{r}
+# Pilih variabel yang akan diukur pengaruh
+datajagungsumut <- palawijasumut_jagung %>% 
+  dplyr::select(Rata_rata_produksi, Produksi, Luas_Panen)
+```
+
+Model 1: Pengaruh rata-rata produksi terhadap jumlah produksi
+```{r}
+model_1_jagung <- lm(Produksi ~ Rata_rata_produksi, data = datajagungsumut)
+summary(model_1_jagung)
+```
+
+```{r}
+# Visualisasi hasil regresi model_1
+ggplot(datajagungsumut, aes(x = Rata_rata_produksi, y = Produksi)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE, color = "blue") +
+  labs(x = "Rata-rata Produksi", y = "Jumlah Produksi") +
+  ggtitle("Hubungan Antara Rata-rata Produksi dan Jumlah Produksi") +
+  theme_minimal()
+```
+
+
+Berdasarkan hasil di atas, kita dapat menyimpulkan bahwa rata-rata produksi padi memiliki pengaruh yang signifikan terhadap jumlah produksi. Nilai R-squared yang relatif rendah menunjukkan bahwa masih ada variabilitas dalam jumlah produksi yang tidak dijelaskan oleh rata-rata produksi, dan mungkin ada faktor lain yang juga mempengaruhi hasil produksi padi.
+
+Model 2: Pengaruh luas panen terhadap jumlah produksi
+```{r}
+model_2_jagung <- lm(Produksi ~ Luas_Panen, data = datajagungsumut)
+summary(model_2_jagung)
+```
+
+
+```{r}
+# Visualisasi hasil regresi model_1
+ggplot(datajagungsumut, aes(x = Luas_Panen, y = Produksi)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE, color = "blue") +
+  labs(x = "Luas Panen", y = "Jumlah Produksi") +
+  ggtitle("Hubungan Antara Luas Panen dan Jumlah Produksi") +
+  theme_minimal()
+```
+Berdasarkan hasil diatas, dapat disimpulkan bahwa luas panen memiliki pengaruh yang signifikan terhadap produksi padi. Nilai R-squared 0.3784 menunjukkan bahwa model regresi ini mampu menjelaskan sekitar 37.84% variasi dalam "Produksi" berdasarkan variabel independen "Luas_panen".
+
+Model 3: Pengaruh luas panen dan rata-rata produksi terhadap jumlah produksi
+```{r}
+model_3_jagung <- lm(Produksi ~ Luas_Panen + Rata_rata_produksi, data = datajagungsumut)
+summary(model_3_jagung)
+```
+
+
+```{r}
+# Visualisasi Model_3
+ggplot(datajagungsumut, aes(x = Produksi, y = predict(model_3_jagung))) +
+  geom_point() +
+  geom_smooth(method = "lm", color = "red", se = FALSE) +
+  labs(title = "Produksi Jagung vs. Prediksi Produksi Jagung",
+       x = "Observed Produksi",
+       y = "Predicted Produksi")
+```
+Berdasarkan hasil diatas dapat disimpulkan bahwa hanya 1 variabel independen, yaitu "Luas_panen", memiliki pengaruh yang signifikan terhadap "Produksi". Nilai R-squared 0.3784 menunjukkan bahwa model ini mampu menjelaskan sekitar 37.84% variasi dalam "Produksi" berdasarkan "Luas_panen", artinya ada 62,16% lagi dipengaruhi oleh variasi variabel lain 
+
+
+Model Klaster dan Regresi untuk Mengungkap Tren Produksi Jagung
+```{r}
+# Siapkan data set. Dataset yangd digunakan adalah data jagung 2013
+set.seed(123)
+
+# K-Means Clustering
+k <- 8
+kmeans_result_jagung <- kmeans(datajagung2013[, c("Produksi", "Luas_Panen")], centers = k)
+datajagung2013$Cluster <- kmeans_result_jagung$cluster
+
+# Visualisasi Hasil Klaster
+plot_11_jagung <- ggplot(datajagung2013, aes(x = Luas_Panen, y = Produksi, label = Kabupaten_Kota)) +
+  geom_point(aes(color = factor(Cluster))) +
+  geom_text(vjust = -0.5, hjust = 0, size = 3, show.legend = FALSE) +
+  labs(title = "Hasil Clustering Produksi Jagung", x = "Luas Panen", y = "Produksi") +
+  scale_color_discrete(name = "Cluster") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal()
+
+# Model Regresi Liner
+lm_model_jagung <- lm(Produksi ~ Rata_rata_produksi + Luas_Panen, data = datajagung2013)
+
+# Tampilkan hasil model regresi
+summary(lm_model_jagung)
+
+# Visualisasi hasil regresi dan klaster produksi padi
+plot_lm_jagung <- ggplot(datajagung2013, aes(x = Luas_Panen, y = Produksi, label = Kabupaten_Kota)) +
+  geom_point(aes(color = factor(Cluster))) +
+  geom_text(vjust = -0.5, hjust = 0, size = 3, show.legend = FALSE) +
+  geom_smooth(method = "lm", se = FALSE, color = "blue") +
+  labs(title = "Hubungan Luas Panen dan Produksi", x = "Luas Panen (Ha)", y = "Produksi (Ton)") +
+  scale_color_discrete(name = "Cluster") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal()
+
+# Tampilkan hasil visualisasi dari kedua model
+plot_11_jagung
+plot_lm_jagung
+
+```
+
+```{r}
+akurasi_klastering2_jagung <- (kmeans_result_jagung$betweenss/kmeans_result_jagung$totss)*100
+akurasi_klastering2_jagung
+```
+Bisa dilihat bahwa tren produksi jagung tidak liner, luas panen tidak terlalu mempengaruhi jumlah produksi. Pengaruh luas panen terhadap produksi berkisar 58.84%. Sementara rata-rata produksi tidak berpengaruh terhadap produksi padi. Tidak tingginya pengaruh luas panen terhadap produksi bisa dipengaruhi oleh faktor-faktor lain yang akan dianalisis lebih lanjut.
+
+### c. Prediksi Produksi Jagung dengan ML
+
+```{r}
+# Menghitung total produksi untuk setiap tahun
+summary_data_jagung <- palawijasumut_jagung %>%
+  group_by(Tahun) %>%
+  summarise(total_produksi = sum(Produksi))
+summary_data_jagung
+```
+
+```{r}
+# Membuat bar chart atau line chart
+ggplot(summary_data_jagung, aes(x = Tahun, y = total_produksi)) +
+  geom_line() +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  labs(title = "Perubahan Jumlah Produksi Jagung dari 2010 - 2022",
+       x = "Tahun",
+       y = "Total Produksi")
+```
+
+```{r}
+# Ekplorasi Data
+summary_data_jagung %>% 
+  plot_time_series(.date_var = Tahun,
+                   .value = total_produksi,
+                   .line_size = 1,
+                   .smooth_size = 0.5,
+                   .smooth_alpha = 0.4,
+                   .interactive = TRUE, 
+                   .x_lab = "Tahun", 
+                   .y_lab = "Jumlah Produksi Jagung (Ton)", 
+                   .title = "Hasil Produksi Jagung di Sumatera Utara (2010-2022)")
+```
+
+```{r}
+# Uji Augmented Dickey-Fuller (ADF) untuk stasioneritas
+library(tseries)
+data <-  summary_data_jagung$total_produksi
+adf_test <- adf.test(data)
+adf_test
+
+```
+```{r}
+#library(modeltime.resample)
+resamples_tscv_jagung <- time_series_cv(
+    data        = summary_data_jagung,
+    assess      = "2 year",
+    initial     = "8 years",
+    skip        = "1 years",
+    slice_limit = 4
+) 
+```
+
+
+
+```{r}
+resamples_tscv_jagung %>%
+    tk_time_series_cv_plan() %>%
+    plot_time_series_cv_plan(.date_var = Tahun, 
+                             .value = total_produksi, 
+                             .interactive = TRUE)
 ```
 
 
