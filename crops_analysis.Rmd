@@ -3,12 +3,26 @@ title: "crops_analysis"
 author: "Roni Yunis"
 date: "2023-08-23"
 output: html_document
+editor_options: 
+  markdown: 
+    wrap: 72
 ---
 
 # 1. Deskripsi
-Tujuan penelitian adalah menghasilkan model prediksi tanaman pangan melalui analisis big data. Temuan dari penelitian ini akan menjadi landasan penting dalam pembangunan sistem big data nasional yang difokuskan pada bidang pertanian, sehingga dapat mendukung program pemerintah dalam pengambilan keputusan untuk meningkatkan ketahanan pangan nasional. Untuk pengujian dan analisis akan menggunakan dataset tanaman pangan yang ada di wilayah Sumatera Utara. Data tanaman pangan yang akan di analisis meliputi: tanaman Jagung, Kacang Hijau, Kacang Kedelai, Kacang Tanah, Ubi Jalar, Ubi Kayu dan Padi, serta data curah hujan.
+
+Tujuan penelitian adalah menghasilkan model prediksi tanaman pangan
+melalui analisis big data. Temuan dari penelitian ini akan menjadi
+landasan penting dalam pembangunan sistem big data nasional yang
+difokuskan pada bidang pertanian, sehingga dapat mendukung program
+pemerintah dalam pengambilan keputusan untuk meningkatkan ketahanan
+pangan nasional. Untuk pengujian dan analisis akan menggunakan dataset
+tanaman pangan yang ada di wilayah Sumatera Utara. Data tanaman pangan
+yang akan di analisis meliputi: tanaman Jagung, Kacang Hijau, Kacang
+Kedelai, Kacang Tanah, Ubi Jalar, Ubi Kayu dan Padi, serta data curah
+hujan.
 
 # 2. Load Library
+
 ```{r}
 library(dplyr)
 library(ggplot2)
@@ -27,15 +41,26 @@ library(timetk)
 ```
 
 # 3. Data Padi
+
 ## Obstain - Load Dataset
+
 ```{r}
 padi_sumut <- read_excel("dataset/bps-Padi.xlsx")
 padi_sumut
 ```
+
 ## Scrub Data
-Proses Scrub yang akan dilakukan adalah merubah type data dan menghapus data yang tidak penting atau data yang kosng (not available). Berdasarkan data_sumut dapat dilihat bahwa type data dari kolom Tahun adalah double, rata-rata produksi, produksi dan luas panen bertype karakter. Maka untuk mendukung proses analisis maka type data Tahun harus dirubah ke type Date, dan data yg bertype karakter dirubah kedalam type numeric
+
+Proses Scrub yang akan dilakukan adalah merubah type data dan menghapus
+data yang tidak penting atau data yang kosng (not available).
+Berdasarkan data_sumut dapat dilihat bahwa type data dari kolom Tahun
+adalah double, rata-rata produksi, produksi dan luas panen bertype
+karakter. Maka untuk mendukung proses analisis maka type data Tahun
+harus dirubah ke type Date, dan data yg bertype karakter dirubah kedalam
+type numeric
 
 ### a. Merubah type data
+
 ```{r}
 # Merubah type data karakter menjadi numeric
 padi_sumut$`Rata-rata produksi` <- as.numeric(padi_sumut$`Rata-rata produksi`)
@@ -49,6 +74,7 @@ padi_sumut
 padi_sumut$Tahun <- make_date(padi_sumut$Tahun)
 glimpse(padi_sumut)
 ```
+
 ```{r}
 # Merubah nama variabel Kabupaten Kota, Rata-rata Produksi dan Luas Panen
 names(padi_sumut)[names(padi_sumut) == "Kabupaten Kota"] <- "Kabupaten_kota"
@@ -56,24 +82,36 @@ names(padi_sumut)[names(padi_sumut) == "Rata-rata produksi"] <- "Rata_rata_produ
 names(padi_sumut)[names(padi_sumut) == "Luas Panen"] <- "Luas_panen"
 glimpse(padi_sumut)
 ```
+
 ```{r}
 tail(padi_sumut)
 head(padi_sumut)
 ```
+
 ### b. Menghapus Data Kosong
+
 ```{r}
 # Menampikan variabel dengan baris kosong
 colSums(is.na(padi_sumut))
 ```
+
 ```{r}
 # Menghapus data NA's
 padisumut_clean <- na.omit(padi_sumut)
 summary(padisumut_clean)
 ```
+
 ```{r}
 colSums(is.na(padisumut_clean))
 ```
-Semua data NA's sudah dihapus. Data padi di wilayah sumut mulai dari Tahun 2010 - 2020 dengan frekuensi data per Tahun. Dalam dataset padisumut_clean masih terdapat data dari provinsi Sumatera Utara keseluruhan. Agar memudahkan dalam tahap analisis selanjutnya maka data padisumut_clean yang diambil hanya berdasarkan kabupaten/kota saja. Sekarang data final yang siap dianalisis adalah sebanyak 359 baris observasi dengan 5 kolom variabel
+
+Semua data NA's sudah dihapus. Data padi di wilayah sumut mulai dari
+Tahun 2010 - 2020 dengan frekuensi data per Tahun. Dalam dataset
+padisumut_clean masih terdapat data dari provinsi Sumatera Utara
+keseluruhan. Agar memudahkan dalam tahap analisis selanjutnya maka data
+padisumut_clean yang diambil hanya berdasarkan kabupaten/kota saja.
+Sekarang data final yang siap dianalisis adalah sebanyak 359 baris
+observasi dengan 5 kolom variabel
 
 ```{r}
 padisumutfilter <- padisumut_clean[padisumut_clean$Kabupaten_kota != "Sumatera Utara",]
@@ -81,7 +119,9 @@ padisumutfilter
 ```
 
 ## Eksplorasi Data Analisis (EDA)
+
 ### Jumlah Produksi Padi per Kabupaten/Kota
+
 ```{r}
 plot_1 <- ggplot(padisumutfilter, aes(x = Tahun, y = Produksi, group = Kabupaten_kota, color = Kabupaten_kota)) +
   geom_line() +
@@ -114,7 +154,9 @@ totproduksi <- padisumutfilter %>%
 
 totproduksi
 ```
+
 ### Tren Produksi Padi per Kabupaten/Kota
+
 ```{r}
 # Visualisasi Tren Produksi Padi
 plot_2 <- ggplot(totproduksi, aes(x = Tahun, y = total_produksi, color = Kabupaten_kota)) +
@@ -126,7 +168,9 @@ plot_2 <- ggplot(totproduksi, aes(x = Tahun, y = total_produksi, color = Kabupat
   theme(legend.position = "right")
 plot_2
 ```
+
 ### Perbandingan Produksi Padi per Kabupaten/Kota
+
 ```{r}
 
 # Hitung total produksi padi per Kabupaten/Kota
@@ -147,9 +191,13 @@ plot_3 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 
 ```
-Perbandingan produksi padi dalam kurun waktu 2010 - 2020 adalah dari Kabupaten Simalungun yang terbanyak dengan Jumlah Produksi Padi sebesar 4814941.97 Ton
+
+Perbandingan produksi padi dalam kurun waktu 2010 - 2020 adalah dari
+Kabupaten Simalungun yang terbanyak dengan Jumlah Produksi Padi sebesar
+4814941.97 Ton
 
 ### Perbandingan Rata-rata produksi Padi per Kabupaten/Kota
+
 ```{r}
 # Turn off dplyr summarise() warning
 options(dplyr.summarise.inform = FALSE)
@@ -160,6 +208,7 @@ rataproduksi <- padisumutfilter %>%
   summarise(Rata_rata_produksi = sum(Rata_rata_produksi))
 rataproduksi
 ```
+
 ```{r}
 
 # Hitung total rata-rata produksi padi per Kabupaten/Kota
@@ -180,7 +229,9 @@ plot_4 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 
 ```
+
 ### Korelasi Luas Panen dan Produksi Padi
+
 ```{r}
 # Visualisasi korelasi luas panen dan produksi padi
 plot_5 <- ggplot(padisumutfilter, aes(x = Luas_panen, y = Produksi, color = Kabupaten_kota)) +
@@ -191,6 +242,7 @@ plot_5 <- ggplot(padisumutfilter, aes(x = Luas_panen, y = Produksi, color = Kabu
   theme(legend.position = "right")
 plot_5
 ```
+
 ```{r}
 # Hitung Pearson correlation coefficient
 correlation_padi <- cor(padisumutfilter$Luas_panen, padisumutfilter$Produksi)
@@ -198,10 +250,14 @@ correlation_padi <- cor(padisumutfilter$Luas_panen, padisumutfilter$Produksi)
 # Nilai correlation coefficient
 cat("Koefisien Korelasi Pearson Luas Panen dan Produksi:", correlation_padi)
 ```
-Berdasarkan grafik diatas bisa lihat bahwa ada korelasi antara luas panen dan produksi. Hubungan korelasi adalah positif dengan nilai korelasi sebesar 0,99, sehingga bisa disimpulkan bahwa jika semakin banyak luas panen maka akan meningkat jumlah produksi padi.
 
+Berdasarkan grafik diatas bisa lihat bahwa ada korelasi antara luas
+panen dan produksi. Hubungan korelasi adalah positif dengan nilai
+korelasi sebesar 0,99, sehingga bisa disimpulkan bahwa jika semakin
+banyak luas panen maka akan meningkat jumlah produksi padi.
 
 ### Perbandingan Rata-rata produksi dengan Produksi Padi
+
 ```{r}
 # Create a boxplot using ggplot2
 plot_6 <- ggplot(padisumutfilter, aes(x = Kabupaten_kota, y = Produksi - Rata_rata_produksi, fill = Kabupaten_kota)) +
@@ -214,7 +270,9 @@ plot_6 <- ggplot(padisumutfilter, aes(x = Kabupaten_kota, y = Produksi - Rata_ra
 # Rotasi sumbu x agar mudah dibaca
 plot_6 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
+
 ### Melihat pola musiman dalam data untuk produksi padi
+
 ```{r}
 # Convert Tahun to Date format
 padisumutfilter$Tahun <- as.Date(paste0(padisumutfilter$Tahun, "-01-01"))
@@ -231,11 +289,16 @@ periodogram_plot <- spectrum(padisumutfilter$Produksi, main = "Periodogram of Pr
 # Print periodogram
 periodogram_plot
 ```
-Berdasarkan Periodogram Produksi Padi bisa dilihat bahwa ada fluktuasi yang berulang dalam data sehingga bisa disimpulkan adanya pola musiman. Melihat hal ini maka akan dilakukan analisis prediksi yang lebih lanjut dan komplek. 
 
+Berdasarkan Periodogram Produksi Padi bisa dilihat bahwa ada fluktuasi
+yang berulang dalam data sehingga bisa disimpulkan adanya pola musiman.
+Melihat hal ini maka akan dilakukan analisis prediksi yang lebih lanjut
+dan komplek.
 
 ## Model
+
 ### a. Clustering Produksi Padi
+
 ```{r}
 # Filter data produksi terbanyak berdasarkan tahun
 grouped_data <- padisumutfilter %>%
@@ -245,7 +308,9 @@ grouped_data <- padisumutfilter %>%
 grouped_data
             
 ```
-Berdasarkan hasil diatas bisa dilihat jumlah total produksi terbanyak ada pada Tahun 2017, yaitu sebanyak 5136186 Ton
+
+Berdasarkan hasil diatas bisa dilihat jumlah total produksi terbanyak
+ada pada Tahun 2017, yaitu sebanyak 5136186 Ton
 
 ```{r}
 # Menyiapkan data, untuk pengujian klastering data yang ambil adalah data tahun 2017 saja
@@ -269,6 +334,7 @@ scale_data <- as.data.frame(scale(clustering_data))
 set.seed(123)
 fviz_nbclust(scale_data, kmeans, method = "wss")
 ```
+
 ```{r}
 # Silhouette method to find the optimal number of clusters
 silhouette_scores <- sapply(2:10, function(k) {
@@ -284,8 +350,6 @@ plot(2:10, silhouette_scores, type = "b", pch = 19, xlab = "Number of clusters",
 optimal_k <- which.max(silhouette_scores) + 1
 cat("Optimal number of clusters:", optimal_k)
 ```
-
-
 
 ```{r}
 # Klastering dengan K-Means
@@ -309,6 +373,7 @@ plot_8 <- ggplot(datapadi2017, aes(x = Luas_panen, y = Produksi, color = factor(
   theme_minimal()
 plot_8
 ```
+
 ```{r}
 # Menghitung jumlah klaster per kabupaten/kota
 
@@ -318,6 +383,7 @@ cluster_counts_per_kabupaten <- datapadi2017 %>%
 
 cluster_counts_per_kabupaten
 ```
+
 ```{r}
 # Hitung jumlah kabupaten setiap klaster
 cluster_kabupaten_counts <- datapadi2017 %>%
@@ -339,6 +405,7 @@ plot_9 <- ggplot(datapadi2017, aes(x = Luas_panen, y = Produksi, label = Kabupat
   theme_minimal()
 plot_9
 ```
+
 ```{r}
 # Hitung rata-rata produksi per klaster
 cluster_avg <- datapadi2017 %>%
@@ -347,9 +414,11 @@ cluster_avg <- datapadi2017 %>%
 
 cluster_avg
 ```
+
 ```{r}
 kmeans_result$centers
 ```
+
 ```{r}
 # Definisikan kriteria klaster
 low_criteria <- quantile(cluster_avg$Avg_Produksi, 0.25)
@@ -362,11 +431,11 @@ cluster_avg_kriteria <- cluster_avg %>%
 cluster_avg_kriteria
 ```
 
-Berdasarkan hasil perhitungan nilai centroid dari klaster, maka bisa disimpulkan bahwa:
-1. Klaster 4 dan 8: adalah klaster yang termasuk kategori rendah 
-2. Klaster 1,2,5 dan 6: adalah klaster yang termasuk kategori sedang
-3. Klaster 3 dan 7: adalah klaster yang termasuk kategori tinggi
-
+Berdasarkan hasil perhitungan nilai centroid dari klaster, maka bisa
+disimpulkan bahwa: 1. Klaster 4 dan 8: adalah klaster yang termasuk
+kategori rendah 2. Klaster 1,2,5 dan 6: adalah klaster yang termasuk
+kategori sedang 3. Klaster 3 dan 7: adalah klaster yang termasuk
+kategori tinggi
 
 ```{r}
 # Menghitung jumlah klaster per kelompok kabupaten/kota
@@ -379,6 +448,7 @@ for (i in 1:8) {
   cat(paste("Klaster", i, ":", kabupaten_per_cluster$Kabupaten_kota[[i]], "\n"))
 }
 ```
+
 ```{r}
 # Evaluasi Clustering dengan Inertia
 
@@ -394,15 +464,19 @@ inertia_values <- sapply(k_values, function(k) {
 inertia_df <- data.frame(K = k_values, Inertia = inertia_values)
 inertia_df
 ```
-Berdasarkan hasil evaluasi dengan Inertia, didapatkan bahwa jumlah klaster yang tepat untuk pengujian klaster yang dilakukan adalah 8, karena nilai Inertia yang paling rendah
 
+Berdasarkan hasil evaluasi dengan Inertia, didapatkan bahwa jumlah
+klaster yang tepat untuk pengujian klaster yang dilakukan adalah 8,
+karena nilai Inertia yang paling rendah
 
 ```{r}
 akurasi_klastering <- (kmeans_result$betweenss/kmeans_result$totss)*100
 akurasi_klastering
 ```
-Akurasi klaster bisa diketahui dengan menghitung rasio dari jumlah kuadrat antar klaster dengan
-jumlah kuadrat total. Sehingga nilai validitas dari model klastering adalah 93,85
+
+Akurasi klaster bisa diketahui dengan menghitung rasio dari jumlah
+kuadrat antar klaster dengan jumlah kuadrat total. Sehingga nilai
+validitas dari model klastering adalah 93,85
 
 ```{r}
 # Membaca dataset
@@ -427,6 +501,7 @@ plot(data, col = cluster_assignment, pch = 19, main = "GMM Clustering")
 ```
 
 Pengujian Klaster dengan Kombinasi K-Means dan GMM
+
 ```{r}
 # Memilih fitur untuk klaster
 features <- datapadi2017[, c("Produksi", "Luas_panen", "Rata_rata_produksi")]
@@ -466,7 +541,6 @@ for (cluster_id in unique(cluster_assignment)) {
 final_clustered_data
 ```
 
-
 ```{r}
 # Remove duplicate columns from the dataset
 final_clustered_data <- final_clustered_data[, !duplicated(names(final_clustered_data))]
@@ -481,27 +555,34 @@ ggplot(final_clustered_data, aes(x = Rata_rata_produksi, y = Luas_panen, color =
   theme_minimal() +
   scale_color_discrete(name = "cluster")
 ```
+
 ```{r}
 # Hitung Silhouette Score untuk melihat seberapa baik klaster yang dilakukan
 silhouette_score <- silhouette(cluster_assignment, dist(scaled_features))
 silhouette_score
 ```
-Secara keseluruhan nilai Silhouette Score yang positif dan mendekati 1 menunjukkan bahwa klastering yang dilakukan memiliki hasil yang baik dalam memisahkan objek-objek ke dalam kelompok-kelompok yang berbeda.
+
+Secara keseluruhan nilai Silhouette Score yang positif dan mendekati 1
+menunjukkan bahwa klastering yang dilakukan memiliki hasil yang baik
+dalam memisahkan objek-objek ke dalam kelompok-kelompok yang berbeda.
 
 #### 2. Data Curah Hujan
 
-
-
 ### b. Regresi Liner
-Tujuan dari analisis ini adalah unutk mencari tahu sejauh mana perubahan dalam rata-rata produksi dan/atau luas panen dapat mempengaruhi perubahan dalam jumlah produksi padi. Adapun hipotesis yang dapat dikembangkan adalah:
-1. Rata-rata produksi berpengaruh signifikan terhadap jumlah produksi padi.
-2. Luas panen berpengaruh signifikan terhadap jumlah produksi padi.
-3. Rata-rata produksi dan luas panen berpengaruh signifikan terhadap jumlah produksi padi.
+
+Tujuan dari analisis ini adalah unutk mencari tahu sejauh mana perubahan
+dalam rata-rata produksi dan/atau luas panen dapat mempengaruhi
+perubahan dalam jumlah produksi padi. Adapun hipotesis yang dapat
+dikembangkan adalah: 1. Rata-rata produksi berpengaruh signifikan
+terhadap jumlah produksi padi. 2. Luas panen berpengaruh signifikan
+terhadap jumlah produksi padi. 3. Rata-rata produksi dan luas panen
+berpengaruh signifikan terhadap jumlah produksi padi.
 
 ```{r}
 # Load dataset padi
 head(padisumutfilter)
 ```
+
 ```{r}
 # Pilih variabel yang akan diukur pengaruh
 datapadisumut <- padisumutfilter %>% 
@@ -509,10 +590,12 @@ datapadisumut <- padisumutfilter %>%
 ```
 
 Model 1: Pengaruh rata-rata produksi terhadap jumlah produksi
+
 ```{r}
 model_1 <- lm(Produksi ~ Rata_rata_produksi, data = datapadisumut)
 summary(model_1)
 ```
+
 ```{r}
 # Visualisasi hasil regresi model_1
 ggplot(datapadisumut, aes(x = Rata_rata_produksi, y = Produksi)) +
@@ -523,14 +606,20 @@ ggplot(datapadisumut, aes(x = Rata_rata_produksi, y = Produksi)) +
   theme_minimal()
 ```
 
-
-Berdasarkan hasil di atas, kita dapat menyimpulkan bahwa rata-rata produksi padi memiliki pengaruh yang signifikan terhadap jumlah produksi. Nilai R-squared yang relatif rendah menunjukkan bahwa masih ada variabilitas dalam jumlah produksi yang tidak dijelaskan oleh rata-rata produksi, dan mungkin ada faktor lain yang juga mempengaruhi hasil produksi padi.
+Berdasarkan hasil di atas, kita dapat menyimpulkan bahwa rata-rata
+produksi padi memiliki pengaruh yang signifikan terhadap jumlah
+produksi. Nilai R-squared yang relatif rendah menunjukkan bahwa masih
+ada variabilitas dalam jumlah produksi yang tidak dijelaskan oleh
+rata-rata produksi, dan mungkin ada faktor lain yang juga mempengaruhi
+hasil produksi padi.
 
 Model 2: Pengaruh luas panen terhadap jumlah produksi
+
 ```{r}
 model_2 <- lm(Produksi ~ Luas_panen, data = datapadisumut)
 summary(model_2)
 ```
+
 ```{r}
 # Visualisasi hasil regresi model_1
 ggplot(datapadisumut, aes(x = Luas_panen, y = Produksi)) +
@@ -540,13 +629,21 @@ ggplot(datapadisumut, aes(x = Luas_panen, y = Produksi)) +
   ggtitle("Hubungan Antara Luas Panen dan Jumlah Produksi") +
   theme_minimal()
 ```
-Berdasarkan hasil diatas, dapat disimpulkan bahwa luas panen memiliki pengaruh yang signifikan terhadap produksi padi. Nilai R-squared yang mendekati 1 (0.9861) menunjukkan bahwa model regresi ini mampu menjelaskan sekitar 98.61% variasi dalam "Produksi" berdasarkan variabel independen "Luas_panen".
 
-Model 3: Pengaruh luas panen dan rata-rata produksi terhadap jumlah produksi
+Berdasarkan hasil diatas, dapat disimpulkan bahwa luas panen memiliki
+pengaruh yang signifikan terhadap produksi padi. Nilai R-squared yang
+mendekati 1 (0.9861) menunjukkan bahwa model regresi ini mampu
+menjelaskan sekitar 98.61% variasi dalam "Produksi" berdasarkan variabel
+independen "Luas_panen".
+
+Model 3: Pengaruh luas panen dan rata-rata produksi terhadap jumlah
+produksi
+
 ```{r}
 model_3 <- lm(Produksi ~ Luas_panen + Rata_rata_produksi, data = datapadisumut)
 summary(model_3)
 ```
+
 ```{r}
 # Visualisasi Model_3
 ggplot(datapadisumut, aes(x = Produksi, y = predict(model_3))) +
@@ -556,10 +653,16 @@ ggplot(datapadisumut, aes(x = Produksi, y = predict(model_3))) +
        x = "Observed Produksi",
        y = "Predicted Produksi")
 ```
-Berdasarkan hasil diatas dapat disimpulkan bahwa kedua variabel independen, yaitu "Luas_panen" dan "Rata_rata_produksi", memiliki pengaruh yang signifikan terhadap "Produksi". Nilai R-squared yang tinggi (0.988) menunjukkan bahwa model ini mampu menjelaskan sekitar 98.8% variasi dalam "Produksi" berdasarkan "Luas_panen" dan "Rata_rata_produksi".
 
+Berdasarkan hasil diatas dapat disimpulkan bahwa kedua variabel
+independen, yaitu "Luas_panen" dan "Rata_rata_produksi", memiliki
+pengaruh yang signifikan terhadap "Produksi". Nilai R-squared yang
+tinggi (0.988) menunjukkan bahwa model ini mampu menjelaskan sekitar
+98.8% variasi dalam "Produksi" berdasarkan "Luas_panen" dan
+"Rata_rata_produksi".
 
 Model Klaster dan Regresi untuk Mengungkap Tren Produksi Padi
+
 ```{r}
 # Siapkan data set. Dataset yangd digunakan adalah data padi 2017
 set.seed(123)
@@ -606,28 +709,38 @@ akurasi_klastering2
 ```
 
 ### c. Model VAR
-Tujuan adalah untuk mengidentifikasi apakah perubahan curah hujan dapat mempengaruhi produksi padi. Akan melakukan prediksi curah hujan dan produksi padi dimasa depan berdasarkan pola hubungan historis antara 2 variabel. Mengidentifikasi apakah perubahan dalam curah hujan dalam satu periode dapat memiliki efek jangka pendek atau panjang terhadap produksi padi.
+
+Tujuan adalah untuk mengidentifikasi apakah perubahan curah hujan dapat
+mempengaruhi produksi padi. Akan melakukan prediksi curah hujan dan
+produksi padi dimasa depan berdasarkan pola hubungan historis antara 2
+variabel. Mengidentifikasi apakah perubahan dalam curah hujan dalam satu
+periode dapat memiliki efek jangka pendek atau panjang terhadap produksi
+padi.
 
 ```{r}
 # Load data curah hujan
 rainfall <- read.csv("dataset/climateserv-statistical.csv")
 head(rainfall)
 ```
+
 ```{r}
 # Merubah type variabel DateTime menjadi Date
 rainfall$DateTime <- as.Date(rainfall$DateTime)
 glimpse(rainfall)
 ```
+
 ```{r}
 # Merubah nama variabel
 names(rainfall)[names(rainfall) == "DateTime"] <- "date"
 names(rainfall)[names(rainfall) == "UCSB.CHIRPS.Rainfall..avg"] <- "rainfallavg"
 glimpse(rainfall)
 ```
+
 ```{r}
 head(rainfall)
 tail(rainfall)
 ```
+
 ```{r}
 # Mengambil rata-rata curah hujan per tahun
 rainfall_yearly <- rainfall %>%
@@ -662,18 +775,35 @@ merged_data
 data_for_var <- merged_data[, c("Rata_rata_produksi", "avg_rainfall")]
 ```
 
-Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam format time series (ts)
+Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam
+format time series (ts)
 
 ```{r}
 ts_data <- ts(data_for_var, start = c(2010,1), frequency = 1)
 ts_data
 ```
+
+```{r}
+best_lag <- VARselect(ts_data, lag.max = 5, type = "both")
+best_lag
+```
+
 ```{r}
 # VAR Model
-var_model_1 <- VAR(ts_data, p = 2) # jumlah order dari model VAR
+var_model_1 <- VAR(ts_data, p = best_lag$selection[1], type = "both") # jumlah order dari model VAR
 summary(var_model_1)
 ```
-Kalau dilihat dari hasil model VAR diatas, maka bisa disimpulkan bahwa tidak ada dampak curah hujan terhadap peningkatan rata-rata produksi padi.
+
+Kalau dilihat dari hasil model VAR diatas, maka bisa disimpulkan bahwa peningkatan jumlah rata-rata curah hujan menyebabkan penurunan rata-rata produksi padi. 
+hal ini bisa diidentifikan bahwa Koefisien estimasi untuk "avg_rainfall.l1" adalah -0.7378, yang mengindikasikan bahwa peningkatan "avg_rainfall" pada satu periode sebelumnya (lag 1) akan menyebabkan penurunan sekitar 0.7378 pada "Rata_rata_produksi" saat ini. dilihat dari nilai F-statistic menguji signifikansi keseluruhan model. Nilai p-value dari F-statistic adalah 0.3383, yang lebih besar dari 0.05, sehingga model secara keseluruhan tidak signifikan secara statistik.
+
+```{r}
+# Melakukan uji Granger Causality
+granger_test <- causality(var_model_1, cause = "avg_rainfall")
+granger_test
+```
+Secara keseluruhan, berdasarkan hasil uji Granger Causality dan Instantaneous Causality, tidak ada bukti statistik yang kuat untuk mendukung adanya hubungan sebab-akibat antara "avg_rainfall" dan "Rata_rata_produksi" dalam model VAR, baik dalam jangka waktu lag maupun dalam jangka waktu instan.
+
 
 ```{r}
 # Membuat model regresi linier
@@ -682,16 +812,16 @@ regression_model <- lm(Rata_rata_produksi ~ avg_rainfall, data = data_for_var)
 # Ringkasan hasil model
 summary(regression_model)
 ```
-Dilihat dari model regresi juga kelihatan bahwa tidak ada pengaruh curah hujan terhadap produksi padi
 
+Dilihat dari model regresi juga kelihatan bahwa tidak ada pengaruh curah hujan terhadap produksi padi
 
 ```{r}
 # Menghitung koefisien korelasi Pearson
 correlation <- cor(data_for_var$Rata_rata_produksi, data_for_var$avg_rainfall)
 correlation
 ```
-Dilihat dari hubungan negatif, artinya tingginya curah hujan biasanya berhubungan dengan rata-rata produksi yang rendah.
 
+Dilihat dari hubungan negatif, artinya tingginya curah hujan biasanya berhubungan dengan rata-rata produksi yang rendah.
 
 ### d. Prediksi Produksi Padi dengan ML
 
@@ -713,7 +843,6 @@ ggplot(summary_data, aes(x = Tahun, y = total_produksi)) +
        x = "Tahun",
        y = "Total Produksi")
 ```
-
 
 ```{r}
 # Ekplorasi Data
@@ -737,7 +866,6 @@ adf_test <- adf.test(data)
 adf_test
 ```
 
-
 ```{r}
 library(modeltime.resample)
 resamples_tscv <- time_series_cv(
@@ -748,6 +876,7 @@ resamples_tscv <- time_series_cv(
     slice_limit = 3
 )
 ```
+
 ```{r}
 resamples_tscv %>%
     tk_time_series_cv_plan() %>%
@@ -756,7 +885,8 @@ resamples_tscv %>%
                              .interactive = TRUE)
 ```
 
-1. Model ARIMA
+1.  Model ARIMA
+
 ```{r}
 library(parsnip)
 model_fit_arima <- arima_reg() %>%
@@ -767,7 +897,8 @@ model_fit_arima <- arima_reg() %>%
 model_fit_arima 
 ```
 
-2. Model ETS
+2.  Model ETS
+
 ```{r}
 model_fit_ets <- exp_smoothing() %>%
     set_engine(engine = "ets") %>% 
@@ -776,7 +907,9 @@ model_fit_ets <- exp_smoothing() %>%
 
 model_fit_ets
 ```
-3. Model Prophet
+
+3.  Model Prophet
+
 ```{r}
 model_fit_prophet <- prophet_reg() %>%
     set_engine(engine = "prophet") %>%
@@ -795,14 +928,14 @@ models_tbl <- modeltime_table(model_fit_arima,
 models_tbl
 ```
 
-4. Pelatihan dan Evaluasi Model
+4.  Pelatihan dan Evaluasi Model
+
 ```{r}
 resamples_fitted <- models_tbl %>%
     modeltime_fit_resamples(resamples = resamples_tscv)
 
 resamples_fitted
 ```
-
 
 ```{r}
 # Evaluasi Model
@@ -817,7 +950,6 @@ resamples_fitted %>%
     plot_modeltime_resamples(.interactive = TRUE)
 ```
 
-
 ```{r}
 models_tbl %>% 
   modeltime_residuals(new_data = summary_data) %>% 
@@ -829,6 +961,7 @@ models_tbl %>%
 refit_tbl <- resamples_fitted %>%
     modeltime_refit(data = summary_data)
 ```
+
 ```{r}
 forecast <- refit_tbl %>%
     modeltime_forecast(h = "1 years", 
@@ -842,7 +975,6 @@ forecast
 forecast %>%
     plot_modeltime_forecast(.interactive = TRUE)
 ```
-
 
 ```{r}
 # Cross Validation Model Prophet
@@ -912,30 +1044,35 @@ new_rsq <- compute_r_squared(log_transformed_actual, log_transformed_forecast)
 print(new_rsq)
 
 ```
-## Interpretasi
-Berdasarkan hasil tersebut bisa disimpulkan bahwa:
-a)	Untuk melakukan evaluasi hasil kluster dalam penelitian ini menggunakan Percentage of Variance Explained, ini adalah salah satu metrik yang digunakan untuk mengevaluasi sejauh mana kluster yang dihasilkan oleh model dapat menjelaskan variasi dalam data. Berdasarkan hasil evaluasi terhadap model kluster yang sudah dilakukan didapatkan bahwa nilai validitas kluster dari model adalah 93,85, hal ini menunjukkan bahwa sekitar 93,85% dari variasi dalam data dijelaskan oleh variasi antara kluster yang dihasilkan oleh model dianggap cukup tinggi.
-b)	Nilai R-Square yang tinggi yaitu sebesar 0,988 dalam model regresi menunjukkan bahwa model dapat menjelaskan 98,8% variasi dalam produksi padi berdasarkan luas panen dan rata-rata produksi.
-c)	Untuk mengukur kinerja dan keandalan model Prophet dalam memprediksi produksi padi secara lebih objektif, maka dalam penelitian akan dilakukan Cross Validation. Cross Validation dapat digunakan untuk menghindari Overfitting atau kesalahan saat melakukan prediksi dengan data pengujian atau data yang baru(7)(8). Berdasarkan Cross Validation yang sudah dilakukan didapatkan bahwa model Prophet memiliki performa yang bervariasi dalam memprediksi data, dengan beberapa metrik MAE: 22,108.09 dan SMAPE=0,3299022 yang lebih rendah, sementara metrik lain seperti MASE=0,1281631 mengidentifikasikan performa yang baik.
-d)	Melihat hasil dari tiga model prediksi memiliki nilai prediksi yang berbeda, maka langkah selanjutnya adalah perlu melakukan uji asumsi disamping melihat perbedaan nilai error dari evaluasi model yang sudah dilakukan sebelumnya. Berdasarkan hasil uji asumsi atas tiga model, dapat dijelaskan bahwa data berdistribusi normal, tidak ada autokorelasi atau korelasi serial dalam residu, sehingga ketiga model dapat digunakan dan cocok untuk memprediksi nilai produksi padi yang akan datang.
 
+## Interpretasi
+
+Berdasarkan hasil tersebut bisa disimpulkan bahwa: 
+a) Untuk melakukan evaluasi hasil kluster dalam penelitian ini menggunakan Percentage of Variance Explained, ini adalah salah satu metrik yang digunakan untuk mengevaluasi sejauh mana kluster yang dihasilkan oleh model dapat menjelaskan variasi dalam data. Berdasarkan hasil evaluasi terhadap model kluster yang sudah dilakukan didapatkan bahwa nilai validitas kluster dari model adalah 93,85, hal ini menunjukkan bahwa sekitar 93,85% dari variasi dalam data dijelaskan oleh variasi antara kluster yang dihasilkan oleh model dianggap cukup tinggi. 
+b) Nilai R-Square yang tinggi yaitu sebesar 0,988 dalam model regresi menunjukkan bahwa model
+dapat menjelaskan 98,8% variasi dalam produksi padi berdasarkan luas panen dan rata-rata produksi. c) Untuk mengukur kinerja dan keandalan model Prophet dalam memprediksi produksi padi secara lebih objektif, maka dalam penelitian akan dilakukan Cross Validation. Cross Validation dapat digunakan untuk menghindari Overfitting atau kesalahan saat melakukan prediksi dengan data pengujian atau data yang baru(7)(8). Berdasarkan Cross Validation yang sudah dilakukan didapatkan bahwa model Prophet memiliki performa yang bervariasi dalam memprediksi data, dengan beberapa metrik MAE: 22,108.09 dan SMAPE=0,3299022 yang lebih rendah, sementara metrik lain seperti MASE=0,1281631 mengidentifikasikan
+performa yang baik. 
+d) Melihat hasil dari tiga model prediksi memiliki nilai prediksi yang berbeda, maka langkah selanjutnya adalah perlu melakukan uji asumsi disamping melihat perbedaan nilai error dari evaluasi model yang sudah dilakukan sebelumnya. Berdasarkan hasil uji asumsi atas tiga model, dapat dijelaskan bahwa data berdistribusi normal, tidak ada autokorelasi atau korelasi serial dalam residu, sehingga ketiga model dapat digunakan dan cocok untuk memprediksi nilai produksi padi yang akan datang.
 
 # 4. Data Jagung
+
 ## Obstain - Load Dataset Palawija
+
 ```{r}
 palawija_sumut <- read_excel("dataset/dataset_palawija_Sumut.xlsx")
 palawija_sumut
 ```
 
 ## Scrub Data Palawija
+
 Proses Scrub yang akan dilakukan adalah merubah type data dan menghapus data yang tidak penting atau data yang kosng (not available). Berdasarkan data palawija_sumut dapat dilihat bahwa type data dari kolom Tahun adalah double, rata-rata produksi, produksi dan luas panen bertype karakter. Maka untuk mendukung proses analisis maka type data Tahun harus dirubah ke type Date, dan data yg bertype karakter dirubah kedalam type numeric.
 
 ```{r}
 glimpse(palawija_sumut)
 ```
 
-
 ### a. Merubah type data
+
 ```{r}
 # Merubah type data karakter menjadi numeric
 palawija_sumut$`Rata-rata_produksi` <- as.numeric(palawija_sumut$`Rata-rata_produksi`)
@@ -950,29 +1087,31 @@ palawija_sumut$Tahun <- make_date(palawija_sumut$Tahun)
 glimpse(palawija_sumut)
 ```
 
-
 ```{r}
 # Merubah nama variabel Rata-rata Produksi
 names(palawija_sumut)[names(palawija_sumut) == "Rata-rata_produksi"] <- "Rata_rata_produksi"
 glimpse(palawija_sumut)
 ```
+
 ### b. Menghapus Data Kosong
+
 ```{r}
 # Menampikan variabel dengan baris kosong
 colSums(is.na(palawija_sumut))
 ```
-
 
 ```{r}
 # Menghapus data NA's
 palawijasumut_clean <- na.omit(palawija_sumut)
 summary(palawijasumut_clean)
 ```
+
 ```{r}
 colSums(is.na(palawijasumut_clean))
 glimpse(palawijasumut_clean)
 
 ```
+
 ```{r}
 # Mengambil semua data kecuali data Kabupaten "Sumatera Utara"
 palawijasumutfilter <- palawijasumut_clean[palawijasumut_clean$Kabupaten_Kota != "Sumatera Utara",]
@@ -980,7 +1119,9 @@ palawijasumutfilter
 ```
 
 ## Eksplorasi Data Analisis (EDA)
+
 ### Jumlah Produksi Jagung per Kabupaten/Kota
+
 ```{r}
 plot_jagung_1 <- ggplot(palawijasumutfilter, aes(x = Tahun, y = Produksi, group = Kabupaten_Kota, color = Kabupaten_Kota)) +
   geom_line() +
@@ -1001,6 +1142,7 @@ totproduksi_jagung <- palawijasumutfilter %>%
   arrange(jumlahproduksi)
 totproduksi_jagung
 ```
+
 ```{r}
 # Turn off dplyr summarise() warning
 options(dplyr.summarise.inform = FALSE)
@@ -1012,10 +1154,13 @@ totproduksi_jagung <- palawijasumutfilter %>%
 
 totproduksi_jagung
 ```
+
 ```{r}
 summary(totproduksi_jagung)
 ```
+
 ### Tren Produksi Jagung per Kabupaten/Kota
+
 ```{r}
 # Visualisasi Tren Produksi Jagung
 plot_jagung_2 <- ggplot(totproduksi_jagung, aes(x = Tahun, y = total_produksi, color = Kabupaten_Kota)) +
@@ -1027,7 +1172,9 @@ plot_jagung_2 <- ggplot(totproduksi_jagung, aes(x = Tahun, y = total_produksi, c
   theme(legend.position = "right")
 plot_jagung_2
 ```
+
 ### Perbandingan Produksi Jagung per Kabupaten/Kota
+
 ```{r}
 # Ambil data tanaman pangan Jagung
 palawijasumut_jagung <- palawijasumutfilter[palawijasumutfilter$Nama_Palawija == "Jagung",]
@@ -1036,7 +1183,6 @@ palawijasumut_jagung <- palawijasumutfilter[palawijasumutfilter$Nama_Palawija ==
 ```{r}
 palawijasumut_jagung
 ```
-
 
 ```{r}
 # Hitung total produksi Jagung per Kabupaten/Kota
@@ -1057,10 +1203,10 @@ plot_jagung_3 <- ggplot(totproduksi_jagung_kabkota, aes(x = Kabupaten_Kota, y = 
 plot_jagung_3 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
-
-Perbandingan produksi Jagung dalam kurun waktu 2010 - 2022 adalah dari Kabupaten Karo yang terbanyak dengan Jumlah Produksi Jagung sebesar 11164760.42	 Ton
+Perbandingan produksi Jagung dalam kurun waktu 2010 - 2022 adalah dari Kabupaten Karo yang terbanyak dengan Jumlah Produksi Jagung sebesar 11164760.42 Ton
 
 ### Perbandingan Rata-rata produksi Jagung per Kabupaten/Kota
+
 ```{r}
 # Turn off dplyr summarise() warning
 options(dplyr.summarise.inform = FALSE)
@@ -1071,7 +1217,6 @@ rataproduksi_jagung <- palawijasumut_jagung %>%
   summarise(Rata_rata_produksi = sum(Rata_rata_produksi))
 rataproduksi_jagung
 ```
-
 
 ```{r}
 
@@ -1095,6 +1240,7 @@ plot_jagung_4 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
 ### Korelasi Luas Panen dan Produksi Jagung
+
 ```{r}
 # Visualisasi korelasi luas panen dan produksi Jagung
 plot_jagung_5 <- ggplot(palawijasumut_jagung, aes(x = Luas_Panen, y = Produksi, color = Kabupaten_Kota)) +
@@ -1105,6 +1251,7 @@ plot_jagung_5 <- ggplot(palawijasumut_jagung, aes(x = Luas_Panen, y = Produksi, 
   theme(legend.position = "right")
 plot_jagung_5
 ```
+
 ```{r}
 # Hitung Pearson correlation coefficient
 correlation_jagung <- cor(palawijasumut_jagung$Luas_Panen, palawijasumut_jagung$Produksi)
@@ -1112,10 +1259,11 @@ correlation_jagung <- cor(palawijasumut_jagung$Luas_Panen, palawijasumut_jagung$
 # Nilai correlation coefficient
 cat("Koefisien Korelasi Pearson Luas Panen dan Produksi:", correlation_jagung)
 ```
+
 Berdasarkan grafik diatas bisa lihat bahwa ada korelasi antara luas panen dan produksi. Hubungan korelasi adalah positif dengan nilai korelasi sebesar 0,62, sehingga bisa disimpulkan bahwa jika semakin banyak luas panen maka akan meningkat jumlah produksi padi.
 
-
 ### Perbandingan Rata-rata produksi dengan Produksi Padi
+
 ```{r}
 # Create a boxplot using ggplot2
 plot_jagung_6 <- ggplot(palawijasumut_jagung, aes(x = Kabupaten_Kota, y = Produksi - Rata_rata_produksi, fill = Kabupaten_Kota)) +
@@ -1128,6 +1276,7 @@ plot_jagung_6 <- ggplot(palawijasumut_jagung, aes(x = Kabupaten_Kota, y = Produk
 # Rotasi sumbu x agar mudah dibaca
 plot_jagung_6 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
+
 ### Melihat pola musiman dalam data untuk produksi jagung
 
 ```{r}
@@ -1148,7 +1297,9 @@ periodogram_plot_jagung
 ```
 
 ## Model
+
 ### a. Clustering Produksi Padi
+
 ```{r}
 # Filter data produksi terbanyak berdasarkan tahun
 grouped_data_jagung <- palawijasumut_jagung %>%
@@ -1158,6 +1309,7 @@ grouped_data_jagung <- palawijasumut_jagung %>%
 grouped_data_jagung
             
 ```
+
 Berdasarkan hasil diatas bisa dilihat jumlah total produksi terbanyak ada pada Tahun 2013, yaitu sebanyak 5000925 Ton
 
 ```{r}
@@ -1185,7 +1337,6 @@ set.seed(123)
 fviz_nbclust(scale_data, kmeans, method = "wss")
 ```
 
-
 ```{r}
 # Silhouette method to find the optimal number of clusters
 silhouette_scores <- sapply(2:10, function(k) {
@@ -1201,8 +1352,6 @@ plot(2:10, silhouette_scores, type = "b", pch = 19, xlab = "Number of clusters",
 optimal_k <- which.max(silhouette_scores) + 1
 cat("Optimal number of clusters:", optimal_k)
 ```
-
-
 
 ```{r}
 # Klastering dengan K-Means
@@ -1227,7 +1376,6 @@ plot_jagung_8 <- ggplot(datajagung2013, aes(x = Luas_Panen, y = Produksi, color 
 plot_jagung_8
 ```
 
-
 ```{r}
 # Menghitung jumlah klaster per kabupaten/kota
 
@@ -1237,8 +1385,6 @@ cluster_counts_per_kabupaten <- datajagung2013 %>%
 
 cluster_counts_per_kabupaten
 ```
-
-
 
 ```{r}
 # Hitung jumlah kabupaten setiap klaster
@@ -1261,6 +1407,7 @@ plot_jagung_9 <- ggplot(datajagung2013, aes(x = Luas_Panen, y = Produksi, label 
   theme_minimal()
 plot_jagung_9
 ```
+
 ```{r}
 # Hitung rata-rata produksi per klaster
 cluster_avg <- datajagung2013 %>%
@@ -1269,7 +1416,6 @@ cluster_avg <- datajagung2013 %>%
 
 cluster_avg
 ```
-
 
 ```{r}
 kmeans_result$centers
@@ -1287,11 +1433,10 @@ cluster_avg_kriteria <- cluster_avg %>%
 cluster_avg_kriteria
 ```
 
-Berdasarkan hasil perhitungan nilai centroid dari klaster, maka bisa disimpulkan bahwa:
+Berdasarkan hasil perhitungan nilai centroid dari klaster, maka bisa disimpulkan bahwa: 
 1. Klaster 2 dan 3: adalah klaster yang termasuk kategori rendah 
-2. Klaster 1,4,5 dan 8: adalah klaster yang termasuk kategori sedang
+2. Klaster 1,4,5 dan 8: adalah klaster yang termasuk kategori sedang 
 3. Klaster 6 dan 7: adalah klaster yang termasuk kategori tinggi
-
 
 ```{r}
 # Menghitung jumlah klaster per kelompok kabupaten/kota
@@ -1304,6 +1449,7 @@ for (i in 1:8) {
   cat(paste("Klaster", i, ":", kabupaten_per_cluster$Kabupaten_Kota[[i]], "\n"))
 }
 ```
+
 ```{r}
 # Evaluasi Clustering dengan Inertia
 
@@ -1319,20 +1465,21 @@ inertia_values <- sapply(k_values, function(k) {
 inertia_df <- data.frame(K = k_values, Inertia = inertia_values)
 inertia_df
 ```
-Berdasarkan hasil evaluasi dengan Inertia, didapatkan bahwa jumlah klaster yang tepat untuk pengujian klaster yang dilakukan adalah 8, karena nilai Inertia yang paling rendah
 
+Berdasarkan hasil evaluasi dengan Inertia, didapatkan bahwa jumlah klaster yang tepat untuk pengujian klaster yang dilakukan adalah 8, karena nilai Inertia yang paling rendah
 
 ```{r}
 akurasi_klastering_jagung <- (kmeans_result$betweenss/kmeans_result$totss)*100
 akurasi_klastering_jagung
 ```
-Akurasi klaster bisa diketahui dengan menghitung rasio dari jumlah kuadrat antar klaster dengan
-jumlah kuadrat total. Sehingga nilai validitas dari model klastering adalah 97,21
+
+Akurasi klaster bisa diketahui dengan menghitung rasio dari jumlah kuadrat antar klaster dengan jumlah kuadrat total. Sehingga nilai validitas dari model klastering adalah 97,21
 
 ### b. Regresi Liner
-Tujuan dari analisis ini adalah untuk mencari tahu sejauh mana perubahan dalam rata-rata produksi dan/atau luas panen dapat mempengaruhi perubahan dalam jumlah produksi jagung. Adapun hipotesis yang dapat dikembangkan adalah:
-1. Rata-rata produksi berpengaruh signifikan terhadap jumlah produksi jagung.
-2. Luas panen berpengaruh signifikan terhadap jumlah produksi jagung.
+
+Tujuan dari analisis ini adalah untuk mencari tahu sejauh mana perubahan dalam rata-rata produksi dan/atau luas panen dapat mempengaruhi perubahan dalam jumlah produksi jagung. Adapun hipotesis yang dapat dikembangkan adalah: 
+1. Rata-rata produksi berpengaruh signifikan terhadap jumlah produksi jagung. 
+2. Luas panen berpengaruh signifikan terhadap jumlah produksi jagung. 
 3. Rata-rata produksi dan luas panen berpengaruh signifikan terhadap jumlah produksi jagung.
 
 ```{r}
@@ -1341,7 +1488,6 @@ head(palawijasumut_jagung)
 
 ```
 
-
 ```{r}
 # Pilih variabel yang akan diukur pengaruh
 datajagungsumut <- palawijasumut_jagung %>% 
@@ -1349,6 +1495,7 @@ datajagungsumut <- palawijasumut_jagung %>%
 ```
 
 Model 1: Pengaruh rata-rata produksi terhadap jumlah produksi
+
 ```{r}
 model_1_jagung <- lm(Produksi ~ Rata_rata_produksi, data = datajagungsumut)
 summary(model_1_jagung)
@@ -1364,15 +1511,14 @@ ggplot(datajagungsumut, aes(x = Rata_rata_produksi, y = Produksi)) +
   theme_minimal()
 ```
 
-
 Berdasarkan hasil di atas, kita dapat menyimpulkan bahwa rata-rata produksi padi memiliki pengaruh yang signifikan terhadap jumlah produksi. Nilai R-squared yang relatif rendah menunjukkan bahwa masih ada variabilitas dalam jumlah produksi yang tidak dijelaskan oleh rata-rata produksi, dan mungkin ada faktor lain yang juga mempengaruhi hasil produksi padi.
 
 Model 2: Pengaruh luas panen terhadap jumlah produksi
+
 ```{r}
 model_2_jagung <- lm(Produksi ~ Luas_Panen, data = datajagungsumut)
 summary(model_2_jagung)
 ```
-
 
 ```{r}
 # Visualisasi hasil regresi model_1
@@ -1383,14 +1529,15 @@ ggplot(datajagungsumut, aes(x = Luas_Panen, y = Produksi)) +
   ggtitle("Hubungan Antara Luas Panen dan Jumlah Produksi") +
   theme_minimal()
 ```
+
 Berdasarkan hasil diatas, dapat disimpulkan bahwa luas panen memiliki pengaruh yang signifikan terhadap produksi padi. Nilai R-squared 0.3784 menunjukkan bahwa model regresi ini mampu menjelaskan sekitar 37.84% variasi dalam "Produksi" berdasarkan variabel independen "Luas_panen".
 
 Model 3: Pengaruh luas panen dan rata-rata produksi terhadap jumlah produksi
+
 ```{r}
 model_3_jagung <- lm(Produksi ~ Luas_Panen + Rata_rata_produksi, data = datajagungsumut)
 summary(model_3_jagung)
 ```
-
 
 ```{r}
 # Visualisasi Model_3
@@ -1401,10 +1548,11 @@ ggplot(datajagungsumut, aes(x = Produksi, y = predict(model_3_jagung))) +
        x = "Observed Produksi",
        y = "Predicted Produksi")
 ```
-Berdasarkan hasil diatas dapat disimpulkan bahwa hanya 1 variabel independen, yaitu "Luas_panen", memiliki pengaruh yang signifikan terhadap "Produksi". Nilai R-squared 0.3784 menunjukkan bahwa model ini mampu menjelaskan sekitar 37.84% variasi dalam "Produksi" berdasarkan "Luas_panen", artinya ada 62,16% lagi dipengaruhi oleh variasi variabel lain 
 
+Berdasarkan hasil diatas dapat disimpulkan bahwa hanya 1 variabel independen, yaitu "Luas_panen", memiliki pengaruh yang signifikan terhadap "Produksi". Nilai R-squared 0.3784 menunjukkan bahwa model ini mampu menjelaskan sekitar 37.84% variasi dalam "Produksi" berdasarkan "Luas_panen", artinya ada 62,16% lagi dipengaruhi oleh variasi variabel lain
 
 Model Klaster dan Regresi untuk Mengungkap Tren Produksi Jagung
+
 ```{r}
 # Siapkan data set. Dataset yangd digunakan adalah data jagung 2013
 set.seed(123)
@@ -1449,6 +1597,7 @@ plot_lm_jagung
 akurasi_klastering2_jagung <- (kmeans_result_jagung$betweenss/kmeans_result_jagung$totss)*100
 akurasi_klastering2_jagung
 ```
+
 Bisa dilihat bahwa tren produksi jagung tidak liner, luas panen tidak terlalu mempengaruhi jumlah produksi. Pengaruh luas panen terhadap produksi berkisar 58.84%. Sementara rata-rata produksi tidak berpengaruh terhadap produksi padi. Tidak tingginya pengaruh luas panen terhadap produksi bisa dipengaruhi oleh faktor-faktor lain yang akan dianalisis lebih lanjut.
 
 ### c. Prediksi Produksi Jagung dengan ML
@@ -1494,6 +1643,7 @@ adf_test <- adf.test(data)
 adf_test
 
 ```
+
 ```{r}
 #library(modeltime.resample)
 resamples_tscv_jagung <- time_series_cv(
@@ -1505,8 +1655,6 @@ resamples_tscv_jagung <- time_series_cv(
 ) 
 ```
 
-
-
 ```{r}
 resamples_tscv_jagung %>%
     tk_time_series_cv_plan() %>%
@@ -1515,8 +1663,8 @@ resamples_tscv_jagung %>%
                              .interactive = TRUE)
 ```
 
+1.  Model ARIMA
 
-1. Model ARIMA
 ```{r}
 #library(parsnip)
 model_fit_arima_jagung <- arima_reg() %>%
@@ -1527,7 +1675,8 @@ model_fit_arima_jagung <- arima_reg() %>%
 model_fit_arima_jagung 
 ```
 
-2. Model ETS
+2.  Model ETS
+
 ```{r}
 model_fit_ets_jagung <- exp_smoothing() %>%
     set_engine(engine = "ets") %>% 
@@ -1537,7 +1686,8 @@ model_fit_ets_jagung <- exp_smoothing() %>%
 model_fit_ets_jagung
 ```
 
-3. Model Prophet
+3.  Model Prophet
+
 ```{r}
 model_fit_prophet_jagung <- prophet_reg() %>%
     set_engine(engine = "prophet") %>%
@@ -1546,6 +1696,7 @@ model_fit_prophet_jagung <- prophet_reg() %>%
 
 model_fit_prophet_jagung
 ```
+
 ```{r}
 # Menggabungkan Model
 models_tbl_jagung <- modeltime_table(model_fit_arima_jagung,
@@ -1555,14 +1706,14 @@ models_tbl_jagung <- modeltime_table(model_fit_arima_jagung,
 models_tbl_jagung
 ```
 
-4. Pelatihan dan Evaluasi Model
+4.  Pelatihan dan Evaluasi Model
+
 ```{r}
 resamples_fitted_jagung <- models_tbl_jagung %>%
     modeltime_fit_resamples(resamples = resamples_tscv_jagung)
 
 resamples_fitted_jagung
 ```
-
 
 ```{r}
 # Evaluasi Model
@@ -1577,7 +1728,6 @@ resamples_fitted_jagung %>%
     plot_modeltime_resamples(.interactive = TRUE)
 ```
 
-
 ```{r}
 models_tbl_jagung %>% 
   modeltime_residuals(new_data = summary_data_jagung) %>% 
@@ -1589,7 +1739,6 @@ models_tbl_jagung %>%
 refit_tbl_jagung <- resamples_fitted_jagung %>%
     modeltime_refit(data = summary_data_jagung)
 ```
-
 
 ```{r}
 forecast_jagung <- refit_tbl_jagung %>%
@@ -1604,7 +1753,6 @@ forecast_jagung
 forecast_jagung %>%
     plot_modeltime_forecast(.interactive = TRUE)
 ```
-
 
 ```{r}
 # Cross Validation Model Prophet
@@ -1660,10 +1808,12 @@ hasil_validasi_jagung
 
 ```
 
-
 # 5. Data Kacang Hijau
-# 6. Data Kacang Kedelai
-# 7. Data Kacang Tanah
-# 8. Data Ubi Jalar
-# 9. Data Ubi Kayu
 
+# 6. Data Kacang Kedelai
+
+# 7. Data Kacang Tanah
+
+# 8. Data Ubi Jalar
+
+# 9. Data Ubi Kayu
