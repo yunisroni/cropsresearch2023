@@ -659,7 +659,7 @@ merged_data
 ```{r}
 # Pilih variabel yang akan diprediksi
 # dalam pengujian ini akan dilihat apakah ada pengaruh curah hujan terhadap peningkatan produksi
-data_for_var <- merged_data[, c("Produksi", "avg_rainfall")]
+data_for_var <- merged_data[, c("Rata_rata_produksi", "avg_rainfall")]
 ```
 
 Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam format time series (ts)
@@ -677,7 +677,7 @@ Kalau dilihat dari hasil model VAR diatas, maka bisa disimpulkan bahwa tidak ada
 
 ```{r}
 # Membuat model regresi linier
-regression_model <- lm(Produksi ~ avg_rainfall, data = data_for_var)
+regression_model <- lm(Rata_rata_produksi ~ avg_rainfall, data = data_for_var)
 
 # Ringkasan hasil model
 summary(regression_model)
@@ -687,10 +687,10 @@ Dilihat dari model regresi juga kelihatan bahwa tidak ada pengaruh curah hujan t
 
 ```{r}
 # Menghitung koefisien korelasi Pearson
-correlation <- cor(data_for_var$Produksi, data_for_var$avg_rainfall)
+correlation <- cor(data_for_var$Rata_rata_produksi, data_for_var$avg_rainfall)
 correlation
 ```
-Dilihat dari hubungan atau korelasi, korelasi curah hujan dan produksi padi sangat rendah atau tidak ada korelasi.
+Dilihat dari hubungan negatif, artinya tingginya curah hujan biasanya berhubungan dengan rata-rata produksi yang rendah.
 
 
 ### d. Prediksi Produksi Padi dengan ML
@@ -1515,6 +1515,150 @@ resamples_tscv_jagung %>%
                              .interactive = TRUE)
 ```
 
+
+1. Model ARIMA
+```{r}
+#library(parsnip)
+model_fit_arima_jagung <- arima_reg() %>%
+    set_engine(engine = "auto_arima") %>% 
+    fit(formula = total_produksi ~ Tahun, 
+        data = summary_data_jagung)
+
+model_fit_arima_jagung 
+```
+
+2. Model ETS
+```{r}
+model_fit_ets_jagung <- exp_smoothing() %>%
+    set_engine(engine = "ets") %>% 
+    fit(formula = total_produksi ~ Tahun, 
+        data = summary_data_jagung)
+
+model_fit_ets_jagung
+```
+
+3. Model Prophet
+```{r}
+model_fit_prophet_jagung <- prophet_reg() %>%
+    set_engine(engine = "prophet") %>%
+    fit(formula = total_produksi ~ Tahun, 
+        data = summary_data_jagung)
+
+model_fit_prophet_jagung
+```
+```{r}
+# Menggabungkan Model
+models_tbl_jagung <- modeltime_table(model_fit_arima_jagung,
+                              model_fit_prophet_jagung,
+                              model_fit_ets_jagung)
+
+models_tbl_jagung
+```
+
+4. Pelatihan dan Evaluasi Model
+```{r}
+resamples_fitted_jagung <- models_tbl_jagung %>%
+    modeltime_fit_resamples(resamples = resamples_tscv_jagung)
+
+resamples_fitted_jagung
+```
+
+
+```{r}
+# Evaluasi Model
+resamples_fitted_jagung %>%
+    modeltime_resample_accuracy() %>%
+    table_modeltime_accuracy(.title = "Tabel Evaluasi", 
+                             .interactive = FALSE)
+```
+
+```{r}
+resamples_fitted_jagung %>%
+    plot_modeltime_resamples(.interactive = TRUE)
+```
+
+
+```{r}
+models_tbl_jagung %>% 
+  modeltime_residuals(new_data = summary_data_jagung) %>% 
+  modeltime_residuals_test()
+```
+
+```{r}
+# Prediksi Masa Depan
+refit_tbl_jagung <- resamples_fitted_jagung %>%
+    modeltime_refit(data = summary_data_jagung)
+```
+
+
+```{r}
+forecast_jagung <- refit_tbl_jagung %>%
+    modeltime_forecast(h = "1 years", 
+                       actual_data = summary_data_jagung) 
+
+forecast_jagung 
+```
+
+```{r}
+# Visualisasi Hasil Forecasting
+forecast_jagung %>%
+    plot_modeltime_forecast(.interactive = TRUE)
+```
+
+
+```{r}
+# Cross Validation Model Prophet
+# Membaca data dan mempersiapkan dataset
+data_jagung <- summary_data_jagung %>% 
+  rename(
+    ds = "Tahun",
+    y = "total_produksi"
+  )
+data_jagung
+
+# Buat fungsi untuk menghitung metrik evaluasi yang dibutuhkan
+compute_metrics_jagung <- function(actual, forecast_jagung) {
+  mae <- mean(abs(actual - forecast_jagung))
+  mape <- mean(abs((actual - forecast_jagung) / actual) * 100)
+  mase <- mean(abs(actual - forecast_jagung) / mean(abs(diff(actual))))
+  smape <- mean(200 * abs(forecast_jagung - actual) / (abs(forecast_jagung) + abs(actual)))
+  rmse <- sqrt(mean((actual - forecast_jagung)^2))
+  metrics <- c(mae, mape, mase, smape, rmse)
+  return(metrics)
+}
+
+# Cross-validation dengan Prophet
+set.seed(123)
+num_folds <- 5
+folds <- cut(1:nrow(data_jagung), breaks = num_folds, labels = FALSE)
+
+prophet_metrics_jagung <- matrix(NA, num_folds, 5)  # Ganti 6 dengan jumlah metrik evaluasi
+for (fold in 1:num_folds) {
+  train_data_jagung <- data_jagung[folds != fold, ]
+  test_data_jagung <- data_jagung[folds == fold, ]
+  
+  # Train Prophet model
+  prophet_model_jagung <- prophet(train_data_jagung)
+  
+  # Prediksi dengan model
+  future_jagung <- make_future_dataframe(prophet_model_jagung, periods = nrow(test_data_jagung))
+  forecast_jagung <- predict(prophet_model_jagung, future_jagung)
+  
+  # Hitung metrik evaluasi
+  prophet_metrics_jagung[fold, ] <- compute_metrics_jagung(test_data_jagung$y, forecast_jagung$yhat)
+}
+
+# Mengubah hasil metrik evaluasi menjadi persentase
+prophet_metrics_jagung <- prophet_metrics_jagung / 100
+
+# Hasil metrik evaluasi cross-validation untuk Prophet
+colnames(prophet_metrics_jagung) <- c("MAE", "MAPE", "MASE", "SMAPE", "RMSE")
+mean_metrics <- colMeans(prophet_metrics_jagung, na.rm = TRUE)
+print("Cross-Validation Metrics for Prophet:")
+hasil_validasi_jagung <- format(mean_metrics, scientific = FALSE)
+hasil_validasi_jagung
+
+```
 
 
 # 5. Data Kacang Hijau
