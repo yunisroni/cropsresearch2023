@@ -673,7 +673,7 @@ ts_data
 var_model_1 <- VAR(ts_data, p = 2) # jumlah order dari model VAR
 summary(var_model_1)
 ```
-Kalau dilihat dari hasil model VAR diatas, maka bisa disimpulkan bahwa tidak ada dampak curah hujan terhadap peningkatan produksi padi.
+Kalau dilihat dari hasil model VAR diatas, maka bisa disimpulkan bahwa tidak ada dampak curah hujan terhadap peningkatan rata-rata produksi padi.
 
 ```{r}
 # Membuat model regresi linier
