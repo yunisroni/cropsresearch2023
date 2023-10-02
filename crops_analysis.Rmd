@@ -1598,7 +1598,7 @@ akurasi_klastering2_jagung <- (kmeans_result_jagung$betweenss/kmeans_result_jagu
 akurasi_klastering2_jagung
 ```
 
-Bisa dilihat bahwa tren produksi jagung tidak liner, luas panen tidak terlalu mempengaruhi jumlah produksi. Pengaruh luas panen terhadap produksi berkisar 58.84%. Sementara rata-rata produksi tidak berpengaruh terhadap produksi padi. Tidak tingginya pengaruh luas panen terhadap produksi bisa dipengaruhi oleh faktor-faktor lain yang akan dianalisis lebih lanjut.
+Bisa dilihat bahwa tren produksi jagung tidak liner, luas panen tidak terlalu mempengaruhi jumlah produksi. Pengaruh luas panen terhadap produksi berkisar 58.84%. Sementara rata-rata produksi tidak berpengaruh terhadap produksi padi. Tidak tingginya pengaruh luas panen terhadap produksi bisa dipengaruhi oleh faktor-faktor lain yang akan dianalisis  lebih lanjut.
 
 ### c. Prediksi Produksi Jagung dengan ML
 
