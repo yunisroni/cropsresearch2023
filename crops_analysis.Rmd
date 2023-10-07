@@ -1521,7 +1521,7 @@ summary(model_2_jagung)
 ```
 
 ```{r}
-# Visualisasi hasil regresi model_1
+# Visualisasi hasil regresi model_2
 ggplot(datajagungsumut, aes(x = Luas_Panen, y = Produksi)) +
   geom_point() +
   geom_smooth(method = "lm", se = FALSE, color = "blue") +
