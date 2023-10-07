@@ -1,0 +1,1029 @@
+---
+title: "Exploratory Data Analysis (EDA) Palawija - Indonesia"
+author: "Nurul Aina Tasya"
+date: "2023-10-05"
+output:
+  html_document:
+    df_print: paged
+---
+
+# 1. Load Library/Packages
+```{r}
+# library untuk manipulasi data
+library(dplyr)
+# library untuk manipulasi data tanggal
+library(lubridate)
+# library untuk menampilkan hasil statistik deskriptif
+library(summarytools)
+# library untuk visualisasi data
+library (ggplot2)
+# library untuk membaca data dari file Excel (.xlsx)
+library(readxl)
+```
+
+
+# 2. Obstain Data
+
+## a.Import Data
+```{r}
+palawija <- read_excel("Dataset Tanaman Pangan di Indonesia.xlsx")
+```
+
+## b.Menampilkan Contoh Data
+```{r}
+# Menampilkan 6 data teratas
+head(palawija)
+```
+```{r}
+# Menampilkan 6 data terbawah
+tail(palawija)
+```
+```{r}
+glimpse(palawija)
+```
+
+# 3. Scrub Data
+
+## a. Merubah type data
+```{r}
+# Merubah type data karakter menjadi numeric
+palawija$Produksi <- as.numeric(palawija$Produksi)
+palawija$Produktivitas <- as.numeric(palawija$Produktivitas)
+palawija$Luas_Panen <- as.numeric(palawija$Luas_Panen)
+glimpse(palawija)
+```
+```{r}
+# Merubah type Tahun menjadi Date
+palawija$Tahun <- make_date(palawija$Tahun)
+glimpse(palawija)
+```
+```{r}
+tail(palawija)
+```
+```{r}
+head(palawija)
+```
+
+## b. Menghapus Data Kosong
+```{r}
+# Menampilkan variabel dengan baris kosong
+glimpse(palawija)
+colSums(is.na(palawija))
+```
+Jumlah data : 5,474 Record. Dari 6 variabel terhadap 3 buah variabel dengan data NA'S
+
+```{r}
+# Menghapus data NA'S
+palawija_clean <- na.omit(palawija)
+colSums(is.na(palawija_clean))
+summary(palawija_clean)
+```
+Berdasarkan hasil diatas bisa dilihat semua variabel tidak ada lagi data
+yang kosong atau NA'
+```{r}
+glimpse(palawija_clean)
+```
+Jumlah data setelah dihapus data NA' menjadi 4,647 baris observasi dengan
+6 variabel.
+
+
+# 4. Explore Data Analysis (EDA)
+## a.Tampilkan Dataset
+```{r}
+glimpse(palawija_clean)
+```
+## b.Menampilkan hasil statistik deskriptif
+```{r}
+descr(palawija_clean)
+```
+
+## c. Filter data jagung, kacang hijau, kacang kedelai, kacang tanah, ubi jalar, dan ubi kayu
+### - Filter data jagung
+```{r}
+Jagung <- filter(palawija_clean, Jenis_Komoditi == "Jagung")
+Jagung
+
+```
+### - Filter data kacang hijau
+```{r}
+KacangHijau <- filter(palawija_clean, Jenis_Komoditi == "Kacang Hijau")
+KacangHijau
+```
+### - Filter data kacang kedelai
+```{r}
+KacangKedelai <- filter(palawija_clean, Jenis_Komoditi == "Kedelai")
+KacangKedelai
+```
+### - Filter data kacang tanah
+```{r}
+KacangTanah <- filter(palawija_clean, Jenis_Komoditi == "Kacang Tanah")
+KacangTanah
+```
+### - Filter data ubi jalar
+```{r}
+UbiJalar <- filter(palawija_clean, Jenis_Komoditi == "Ubi Jalar")
+UbiJalar
+
+```
+### - Filter data ubi kayu
+```{r}
+UbiKayu <- filter(palawija_clean, Jenis_Komoditi == "Ubi Kayu")
+UbiKayu
+```
+
+## d. Jumlah Produksi Palawija Per Provinsi
+### - Jumlah Produksi Jagung Per Provinsi
+```{r}
+plot_jagung_1 <- ggplot(Jagung, aes(x = Tahun, y = Produksi, group = Provinsi, color = Provinsi)) +
+  geom_line() +
+  labs(title = "Jumlah Produksi Jagung", x = "Tahun", y = "Produksi Jagung (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "right")
+plot_jagung_1
+
+```
+
+```{r}
+# Hitung total produksi per provinsi
+totproduksi_jagung <- Jagung %>% 
+  #mutate(first_date_month = floor_date(Tahun, unit = "year")) %>% 
+  group_by(Provinsi) %>% 
+  summarise(JumlahProduksi = sum(Produksi)) %>% 
+  arrange(JumlahProduksi)
+totproduksi_jagung
+```
+
+```{r}
+# Turn off dplyr summarise() warning
+options(dplyr.summarise.inform = FALSE)
+
+# Hitung total produksi per provinsi/tahun
+totproduksi_jagung <- Jagung %>% 
+  group_by(Tahun, Provinsi, .drop = FALSE) %>%  # Add .drop argument
+  summarise(TotalProduksi = sum(Produksi))
+
+totproduksi_jagung
+```
+
+```{r}
+summary(totproduksi_jagung)
+```
+
+
+### - Jumlah Produksi Kacang Hijau Per Provinsi
+```{r}
+plot_kacanghijau_1 <- ggplot(KacangHijau, aes(x = Tahun, y = Produksi, group = Provinsi, color = Provinsi)) +
+  geom_line() +
+  labs(title = "Jumlah Produksi Kacang Hijau", x = "Tahun", y = "Produksi Kacang Hijau (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "right")
+plot_kacanghijau_1
+
+```
+
+```{r}
+# Hitung total produksi per provinsi
+totproduksi_kacanghijau <- KacangHijau %>% 
+  #mutate(first_date_month = floor_date(Tahun, unit = "year")) %>% 
+  group_by(Provinsi) %>% 
+  summarise(JumlahProduksi = sum(Produksi)) %>% 
+  arrange(JumlahProduksi)
+totproduksi_kacanghijau
+```
+
+```{r}
+# Turn off dplyr summarise() warning
+options(dplyr.summarise.inform = FALSE)
+
+# Hitung total produksi per provinsi/tahun
+totproduksi_kacanghijau <- KacangHijau %>% 
+  group_by(Tahun, Provinsi, .drop = FALSE) %>%  # Add .drop argument
+  summarise(TotalProduksi = sum(Produksi))
+
+totproduksi_kacanghijau
+```
+
+```{r}
+summary(totproduksi_kacanghijau)
+```
+
+
+
+### - Jumlah Produksi Kacang Kedelai Per Provinsi
+```{r}
+plot_kacangkedelai_1 <- ggplot(KacangKedelai, aes(x = Tahun, y = Produksi, group = Provinsi, color = Provinsi)) +
+  geom_line() +
+  labs(title = "Jumlah Produksi Kacang Kedelai", x = "Tahun", y = "Produksi Kacang Kedelai (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "right")
+plot_kacangkedelai_1
+
+```
+
+```{r}
+# Hitung total produksi per provinsi
+totproduksi_kacangkedelai <- KacangKedelai %>% 
+  #mutate(first_date_month = floor_date(Tahun, unit = "year")) %>% 
+  group_by(Provinsi) %>% 
+  summarise(JumlahProduksi = sum(Produksi)) %>% 
+  arrange(JumlahProduksi)
+totproduksi_kacangkedelai
+```
+
+```{r}
+# Turn off dplyr summarise() warning
+options(dplyr.summarise.inform = FALSE)
+
+# Hitung total produksi per provinsi/tahun
+totproduksi_kacangkedelai <- KacangKedelai %>% 
+  group_by(Tahun, Provinsi, .drop = FALSE) %>%  # Add .drop argument
+  summarise(TotalProduksi = sum(Produksi))
+
+totproduksi_kacangkedelai
+```
+
+```{r}
+summary(totproduksi_kacangkedelai)
+```
+
+
+### - Jumlah Produksi Kacang Tanah Per Provinsi
+```{r}
+plot_kacangtanah_1 <- ggplot(KacangTanah, aes(x = Tahun, y = Produksi, group = Provinsi, color = Provinsi)) +
+  geom_line() +
+  labs(title = "Jumlah Produksi Kacang Tanah", x = "Tahun", y = "Produksi Kacang Tanah (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "right")
+plot_kacangtanah_1
+
+```
+
+```{r}
+# Hitung total produksi per provinsi
+totproduksi_kacangtanah <- KacangTanah %>% 
+  #mutate(first_date_month = floor_date(Tahun, unit = "year")) %>% 
+  group_by(Provinsi) %>% 
+  summarise(JumlahProduksi = sum(Produksi)) %>% 
+  arrange(JumlahProduksi)
+totproduksi_kacangtanah
+```
+
+```{r}
+# Turn off dplyr summarise() warning
+options(dplyr.summarise.inform = FALSE)
+
+# Hitung total produksi per provinsi/tahun
+totproduksi_kacangtanah <- KacangTanah %>% 
+  group_by(Tahun, Provinsi, .drop = FALSE) %>%  # Add .drop argument
+  summarise(TotalProduksi = sum(Produksi))
+
+totproduksi_kacangtanah
+```
+
+```{r}
+summary(totproduksi_kacangtanah)
+```
+
+
+### - Jumlah Produksi Ubi Jalar Per Provinsi
+```{r}
+plot_ubijalar_1 <- ggplot(UbiJalar, aes(x = Tahun, y = Produksi, group = Provinsi, color = Provinsi)) +
+  geom_line() +
+  labs(title = "Jumlah Produksi Ubi Jalar", x = "Tahun", y = "Produksi Ubi Jalar (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "right")
+plot_ubijalar_1
+
+```
+
+```{r}
+# Hitung total produksi per provinsi
+totproduksi_ubijalar <- UbiJalar %>% 
+  #mutate(first_date_month = floor_date(Tahun, unit = "year")) %>% 
+  group_by(Provinsi) %>% 
+  summarise(JumlahProduksi = sum(Produksi)) %>% 
+  arrange(JumlahProduksi)
+totproduksi_ubijalar
+```
+
+```{r}
+# Turn off dplyr summarise() warning
+options(dplyr.summarise.inform = FALSE)
+
+# Hitung total produksi per provinsi/tahun
+totproduksi_ubijalar <- UbiJalar %>% 
+  group_by(Tahun, Provinsi, .drop = FALSE) %>%  # Add .drop argument
+  summarise(TotalProduksi = sum(Produksi))
+
+totproduksi_ubijalar
+```
+
+```{r}
+summary(totproduksi_ubijalar)
+```
+
+
+### - Jumlah Produksi Ubi Kayu Per Provinsi
+```{r}
+plot_ubikayu_1 <- ggplot(UbiKayu, aes(x = Tahun, y = Produksi, group = Provinsi, color = Provinsi)) +
+  geom_line() +
+  labs(title = "Jumlah Produksi Ubi Kayu", x = "Tahun", y = "Produksi Ubi Kayu (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "right")
+plot_ubikayu_1
+
+```
+
+```{r}
+# Hitung total produksi per provinsi
+totproduksi_ubikayu <- UbiKayu %>% 
+  #mutate(first_date_month = floor_date(Tahun, unit = "year")) %>% 
+  group_by(Provinsi) %>% 
+  summarise(JumlahProduksi = sum(Produksi)) %>% 
+  arrange(JumlahProduksi)
+totproduksi_ubikayu
+```
+
+```{r}
+# Turn off dplyr summarise() warning
+options(dplyr.summarise.inform = FALSE)
+
+# Hitung total produksi per provinsi/tahun
+totproduksi_ubikayu <- UbiKayu %>% 
+  group_by(Tahun, Provinsi, .drop = FALSE) %>%  # Add .drop argument
+  summarise(TotalProduksi = sum(Produksi))
+
+totproduksi_ubikayu
+```
+
+```{r}
+summary(totproduksi_ubikayu)
+```
+
+
+
+## e. Tren Produksi Palawija Per Provinsi
+### - Tren Produksi Jagung Per Provinsi
+```{r}
+# Visualisasi Tren Produksi Jagung
+plot_jagung_2 <- ggplot(totproduksi_jagung, aes(x = Tahun, y = TotalProduksi, color = Provinsi)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Tren Produksi Jagung", x = "Tahun", y = "Total Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "right")
+plot_jagung_2
+```
+### - Tren Produksi Kacang Hijau Per Provinsi
+```{r}
+# Visualisasi Tren Produksi Kacang Hijau
+plot_kacanghijau_2 <- ggplot(totproduksi_kacanghijau, aes(x = Tahun, y = TotalProduksi, color = Provinsi)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Tren Produksi Kacang Hijau", x = "Tahun", y = "Total Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "right")
+plot_kacanghijau_2
+```
+
+### - Tren Produksi Kacang Kedelai Per Provinsi
+```{r}
+# Visualisasi Tren Produksi Kacang Kedelai
+plot_kacangkedelai_2 <- ggplot(totproduksi_kacangkedelai, aes(x = Tahun, y = TotalProduksi, color = Provinsi)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Tren Produksi Kacang Kedelai", x = "Tahun", y = "Total Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "right")
+plot_kacangkedelai_2
+```
+
+### - Tren Produksi Kacang Tanah Per Provinsi
+```{r}
+# Visualisasi Tren Produksi Kacang Tanah
+plot_kacangtanah_2 <- ggplot(totproduksi_kacangtanah, aes(x = Tahun, y = TotalProduksi, color = Provinsi)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Tren Produksi Kacang Tanah", x = "Tahun", y = "Total Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "right")
+plot_kacangtanah_2
+```
+
+### - Tren Produksi Ubi Jalar Per Provinsi
+```{r}
+# Visualisasi Tren Produksi Ubi Jalar
+plot_ubijalar_2 <- ggplot(totproduksi_ubijalar, aes(x = Tahun, y = TotalProduksi, color = Provinsi)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Tren Produksi Ubi Jalar", x = "Tahun", y = "Total Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "right")
+plot_ubijalar_2
+```
+
+### - Tren Produksi Ubi Kayu Per Provinsi
+```{r}
+# Visualisasi Tren Produksi Ubi Kayu
+plot_ubikayu_2 <- ggplot(totproduksi_ubikayu, aes(x = Tahun, y = TotalProduksi, color = Provinsi)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Tren Produksi Ubi Kayu", x = "Tahun", y = "Total Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "right")
+plot_ubikayu_2
+```
+
+
+
+## f. Perbandingan Produksi Palawija Per Provinsi
+### - Perbandingan Produksi Jagung Per Provinsi
+```{r}
+# Hitung total produksi Jagung per Provinsi
+totproduksi_jagung_provinsi <- Jagung %>% 
+  group_by(Provinsi) %>% 
+  summarise(TotalProduksi = sum(Produksi))
+totproduksi_jagung_provinsi
+
+# Visualisasi dengan barplot
+plot_jagung_3 <- ggplot(totproduksi_jagung_provinsi, aes(x = Provinsi, y = TotalProduksi, fill = Provinsi)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Perbandingan Produksi Jagung antara Provinsi", x = "Provinsi", y = "Total Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "none")  # hilangkan legend
+
+# Rotasi sumbu x agar mudah dibaca
+plot_jagung_3 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+Perbandingan produksi Jagung dalam kurun waktu 1993 - 2015 adalah dari provinsi Jawa Timur yang terbanyak dengan Jumlah Produksi Jagung sebesar 98164357 Ton.
+
+
+### - Perbandingan Produksi Kacang Hijau Per Provinsi
+```{r}
+# Hitung total produksi Kacang Hijau per Provinsi
+totproduksi_kacanghijau_provinsi <- KacangHijau %>% 
+  group_by(Provinsi) %>% 
+  summarise(TotalProduksi = sum(Produksi))
+totproduksi_kacanghijau_provinsi
+
+# Visualisasi dengan barplot
+plot_kacanghijau_3 <- ggplot(totproduksi_kacanghijau_provinsi, aes(x = Provinsi, y = TotalProduksi, fill = Provinsi)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Perbandingan Produksi Kacang Hijau antara Provinsi", x = "Provinsi", y = "Total Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "none")  # hilangkan legend
+
+# Rotasi sumbu x agar mudah dibaca
+plot_kacanghijau_3 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+Perbandingan produksi Kacang Hijau dalam kurun waktu 1993 - 2015 adalah dari provinsi Jawa Tengah yang terbanyak dengan Jumlah Produksi Kacang Hijau sebesar 1549775 Ton.
+
+
+### - Perbandingan Produksi Kacang Kedelai Per Provinsi
+```{r}
+# Hitung total produksi Kacang Kedelai per Provinsi
+totproduksi_kacangkedelai_provinsi <- KacangKedelai %>% 
+  group_by(Provinsi) %>% 
+  summarise(TotalProduksi = sum(Produksi))
+totproduksi_kacangkedelai_provinsi
+
+# Visualisasi dengan barplot
+plot_kacangkedelai_3 <- ggplot(totproduksi_kacangkedelai_provinsi, aes(x = Provinsi, y = TotalProduksi, fill = Provinsi)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Perbandingan Produksi Kacang Kedelai antara Provinsi", x = "Provinsi", y = "Total Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "none")  # hilangkan legend
+
+# Rotasi sumbu x agar mudah dibaca
+plot_kacangkedelai_3 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+Perbandingan produksi Kacang Kedelai dalam kurun waktu 1993 - 2015 adalah dari provinsi Jawa Timur yang terbanyak dengan Jumlah Produksi Kacang Kedelai sebesar 8773308 Ton.
+
+
+### - Perbandingan Produksi Kacang Tanah Per Provinsi
+```{r}
+# Hitung total produksi Kacang Tanah per Provinsi
+totproduksi_kacangtanah_provinsi <- KacangTanah %>% 
+  group_by(Provinsi) %>% 
+  summarise(TotalProduksi = sum(Produksi))
+totproduksi_kacangtanah_provinsi
+
+# Visualisasi dengan barplot
+plot_kacangtanah_3 <- ggplot(totproduksi_kacangtanah_provinsi, aes(x = Provinsi, y = TotalProduksi, fill = Provinsi)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Perbandingan Produksi Kacang Tanah antara Provinsi", x = "Provinsi", y = "Total Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "none")  # hilangkan legend
+
+# Rotasi sumbu x agar mudah dibaca
+plot_kacangtanah_3 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+Perbandingan produksi Kacang Tanah dalam kurun waktu 1993 - 2015 adalah dari provinsi Jawa Timur yang terbanyak dengan Jumlah Produksi Kacang Tanah sebesar 4295694 Ton.
+
+
+### - Perbandingan Produksi Ubi Jalar Per Provinsi
+```{r}
+# Hitung total produksi Ubi Jalar per Provinsi
+totproduksi_ubijalar_provinsi <- UbiJalar %>% 
+  group_by(Provinsi) %>% 
+  summarise(TotalProduksi = sum(Produksi))
+totproduksi_ubijalar_provinsi
+
+# Visualisasi dengan barplot
+plot_ubijalar_3 <- ggplot(totproduksi_ubijalar_provinsi, aes(x = Provinsi, y = TotalProduksi, fill = Provinsi)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Perbandingan Produksi Ubi Jalar antara Provinsi", x = "Provinsi", y = "Total Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "none")  # hilangkan legend
+
+# Rotasi sumbu x agar mudah dibaca
+plot_ubijalar_3 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+Perbandingan produksi Ubi Jalar dalam kurun waktu 1993 - 2015 adalah dari provinsi Jawa Barat yang terbanyak dengan Jumlah Produksi Ubi Jalar sebesar 9548484.00 Ton.
+
+
+### - Perbandingan Produksi Ubi Kayu Per Provinsi
+```{r}
+# Hitung total produksi Ubi Kayu per Provinsi
+totproduksi_ubikayu_provinsi <- UbiKayu %>% 
+  group_by(Provinsi) %>% 
+  summarise(TotalProduksi = sum(Produksi))
+totproduksi_ubikayu_provinsi
+
+# Visualisasi dengan barplot
+plot_ubikayu_3 <- ggplot(totproduksi_ubikayu_provinsi, aes(x = Provinsi, y = TotalProduksi, fill = Provinsi)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Perbandingan Produksi Ubi Kayu antara Provinsi", x = "Provinsi", y = "Total Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "none")  # hilangkan legend
+
+# Rotasi sumbu x agar mudah dibaca
+plot_ubikayu_3 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+Perbandingan produksi Ubi Kayu dalam kurun waktu 1993 - 2015 adalah dari provinsi Lampung yang terbanyak dengan Jumlah Produksi Ubi Kayu sebesar 118343702 Ton.
+
+
+
+## g. Perbandingan Produktivitas Palawija Per Provinsi
+### - Perbandingan Produktivitas Jagung Per Provinsi
+```{r}
+# Turn off dplyr summarise() warning
+options(dplyr.summarise.inform = FALSE)
+
+# Melihat tren produktivitas jagung
+produktivitas_jagung <- Jagung %>% 
+  group_by(Tahun, Provinsi, .drop = FALSE) %>%  # Add .drop argument
+  summarise(Produktivitas = sum(Produktivitas))
+produktivitas_jagung
+```
+
+```{r}
+
+# Hitung total produktivitas Jagung per provinsi
+totproduktivitas_jagung_provinsi <- Jagung %>% 
+  group_by(Provinsi) %>% 
+  summarise(Total_Produktivitas = sum(Produktivitas))
+
+# Visualisasi dengan barplot
+plot_jagung_4 <- ggplot(totproduktivitas_jagung_provinsi, aes(x = Provinsi, y = Total_Produktivitas, fill = Provinsi)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Perbandingan Produktivitas Jagung antar Provinsi", x = "Provinsi", y = "Produktivitas (Kuintal/Hektar)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "none")  # hilangkan legend
+
+# Rotasi sumbu x agar mudah dibaca
+plot_jagung_4 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+```
+
+
+### - Perbandingan Produktivitas Kacang Hijau Per Provinsi
+```{r}
+# Turn off dplyr summarise() warning
+options(dplyr.summarise.inform = FALSE)
+
+# Melihat tren produktivitas Kacang Hijau
+produktivitas_kacanghijau <- KacangHijau %>% 
+  group_by(Tahun, Provinsi, .drop = FALSE) %>%  # Add .drop argument
+  summarise(Produktivitas = sum(Produktivitas))
+produktivitas_kacanghijau
+```
+
+```{r}
+
+# Hitung total produktivitas Kacang Hijau per provinsi
+totproduktivitas_kacanghijau_provinsi <- KacangHijau %>% 
+  group_by(Provinsi) %>% 
+  summarise(Total_Produktivitas = sum(Produktivitas))
+
+# Visualisasi dengan barplot
+plot_kacanghijau_4 <- ggplot(totproduktivitas_kacanghijau_provinsi, aes(x = Provinsi, y = Total_Produktivitas, fill = Provinsi)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Perbandingan Produktivitas Kacang Hijau antar Provinsi", x = "Provinsi", y = "Produktivitas (Kuintal/Hektar)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "none")  # hilangkan legend
+
+# Rotasi sumbu x agar mudah dibaca
+plot_kacanghijau_4 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+```
+
+
+### - Perbandingan Produktivitas Kacang Kedelai Per Provinsi
+```{r}
+# Turn off dplyr summarise() warning
+options(dplyr.summarise.inform = FALSE)
+
+# Melihat tren produktivitas Kacang Kedelai
+produktivitas_kacangkedelai <- KacangKedelai %>% 
+  group_by(Tahun, Provinsi, .drop = FALSE) %>%  # Add .drop argument
+  summarise(Produktivitas = sum(Produktivitas))
+produktivitas_kacangkedelai
+```
+
+```{r}
+
+# Hitung total produktivitas Kacang Kedelai per provinsi
+totproduktivitas_kacangkedelai_provinsi <- KacangKedelai %>% 
+  group_by(Provinsi) %>% 
+  summarise(Total_Produktivitas = sum(Produktivitas))
+
+# Visualisasi dengan barplot
+plot_kacangkedelai_4 <- ggplot(totproduktivitas_kacangkedelai_provinsi, aes(x = Provinsi, y = Total_Produktivitas, fill = Provinsi)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Perbandingan Produktivitas Kacang Kedelai antar Provinsi", x = "Provinsi", y = "Produktivitas (Kuintal/Hektar)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "none")  # hilangkan legend
+
+# Rotasi sumbu x agar mudah dibaca
+plot_kacangkedelai_4 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+```
+
+
+### - Perbandingan Produktivitas Kacang Tanah Per Provinsi
+```{r}
+# Turn off dplyr summarise() warning
+options(dplyr.summarise.inform = FALSE)
+
+# Melihat tren produktivitas Kacang Tanah
+produktivitas_kacangtanah <- KacangTanah %>% 
+  group_by(Tahun, Provinsi, .drop = FALSE) %>%  # Add .drop argument
+  summarise(Produktivitas = sum(Produktivitas))
+produktivitas_kacangtanah
+```
+
+```{r}
+
+# Hitung total produktivitas Kacang Tanah per provinsi
+totproduktivitas_kacangtanah_provinsi <- KacangTanah %>% 
+  group_by(Provinsi) %>% 
+  summarise(Total_Produktivitas = sum(Produktivitas))
+
+# Visualisasi dengan barplot
+plot_kacangtanah_4 <- ggplot(totproduktivitas_kacangtanah_provinsi, aes(x = Provinsi, y = Total_Produktivitas, fill = Provinsi)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Perbandingan Produktivitas Kacang Tanah antar Provinsi", x = "Provinsi", y = "Produktivitas (Kuintal/Hektar)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "none")  # hilangkan legend
+
+# Rotasi sumbu x agar mudah dibaca
+plot_kacangtanah_4 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+```
+
+
+### - Perbandingan Produktivitas Ubi Jalar Per Provinsi
+```{r}
+# Turn off dplyr summarise() warning
+options(dplyr.summarise.inform = FALSE)
+
+# Melihat tren produktivitas Ubi Jalar
+produktivitas_ubijalar <- UbiJalar %>% 
+  group_by(Tahun, Provinsi, .drop = FALSE) %>%  # Add .drop argument
+  summarise(Produktivitas = sum(Produktivitas))
+produktivitas_ubijalar
+```
+
+```{r}
+
+# Hitung total produkstivitas Ubi Jalar per provinsi
+totproduktivitas_ubijalar_provinsi <- UbiJalar %>% 
+  group_by(Provinsi) %>% 
+  summarise(Total_Produktivitas = sum(Produktivitas))
+
+# Visualisasi dengan barplot
+plot_ubijalar_4 <- ggplot(totproduktivitas_ubijalar_provinsi, aes(x = Provinsi, y = Total_Produktivitas, fill = Provinsi)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Perbandingan Produktivitas Ubi Jalar antar Provinsi", x = "Provinsi", y = "Produktivitas (Kuintal/Hektar)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "none")  # hilangkan legend
+
+# Rotasi sumbu x agar mudah dibaca
+plot_ubijalar_4 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+```
+
+
+### - Perbandingan Produktivitas Ubi Kayu Per Provinsi
+```{r}
+# Turn off dplyr summarise() warning
+options(dplyr.summarise.inform = FALSE)
+
+# Melihat tren produktivitas Ubi Kayu
+produktivitas_ubikayu <- UbiKayu %>% 
+  group_by(Tahun, Provinsi, .drop = FALSE) %>%  # Add .drop argument
+  summarise(Produktivitas = sum(Produktivitas))
+produktivitas_ubikayu
+```
+
+```{r}
+
+# Hitung total produkstivitas Ubi Kayu per provinsi
+totproduktivitas_ubikayu_provinsi <- UbiKayu %>% 
+  group_by(Provinsi) %>% 
+  summarise(Total_Produktivitas = sum(Produktivitas))
+
+# Visualisasi dengan barplot
+plot_ubikayu_4 <- ggplot(totproduktivitas_ubikayu_provinsi, aes(x = Provinsi, y = Total_Produktivitas, fill = Provinsi)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Perbandingan Produktivitas Ubi Kayu antar Provinsi", x = "Provinsi", y = "Produktivitas (Kuintal/Hektar)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "none")  # hilangkan legend
+
+# Rotasi sumbu x agar mudah dibaca
+plot_ubikayu_4 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+```
+
+
+
+## h. Korelasi Luas Panen dan Produksi Palawija
+### - Korelasi Luas Panen dan Produksi Jagung
+```{r}
+# Visualisasi korelasi luas panen dan produksi Jagung
+plot_jagung_5 <- ggplot(Jagung, aes(x = Luas_Panen, y = Produksi, color = Provinsi)) +
+  geom_point() +
+  labs(title = "Korelasi Produksi dan Luas Panen", x = "Luas Panen (Ha)", y = "Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "right")
+plot_jagung_5
+```
+
+```{r}
+# Hitung Pearson correlation coefficient
+correlation_jagung <- cor(Jagung$Luas_Panen, Jagung$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson Luas Panen dan Produksi:", correlation_jagung)
+```
+
+Berdasarkan grafik diatas bisa lihat bahwa ada korelasi antara luas panen dan produksi. Hubungan korelasi adalah positif dengan nilai korelasi sebesar 0,95; sehingga bisa disimpulkan bahwa jika semakin banyak luas panen maka akan meningkat jumlah produksi jagung.
+
+### - Korelasi Luas Panen dan Produksi Kacang Hijau
+```{r}
+# Visualisasi korelasi luas panen dan produksi Kacang Hijau
+plot_kacanghijau_5 <- ggplot(KacangHijau, aes(x = Luas_Panen, y = Produksi, color = Provinsi)) +
+  geom_point() +
+  labs(title = "Korelasi Produksi dan Luas Panen", x = "Luas Panen (Ha)", y = "Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "right")
+plot_kacanghijau_5
+```
+
+```{r}
+# Hitung Pearson correlation coefficient
+correlation_kacanghijau <- cor(KacangHijau$Luas_Panen, KacangHijau$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson Luas Panen dan Produksi:", correlation_kacanghijau)
+```
+
+Berdasarkan grafik diatas bisa lihat bahwa ada korelasi antara luas panen dan produksi. Hubungan korelasi adalah positif dengan nilai korelasi sebesar 0,96; sehingga bisa disimpulkan bahwa jika semakin banyak luas panen maka akan meningkat jumlah produksi kacang hijau.
+
+
+### - Korelasi Luas Panen dan Produksi Kacang Kedelai
+```{r}
+# Visualisasi korelasi luas panen dan produksi Kacang Kedelai
+plot_kacangkedelai_5 <- ggplot(KacangKedelai, aes(x = Luas_Panen, y = Produksi, color = Provinsi)) +
+  geom_point() +
+  labs(title = "Korelasi Produksi dan Luas Panen", x = "Luas Panen (Ha)", y = "Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "right")
+plot_kacangkedelai_5
+```
+
+```{r}
+# Hitung Pearson correlation coefficient
+correlation_kacangkedelai <- cor(KacangKedelai$Luas_Panen, KacangKedelai$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson Luas Panen dan Produksi:", correlation_kacangkedelai)
+```
+
+Berdasarkan grafik diatas bisa lihat bahwa ada korelasi antara luas panen dan produksi. Hubungan korelasi adalah positif dengan nilai korelasi sebesar 0,99; sehingga bisa disimpulkan bahwa jika semakin banyak luas panen maka akan meningkat jumlah produksi kacang kedelai.
+
+
+### - Korelasi Luas Panen dan Produksi Kacang Tanah
+```{r}
+# Visualisasi korelasi luas panen dan produksi Kacang Tanah
+plot_kacangtanah_5 <- ggplot(KacangTanah, aes(x = Luas_Panen, y = Produksi, color = Provinsi)) +
+  geom_point() +
+  labs(title = "Korelasi Produksi dan Luas Panen", x = "Luas Panen (Ha)", y = "Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "right")
+plot_kacangtanah_5
+```
+
+```{r}
+# Hitung Pearson correlation coefficient
+correlation_kacangtanah <- cor(KacangTanah$Luas_Panen, KacangTanah$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson Luas Panen dan Produksi:", correlation_kacangtanah)
+```
+
+Berdasarkan grafik diatas bisa lihat bahwa ada korelasi antara luas panen dan produksi. Hubungan korelasi adalah positif dengan nilai korelasi sebesar 0,99; sehingga bisa disimpulkan bahwa jika semakin banyak luas panen maka akan meningkat jumlah produksi kacang tanah.
+
+
+### - Korelasi Luas Panen dan Produksi Ubi Jalar
+```{r}
+# Visualisasi korelasi luas panen dan produksi Ubi Jalar
+plot_ubijalar_5 <- ggplot(UbiJalar, aes(x = Luas_Panen, y = Produksi, color = Provinsi)) +
+  geom_point() +
+  labs(title = "Korelasi Produksi dan Luas Panen", x = "Luas Panen (Ha)", y = "Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "right")
+plot_ubijalar_5
+```
+
+```{r}
+# Hitung Pearson correlation coefficient
+correlation_ubijalar <- cor(UbiJalar$Luas_Panen, UbiJalar$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson Luas Panen dan Produksi:", correlation_ubijalar)
+```
+Berdasarkan grafik diatas bisa lihat bahwa ada korelasi antara luas panen dan produksi. Hubungan korelasi adalah positif dengan nilai korelasi sebesar 0,89; sehingga bisa disimpulkan bahwa jika semakin banyak luas panen maka akan meningkat jumlah produksi ubi jalar.
+
+
+### - Korelasi Luas Panen dan Produksi Ubi Kayu
+```{r}
+# Visualisasi korelasi luas panen dan produksi Ubi Kayu
+plot_ubikayu_5 <- ggplot(UbiKayu, aes(x = Luas_Panen, y = Produksi, color = Provinsi)) +
+  geom_point() +
+  labs(title = "Korelasi Produksi dan Luas Panen", x = "Luas Panen (Ha)", y = "Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "right")
+plot_ubikayu_5
+```
+
+```{r}
+# Hitung Pearson correlation coefficient
+correlation_kacangubikayu <- cor(UbiKayu$Luas_Panen, UbiKayu$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson Luas Panen dan Produksi:", correlation_kacangubikayu)
+```
+Berdasarkan grafik diatas bisa lihat bahwa ada korelasi antara luas panen dan produksi. Hubungan korelasi adalah positif dengan nilai korelasi sebesar 0,94; sehingga bisa disimpulkan bahwa jika semakin banyak luas panen maka akan meningkat jumlah produksi ubi kayu.
+
+
+
+## i. Perbandingan Produktivitas dengan Produksi Palawija 
+### - Perbandingan Produktivitas dengan Produksi Jagung 
+```{r}
+# Create a boxplot using ggplot2
+plot_jagung_6 <- ggplot(Jagung, aes(x = Provinsi, y = Produksi - Produktivitas, fill = Provinsi)) +
+  geom_boxplot() +
+  labs(title = "Perbandingan Produksi dan Produktivitas Jagung per Provinsi", x = "Provinsi", y = "Selisih Produksi") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+# Rotasi sumbu x agar mudah dibaca
+plot_jagung_6 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+### - Perbandingan Produktivitas dengan Produksi Kacang Hijau
+```{r}
+# Create a boxplot using ggplot2
+plot_kacanghijau_6 <- ggplot(KacangHijau, aes(x = Provinsi, y = Produksi - Produktivitas, fill = Provinsi)) +
+  geom_boxplot() +
+  labs(title = "Perbandingan Produksi dan Produktivitas Kacang Hijau per Provinsi", x = "Provinsi", y = "Selisih Produksi") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+# Rotasi sumbu x agar mudah dibaca
+plot_kacanghijau_6 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+### - Perbandingan Produktivitas dengan Produksi Kacang Kedelai 
+```{r}
+# Create a boxplot using ggplot2
+plot_kacangkedelai_6 <- ggplot(KacangKedelai, aes(x = Provinsi, y = Produksi - Produktivitas, fill = Provinsi)) +
+  geom_boxplot() +
+  labs(title = "Perbandingan Produksi dan Produktivitas Kacang Kedelai per Provinsi", x = "Provinsi", y = "Selisih Produksi") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+# Rotasi sumbu x agar mudah dibaca
+plot_kacangkedelai_6 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+### - Perbandingan Produktivitas dengan Produksi Kacang Tanah 
+```{r}
+# Create a boxplot using ggplot2
+plot_kacangtanah_6 <- ggplot(KacangTanah, aes(x = Provinsi, y = Produksi - Produktivitas, fill = Provinsi)) +
+  geom_boxplot() +
+  labs(title = "Perbandingan Produksi dan Produktivitas Kacang Tanah per Provinsi", x = "Provinsi", y = "Selisih Produksi") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+# Rotasi sumbu x agar mudah dibaca
+plot_kacangtanah_6 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+### - Perbandingan Produktivitas dengan Produksi Ubi Jalar 
+```{r}
+# Create a boxplot using ggplot2
+plot_ubijalar_6 <- ggplot(UbiJalar, aes(x = Provinsi, y = Produksi - Produktivitas, fill = Provinsi)) +
+  geom_boxplot() +
+  labs(title = "Perbandingan Produksi dan Produktivitas Ubi Jalar per Provinsi", x = "Provinsi", y = "Selisih Produksi") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+# Rotasi sumbu x agar mudah dibaca
+plot_ubijalar_6 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+### - Perbandingan Produktivitas dengan Produksi Ubi Kayu
+```{r}
+# Create a boxplot using ggplot2
+plot_ubikayu_6 <- ggplot(UbiKayu, aes(x = Provinsi, y = Produksi - Produktivitas, fill = Provinsi)) +
+  geom_boxplot() +
+  labs(title = "Perbandingan Produksi dan Produktivitas Ubi Kayu per Provinsi", x = "Provinsi", y = "Selisih Produksi") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+# Rotasi sumbu x agar mudah dibaca
+plot_ubikayu_6 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
