@@ -24,7 +24,7 @@ library(readxl)
 
 ## a.Import Data
 ```{r}
-palawija <- read_excel("dataset/pangan_Indoensia.xlsx")
+palawija <- read_excel("dataset/pangan_Indonesia.xlsx")
 ```
 
 ## b.Menampilkan Contoh Data
@@ -32,10 +32,12 @@ palawija <- read_excel("dataset/pangan_Indoensia.xlsx")
 # Menampilkan 6 data teratas
 head(palawija)
 ```
+
 ```{r}
 # Menampilkan 6 data terbawah
 tail(palawija)
 ```
+
 ```{r}
 glimpse(palawija)
 ```
@@ -50,6 +52,7 @@ palawija$Produktivitas <- as.numeric(palawija$Produktivitas)
 palawija$Luas_Panen <- as.numeric(palawija$Luas_Panen)
 glimpse(palawija)
 ```
+
 ```{r}
 # Merubah type Tahun menjadi Date
 palawija$Tahun <- make_date(palawija$Tahun)

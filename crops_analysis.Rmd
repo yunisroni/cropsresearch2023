@@ -1059,7 +1059,7 @@ d) Melihat hasil dari tiga model prediksi memiliki nilai prediksi yang berbeda, 
 ## Obstain - Load Dataset Palawija
 
 ```{r}
-palawija_sumut <- read_excel("dataset/dataset_palawija_Sumut.xlsx")
+palawija_sumut <- read_excel("dataset/dataset_palawija_Sumut_update.xlsx")
 palawija_sumut
 ```
 
@@ -1118,13 +1118,22 @@ palawijasumutfilter <- palawijasumut_clean[palawijasumut_clean$Kabupaten_Kota !=
 palawijasumutfilter
 ```
 
+```{r}
+head(palawijasumutfilter)
+```
+```{r}
+tail(palawijasumutfilter)
+```
+
+
+
 ## Eksplorasi Data Analisis (EDA)
 
 ### Jumlah Produksi Jagung per Kabupaten/Kota
 
 ```{r}
 plot_jagung_1 <- ggplot(palawijasumutfilter, aes(x = Tahun, y = Produksi, group = Kabupaten_Kota, color = Kabupaten_Kota)) +
-  geom_line() +
+  geom_point() +
   labs(title = "Jumlah Produksi Jagung", x = "Tahun", y = "Produksi Jagung (Ha)") +
   scale_y_continuous(labels = scales::comma) +
   theme_minimal() +
@@ -1260,9 +1269,9 @@ correlation_jagung <- cor(palawijasumut_jagung$Luas_Panen, palawijasumut_jagung$
 cat("Koefisien Korelasi Pearson Luas Panen dan Produksi:", correlation_jagung)
 ```
 
-Berdasarkan grafik diatas bisa lihat bahwa ada korelasi antara luas panen dan produksi. Hubungan korelasi adalah positif dengan nilai korelasi sebesar 0,62, sehingga bisa disimpulkan bahwa jika semakin banyak luas panen maka akan meningkat jumlah produksi padi.
+Berdasarkan grafik diatas bisa lihat bahwa ada korelasi antara luas panen dan produksi. Hubungan korelasi adalah positif dengan nilai korelasi sebesar 0,62, sehingga bisa disimpulkan bahwa jika semakin banyak luas panen maka akan meningkat jumlah produksi jagung.
 
-### Perbandingan Rata-rata produksi dengan Produksi Padi
+### Perbandingan Rata-rata produksi dengan Produksi Jagung
 
 ```{r}
 # Create a boxplot using ggplot2
@@ -1298,7 +1307,7 @@ periodogram_plot_jagung
 
 ## Model
 
-### a. Clustering Produksi Padi
+### a. Clustering Produksi Jagung
 
 ```{r}
 # Filter data produksi terbanyak berdasarkan tahun
@@ -1511,7 +1520,7 @@ ggplot(datajagungsumut, aes(x = Rata_rata_produksi, y = Produksi)) +
   theme_minimal()
 ```
 
-Berdasarkan hasil di atas, kita dapat menyimpulkan bahwa rata-rata produksi padi memiliki pengaruh yang signifikan terhadap jumlah produksi. Nilai R-squared yang relatif rendah menunjukkan bahwa masih ada variabilitas dalam jumlah produksi yang tidak dijelaskan oleh rata-rata produksi, dan mungkin ada faktor lain yang juga mempengaruhi hasil produksi padi.
+Berdasarkan hasil di atas, kita dapat menyimpulkan bahwa rata-rata produksi jagung memiliki pengaruh yang signifikan terhadap jumlah produksi. Nilai R-squared yang relatif rendah menunjukkan bahwa masih ada variabilitas dalam jumlah produksi yang tidak dijelaskan oleh rata-rata produksi, dan mungkin ada faktor lain yang juga mempengaruhi hasil produksi padi.
 
 Model 2: Pengaruh luas panen terhadap jumlah produksi
 
@@ -1530,7 +1539,7 @@ ggplot(datajagungsumut, aes(x = Luas_Panen, y = Produksi)) +
   theme_minimal()
 ```
 
-Berdasarkan hasil diatas, dapat disimpulkan bahwa luas panen memiliki pengaruh yang signifikan terhadap produksi padi. Nilai R-squared 0.3784 menunjukkan bahwa model regresi ini mampu menjelaskan sekitar 37.84% variasi dalam "Produksi" berdasarkan variabel independen "Luas_panen".
+Berdasarkan hasil diatas, dapat disimpulkan bahwa luas panen memiliki pengaruh yang signifikan terhadap produksi jagung. Nilai R-squared 0.3784 menunjukkan bahwa model regresi ini mampu menjelaskan sekitar 37.84% variasi dalam "Produksi" berdasarkan variabel independen "Luas_panen".
 
 Model 3: Pengaruh luas panen dan rata-rata produksi terhadap jumlah produksi
 
@@ -1645,7 +1654,7 @@ adf_test
 ```
 
 ```{r}
-#library(modeltime.resample)
+library(modeltime.resample)
 resamples_tscv_jagung <- time_series_cv(
     data        = summary_data_jagung,
     assess      = "2 year",
@@ -1666,7 +1675,7 @@ resamples_tscv_jagung %>%
 1.  Model ARIMA
 
 ```{r}
-#library(parsnip)
+library(parsnip)
 model_fit_arima_jagung <- arima_reg() %>%
     set_engine(engine = "auto_arima") %>% 
     fit(formula = total_produksi ~ Tahun, 
@@ -1809,6 +1818,7 @@ hasil_validasi_jagung
 ```
 
 # 5. Data Kacang Hijau
+
 
 # 6. Data Kacang Kedelai
 
