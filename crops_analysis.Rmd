@@ -51,13 +51,7 @@ padi_sumut
 
 ## Scrub Data
 
-Proses Scrub yang akan dilakukan adalah merubah type data dan menghapus
-data yang tidak penting atau data yang kosng (not available).
-Berdasarkan data_sumut dapat dilihat bahwa type data dari kolom Tahun
-adalah double, rata-rata produksi, produksi dan luas panen bertype
-karakter. Maka untuk mendukung proses analisis maka type data Tahun
-harus dirubah ke type Date, dan data yg bertype karakter dirubah kedalam
-type numeric
+Proses Scrub yang akan dilakukan adalah merubah type data dan menghapus data yang tidak penting atau data yang kosng (not available). Berdasarkan data_sumut dapat dilihat bahwa type data dari kolom Tahun adalah double, rata-rata produksi, produksi dan luas panen bertype karakter. Maka untuk mendukung proses analisis maka type data Tahun harus dirubah ke type Date, dan data yg bertype karakter dirubah kedalam type numeric
 
 ### a. Merubah type data
 
