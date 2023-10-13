@@ -23,7 +23,7 @@ library(readxl)
 
 ## a.Import Data
 ```{r}
-palawija <- read_excel("Dataset Palawija_Wilayah Sumut.xlsx")
+palawija <- read_excel("dataset/dataset_palawija_Sumut.xlsx")
 ```
 
 ## b.Menampilkan Contoh Data
@@ -31,10 +31,12 @@ palawija <- read_excel("Dataset Palawija_Wilayah Sumut.xlsx")
 # Menampilkan 6 data teratas
 head(palawija)
 ```
+
 ```{r}
 # Menampilkan 6 data terbawah
 tail(palawija)
 ```
+
 ```{r}
 glimpse(palawija)
 ```
@@ -170,7 +172,8 @@ options(dplyr.summarise.inform = FALSE)
 # Hitung total produksi jagung per kabupaten/tahun
 totproduksijagung <- JagungFilter %>% 
   group_by(Tahun, Kabupaten_Kota, .drop = FALSE) %>%  # Add .drop argument
-  summarise(Total_Produksi = sum(Produksi))
+  summarise(Total_Produksi = sum(Produksi)) %>% 
+  mutate(Jenis_Palawija = "Jagung")
 
 totproduksijagung
 ```
@@ -198,7 +201,8 @@ options(dplyr.summarise.inform = FALSE)
 # Hitung total produksi kacang hijau per kabupaten/tahun
 totproduksikacanghijau <- KacangHijauFilter %>% 
   group_by(Tahun, Kabupaten_Kota, .drop = FALSE) %>%  # Add .drop argument
-  summarise(Total_Produksi = sum(Produksi))
+  summarise(Total_Produksi = sum(Produksi)) %>% 
+  mutate(Jenis_Palawija = "Kacang Hijau")
 
 totproduksikacanghijau
 ```
@@ -225,7 +229,8 @@ options(dplyr.summarise.inform = FALSE)
 # Hitung total produksi kacang kedelai per kabupaten/tahun
 totproduksikacangkedelai <- KacangKedelaiFilter %>% 
   group_by(Tahun, Kabupaten_Kota, .drop = FALSE) %>%  # Add .drop argument
-  summarise(Total_Produksi = sum(Produksi))
+  summarise(Total_Produksi = sum(Produksi)) %>% 
+  mutate(Jenis_Palawija = "Kacang Kedelai")
 
 totproduksikacangkedelai
 ```
@@ -253,7 +258,8 @@ options(dplyr.summarise.inform = FALSE)
 # Hitung total produksi kacang tanah per kabupaten/tahun
 totproduksikacangtanah <- KacangTanahFilter %>% 
   group_by(Tahun, Kabupaten_Kota, .drop = FALSE) %>%  # Add .drop argument
-  summarise(Total_Produksi = sum(Produksi))
+  summarise(Total_Produksi = sum(Produksi)) %>% 
+  mutate(Jenis_Palawija = "Kacang Tanah")
 
 totproduksikacangtanah
 ```
@@ -281,7 +287,8 @@ options(dplyr.summarise.inform = FALSE)
 # Hitung total produksi ubi jalar per kabupaten/tahun
 totproduksiubijalar <- UbiJalarFilter %>% 
   group_by(Tahun, Kabupaten_Kota, .drop = FALSE) %>%  # Add .drop argument
-  summarise(Total_Produksi = sum(Produksi))
+  summarise(Total_Produksi = sum(Produksi)) %>% 
+  mutate(Jenis_Palawija = "Ubi Jalar")
 
 totproduksiubijalar
 ```
@@ -307,7 +314,8 @@ options(dplyr.summarise.inform = FALSE)
 # Hitung total produksi per kabupaten/tahun
 totproduksiubikayu <- UbiKayuFilter %>% 
   group_by(Tahun, Kabupaten_Kota, .drop = FALSE) %>%  # Add .drop argument
-  summarise(Total_Produksi = sum(Produksi))
+  summarise(Total_Produksi = sum(Produksi)) %>% 
+  mutate(Jenis_Palawija = "Ubi Kayu")
 
 totproduksiubikayu
 ```
@@ -969,5 +977,30 @@ plot_per_ratadgnproduksi_ubikayu <- ggplot(UbiKayuFilter, aes(x = Kabupaten_Kota
 # Rotasi sumbu x agar mudah dibaca
 plot_per_ratadgnproduksi_ubikayu + theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
+
+### Nelihat total produksi palawija terbanyak
+```{r}
+# Menggabungkan data total produksi palawija
+combined_data <- rbind(
+  totproduksijagung,
+  totproduksikacanghijau,
+  totproduksikacangkedelai,
+  totproduksikacangtanah,
+  totproduksiubijalar,
+  totproduksiubikayu
+)
+combined_data
+```
+
+```{r}
+# Hitung total produksi palawija berdasarkan jenis palawija
+totproduksipalawija <- combined_data %>% 
+  mutate(first_date_month = floor_date(Tahun, unit = "year")) %>% 
+  group_by(Jenis_Palawija) %>% 
+  summarise(Total_Produksi = sum(Total_Produksi)) %>% 
+  arrange(Total_Produksi)
+totproduksipalawija
+```
+Total produksi palawija terbanyak dari tahun 2010 - 2022, adalah Jagung dengan total produksi sebesar 24165833.65 Ton. dan palawija dengan total produksi terkecil adalah Kacang Hijau dengan total produksi 30067.59 Ton
 
 
