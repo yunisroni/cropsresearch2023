@@ -26,7 +26,7 @@ library(readxl)
 
 ## a.Import Data
 ```{r}
-palawija <- read_excel("Dataset Tanaman Pangan di Indonesia.xlsx")
+palawija <- read_excel("dataset/pangan_Indonesia.xlsx")
 ```
 
 ## b.Menampilkan Contoh Data
