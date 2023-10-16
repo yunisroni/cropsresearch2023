@@ -19,6 +19,12 @@ library(summarytools)
 library (ggplot2)
 # library untuk membaca data dari file Excel (.xlsx)
 library(readxl)
+# library untuk mengakses fungsi dari model Random Forest
+library(randomForest)
+# library untuk mengaktifkan paket e1071, khususnya model SVR
+library(e1071)
+# library Untuk metrik evaluasi
+library(caret) 
 ```
 
 
@@ -1012,7 +1018,176 @@ plot_ubikayu_6 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 
 
+# 5. Prediksi Produksi Palawija dengan ML
+```{r}
+# Membagi data menjadi data pelatihan dan pengujian - Jagung
+set.seed(123) #menentukan nilai acak dari data
+jagung_sample_indices <- sample(nrow(Jagung), nrow(Jagung) * 0.7)
+jagung_training_data <- Jagung[jagung_sample_indices, ]
+jagung_testing_data <- Jagung[-jagung_sample_indices, ]
+jagung_training_data
+jagung_testing_data
+```
+```{r}
+# Membagi data menjadi data pelatihan dan pengujian - Kacang Hijau
+set.seed(123) #menentukan nilai acak dari data
+kacanghijau_sample_indices <- sample(nrow(KacangHijau), nrow(KacangHijau) * 0.7)
+kacanghijau_training_data <- KacangHijau[kacanghijau_sample_indices, ]
+kacanghijau_testing_data <- KacangHijau[-kacanghijau_sample_indices, ]
+kacanghijau_training_data
+kacanghijau_testing_data
+```
+```{r}
+# Membagi data menjadi data pelatihan dan pengujian - Kacang Kedelai
+set.seed(123) #menentukan nilai acak dari data
+kacangkedelai_sample_indices <- sample(nrow(KacangKedelai), nrow(KacangKedelai) * 0.7)
+kacangkedelai_training_data <- KacangKedelai[kacangkedelai_sample_indices, ]
+kacangkedelai_testing_data <- KacangKedelai[-kacangkedelai_sample_indices, ]
+kacangkedelai_training_data
+kacangkedelai_testing_data
+```
+```{r}
+# Membagi data menjadi data pelatihan dan pengujian - Kacang Tanah
+set.seed(123) #menentukan nilai acak dari data
+kacangtanah_sample_indices <- sample(nrow(KacangTanah), nrow(KacangTanah) * 0.7)
+kacangtanah_training_data <- KacangTanah[kacangtanah_sample_indices, ]
+kacangtanah_testing_data <- KacangTanah[-kacangtanah_sample_indices, ]
+kacangtanah_training_data
+kacangtanah_testing_data
+```
+```{r}
+# Membagi data menjadi data pelatihan dan pengujian - Ubi Jalar
+set.seed(123) #menentukan nilai acak dari data
+ubijalar_sample_indices <- sample(nrow(UbiJalar), nrow(UbiJalar) * 0.7)
+ubijalar_training_data <- UbiJalar[ubijalar_sample_indices, ]
+ubijalar_testing_data <- UbiJalar[-ubijalar_sample_indices, ]
+ubijalar_training_data
+ubijalar_testing_data
+```
+```{r}
+# Membagi data menjadi data pelatihan dan pengujian - Ubi Kayu
+set.seed(123) #menentukan nilai acak dari data
+ubikayu_sample_indices <- sample(nrow(UbiKayu), nrow(UbiKayu) * 0.7)
+ubikayu_training_data <- UbiKayu[ubikayu_sample_indices, ]
+ubikayu_testing_data <- UbiKayu[-ubikayu_sample_indices, ]
+ubikayu_training_data
+ubikayu_testing_data
+```
 
+
+## a. Model Random Forest
+### - Model Random Forest(Jagung)
+```{r}
+# Membangun model Random Forest
+rf_model_jagung <- randomForest(Produksi ~ ., data = jagung_training_data, ntree = 500)
+rf_model_jagung
+```
+```{r}
+# Melakukan prediksi menggunakan model Random Forest
+jagung_predictions <- predict(rf_model_jagung, newdata = jagung_testing_data)
+head(jagung_predictions, n=10)
+```
+```{r}
+#Menampilkan plot hasil prediksi
+plot(jagung_predictions)
+
+```
+
+### - Model Random Forest(Kacang Hijau)
+```{r}
+# Membangun model Random Forest
+rf_model_kacanghijau <- randomForest(Produksi ~ ., data = kacanghijau_training_data, ntree = 500)
+rf_model_kacanghijau
+```
+```{r}
+# Melakukan prediksi menggunakan model Random Forest
+kacanghijau_predictions <- predict(rf_model_kacanghijau, newdata = kacanghijau_testing_data)
+head(kacanghijau_predictions, n=10)
+```
+```{r}
+#Menampilkan plot hasil prediksi
+plot(kacanghijau_predictions)
+```
+
+### - Model Random Forest(Kacang Kedelai)
+```{r}
+# Membangun model Random Forest
+rf_model_kacangkedelai <- randomForest(Produksi ~ ., data = kacangkedelai_training_data, ntree = 500)
+rf_model_kacangkedelai
+```
+```{r}
+# Melakukan prediksi menggunakan model Random Forest
+kacangkedelai_predictions <- predict(rf_model_kacangkedelai, newdata = kacangkedelai_testing_data)
+head(kacangkedelai_predictions, n=10)
+```
+```{r}
+#Menampilkan plot hasil prediksi
+plot(kacangkedelai_predictions)
+```
+
+### - Model Random Forest(Kacang Tanah)
+```{r}
+# Membangun model Random Forest
+rf_model_kacangtanah <- randomForest(Produksi ~ ., data = kacangtanah_training_data, ntree = 500)
+rf_model_kacangtanah
+```
+```{r}
+# Melakukan prediksi menggunakan model Random Forest
+kacangtanah_predictions <- predict(rf_model_kacangtanah, newdata = kacangtanah_testing_data)
+head(kacangtanah_predictions, n=10)
+```
+```{r}
+#Menampilkan plot hasil prediksi
+plot(kacangtanah_predictions)
+```
+
+### - Model Random Forest(Ubi Jalar)
+```{r}
+# Membangun model Random Forest
+rf_model_ubijalar <- randomForest(Produksi ~ ., data = ubijalar_training_data, ntree = 500)
+rf_model_ubijalar
+```
+```{r}
+# Melakukan prediksi menggunakan model Random Forest
+ubijalar_predictions <- predict(rf_model_ubijalar, newdata = ubijalar_testing_data)
+head(ubijalar_predictions, n=10)
+```
+```{r}
+#Menampilkan plot hasil prediksi
+plot(ubijalar_predictions)
+```
+
+### - Model Random Forest(Ubi Kayu)
+```{r}
+# Membangun model Random Forest
+rf_model_ubikayu <- randomForest(Produksi ~ ., data = ubikayu_training_data, ntree = 500)
+rf_model_ubikayu
+```
+```{r}
+# Melakukan prediksi menggunakan model Random Forest
+ubikayu_predictions <- predict(rf_model_ubikayu, newdata = ubikayu_testing_data)
+head(ubikayu_predictions, n=10)
+```
+```{r}
+#Menampilkan plot hasil prediksi
+plot(ubikayu_predictions)
+```
+
+
+
+
+
+
+
+
+
+## b. Model SVR
+### - Model SVR (Jagung)
+### - Model SVR (Kacang Hijau)
+### - Model SVR (Kacang Kedelai)
+### - Model SVR (Kacang Tanah)
+### - Model SVR (Ubi Jalar)
+### - Model SVR (Ubi Kayu)
 
 
 
