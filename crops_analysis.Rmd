@@ -186,8 +186,8 @@ plot_3 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 ```
 
-Perbandingan produksi padi dalam kurun waktu 2010 - 2020 adalah dari
-Kabupaten Simalungun yang terbanyak dengan Jumlah Produksi Padi sebesar
+Perbandingan produksi padi dalam kurun waktu 2010 - 2022 adalah dari
+Simalungun Serdang yang terbanyak dengan Jumlah Produksi Padi sebesar
 4814941.97 Ton
 
 ### Perbandingan Rata-rata produksi Padi per Kabupaten/Kota
@@ -315,7 +315,7 @@ datapadi2017 <- padisumutfilter %>%
 ```{r}
 # Memilih variabel klastering
 clustering_data <- datapadi2017 %>% 
- select(Produksi, Rata_rata_produksi, Luas_panen)
+ dplyr::select(Produksi, Rata_rata_produksi, Luas_panen)
 ```
 
 ```{r}
@@ -426,10 +426,12 @@ cluster_avg_kriteria
 ```
 
 Berdasarkan hasil perhitungan nilai centroid dari klaster, maka bisa
-disimpulkan bahwa: 1. Klaster 4 dan 8: adalah klaster yang termasuk
-kategori rendah 2. Klaster 1,2,5 dan 6: adalah klaster yang termasuk
-kategori sedang 3. Klaster 3 dan 7: adalah klaster yang termasuk
-kategori tinggi
+disimpulkan bahwa: 
+1. Klaster 4 dan 8: adalah klaster yang termasuk kategori rendah 
+
+2. Klaster 1, 2, 5 dan 6: adalah klaster yang termasuk kategori sedang 
+
+3. Klaster 3 dan 7: adalah klaster yang termasuk kategori tinggi
 
 ```{r}
 # Menghitung jumlah klaster per kelompok kabupaten/kota
@@ -477,7 +479,7 @@ validitas dari model klastering adalah 93,85
 data <- datapadi2017[, 3:5]
 
 # Menentukan jumlah cluster yang diinginkan
-num_clusters <- 10
+num_clusters <- 8
 
 # Membuat model GMM
 gmm_model <- Mclust(data, G = num_clusters)
