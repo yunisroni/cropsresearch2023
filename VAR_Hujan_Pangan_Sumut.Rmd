@@ -1,0 +1,1600 @@
+---
+title: "EDA_Hujan_Pangan_Sumut"
+author: "Fitria"
+date: "2023-10-12"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+"vars" %in% installed.packages()[,"Package"]
+```
+```{r}
+library(lubridate)
+lubridate::date()
+```
+
+# 1. Panggil Library
+```{r}
+library(dplyr)
+library(ggplot2)
+library(lubridate)
+library(summarytools)
+library(readxl)
+library(cluster)
+library(scales)
+library(vars)
+```
+
+#2. Tanaman Pangan Sumut 2010-2022
+## Obstain - Load Dataset
+
+```{r}
+tanaman_pangan <- read_excel("C:/Users/Lenovo/Documents/File R skripsi/Dataset Tanaman Pangan Sumut/Tanaman Pangan_Sumut_2010-2022.xlsx")
+tanaman_pangan
+```
+
+```{r}
+#Merubah type data dari cdouble menjadi numeric agar mudah di operasikan
+tanaman_pangan$Ratarata_produksi<-as.numeric(tanaman_pangan$Ratarata_produksi)
+tanaman_pangan$Produksi<-as.numeric(tanaman_pangan$Produksi)
+tanaman_pangan$Luas_Panen<-as.numeric(tanaman_pangan$Luas_Panen)
+tanaman_pangan
+```
+
+```{r}
+#merubah type data tahun dari double menjadi date
+tanaman_pangan$Tahun<-make_date(tanaman_pangan$Tahun)
+tanaman_pangan
+```
+
+
+```{r}
+#Merubah variabel nama
+names(tanaman_pangan) [names(tanaman_pangan) == "Ratarata_produksi"] <- "Rata_rata_produksi"
+glimpse(tanaman_pangan)
+```
+
+```{r}
+tail(tanaman_pangan)
+```
+```{r}
+head(tanaman_pangan)
+```
+```{r}
+# Menampikan variabel dengan baris kosong
+colSums(is.na(tanaman_pangan))
+```
+### b. Menghapus Data Kosong
+
+```{r}
+# Menampikan variabel dengan baris kosong
+colSums(is.na(tanaman_pangan))
+```
+
+```{r}
+# Menghapus data NA's
+tanaman_pangan_clean <- na.omit(tanaman_pangan)
+summary(tanaman_pangan_clean)
+```
+
+```{r}
+colSums(is.na(tanaman_pangan_clean))
+```
+
+Semua data NA's sudah dihapus. Data tanaman pangan di wilayah sumut mulai dari
+Tahun 2010 - 2020 dengan frekuensi data per Tahun. Dalam dataset
+tanaman_pangan_clean masih terdapat data dari provinsi Sumatera Utara
+keseluruhan. Agar memudahkan dalam tahap analisis selanjutnya maka data
+tanaman_pangan_clean yang diambil hanya berdasarkan kabupaten/kota saja.
+Sekarang data final yang siap dianalisis adalah sebanyak 359 baris #revisi nanti
+observasi dengan 6 kolom variabel
+
+
+```{r}
+#menfilter data kabupaten/kota saja tanpa data sumatera utara
+tanaman_pangan_filter <- tanaman_pangan_clean[tanaman_pangan_clean$Kabupaten_Kota != "Sumatera Utara",]
+tanaman_pangan_filter
+```
+```{r}
+options(dplyr.summarise.inform = FALSE) # untuk menonaktifkan pesan peringatan yang biasanya muncul ketika Anda menggunakan summarise() untuk menghitung statistik tertentu
+```
+
+## Eksplorasi Data Analisis (EDA)
+
+### Jumlah Produksi Tanaman Pangan per Kabupaten/Kota
+```{r}
+# Hitung total produksi semua tanaman pangan per kabupaten di setiap tahun
+totproduksi_pangan <- tanaman_pangan_filter %>% 
+  group_by(Tahun, Kabupaten_Kota, .drop = FALSE) %>%  # Add .drop argument
+  summarise(total_produksi = sum(Produksi))
+
+totproduksi_pangan
+```
+
+```{r}
+# Hitung total produksi semua tanaman pangan per setiap Kabupaten/Kota
+totproduksi_kabkota <- tanaman_pangan_filter %>% 
+  group_by(Kabupaten_Kota) %>% 
+  summarise(total_produksi = sum(Produksi))%>%
+  arrange(desc(total_produksi))
+  
+totproduksi_kabkota
+```
+
+### Tren Produksi Tanaman Pangan per Kabupaten/Kota
+
+
+```{r}
+# Visualisasi Tren Produksi tanaman pangan per kabupaten/kota di setiap tahun
+plot_1 <- ggplot(totproduksi_pangan, aes(x = Tahun, y = total_produksi, color = Kabupaten_Kota)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Tren Produksi Tanaman Pangan", x = "Tahun", y = "Total Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "right")
+plot_1
+```
+
+```{r}
+
+# Visualisasi dengan barplot
+plot_2 <- ggplot(totproduksi_kabkota, aes(x = Kabupaten_Kota, y = total_produksi, fill = Kabupaten_Kota)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Perbandingan Produksi Tanaman pangan antara Kabupaten/Kota", x = "Kabupaten/Kota", y = "Total Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "none")  # hilangkan legend
+
+# Rotasi sumbu x agar mudah dibaca
+plot_2 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+Perbandingan produksi tanaman pangan dalam kurun waktu 2010 - 2022 adalah dari Kabupaten Simalungun yang terbanyak dengan Jumlah Produksi 13.271.196.14 Ton
+
+
+# 3. Curah hujan
+
+```{r}
+rainfall <-read_excel("C:/Users/Lenovo/Documents/File R skripsi/Rainfall Sumut_2010-2022.xlsx")
+rainfall
+```
+
+
+```{r}
+# Merubah type variabel DateTime menjadi Date
+rainfall$DateTime <- as.Date(rainfall$DateTime)
+glimpse(rainfall)
+```
+
+```{r}
+# Merubah nama variabel
+names(rainfall)[names(rainfall) == "UCSB CHIRPS Rainfall: avg"] <- "rainfall_avg"
+names(rainfall)[names(rainfall) == "DateTime"] <- "date"
+glimpse(rainfall)
+```
+
+```{r}
+#Merubah type data rainfallavg menjadi numeric dan
+rainfall$rainfall_avg <-as.numeric(rainfall$rainfall_avg)
+rainfall
+```
+```{r}
+head(rainfall)
+```
+```{r}
+tail(rainfall)
+```
+
+```{r}
+# Mengambil rata-rata curah hujan per tahun
+rainfall_yearly <- rainfall %>%
+  mutate(year = lubridate::year(date)) %>%
+  group_by(year) %>%
+  summarise(avg_rainfall = mean(rainfall_avg))
+rainfall_yearly  
+```
+
+```{r}
+# Merubah type tahun menjadi date
+rainfall_yearly$year <- make_date(rainfall_yearly$year)
+rainfall_yearly
+```
+
+
+# 4. Padi
+
+```{r}
+# Ambil data padi di dataset tanaman pangan 
+Padi <- tanaman_pangan_filter[tanaman_pangan_filter$Nama_Tanaman_Pangan == "Padi",]
+```
+
+```{r}
+glimpse(Padi)
+```
+
+
+## EDA Padi
+
+### Jumlah Produksi Padi per Kabupaten/Kota
+```{r}
+# Hitung total produksi padi per kabupaten/kota di setiap tahun
+totproduksi_padi <- Padi %>% 
+  group_by(Tahun, Kabupaten_Kota, .drop = FALSE) %>%  # Add .drop argument
+  summarise(total_produksi = sum(Produksi))
+
+totproduksi_padi
+```
+
+
+```{r}
+# Hitung total produksi padi per setiap Kabupaten/Kota
+totproduksi_kabkota_padi <- Padi %>% 
+  group_by(Kabupaten_Kota) %>% 
+  summarise(total_produksi = sum(Produksi))%>%
+  arrange(desc(total_produksi))
+  
+totproduksi_kabkota_padi
+```
+
+### Tren Produksi Tanaman Pangan per Kabupaten/Kota
+
+```{r}
+# Visualisasi Tren Produksi tanaman pangan per kabupaten/kota di setiap tahun
+plot_padi_1 <- ggplot(totproduksi_padi, aes(x = Tahun, y = total_produksi, color = Kabupaten_Kota)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Tren Produksi Padi", x = "Tahun", y = "Total Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "right")
+plot_padi_1
+```
+
+```{r}
+
+# Visualisasi dengan barplot total produksi padi di setiap kabupaten/kota
+plot_padi_2<- ggplot(totproduksi_kabkota_padi, aes(x = Kabupaten_Kota, y = total_produksi, fill = Kabupaten_Kota)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Perbandingan Produksi Tanaman pangan antara Kabupaten/Kota", x = "Kabupaten/Kota", y = "Total Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "none")  # hilangkan legend
+
+# Rotasi sumbu x agar mudah dibaca
+plot_padi_2 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+Perbandingan produksi padi dalam kurun waktu 2010 - 2022 adalah dari Deli serdang yang terbanyak dengan Jumlah Produksi 5213178.41 ton
+
+### Perbandingan Rata-rata produksi Padi per Kabupaten/Kota
+
+```{r}
+# Turn off dplyr summarise() warning
+options(dplyr.summarise.inform = FALSE)
+
+# Melihat tren rata-rata produksi padi
+rataproduksi_padi <- Padi %>% 
+  group_by(Tahun, Kabupaten_Kota, .drop = FALSE) %>%  # Add .drop argument
+  summarise(Rata_rata_produksi = sum(Rata_rata_produksi))
+rataproduksi_padi
+```
+
+```{r}
+# Hitung total rata-rata produksi padi per Kabupaten/Kota
+totrataproduksi_kabkota_padi <- Padi %>% 
+  group_by(Kabupaten_Kota) %>% 
+  summarise(total_rataproduksi = sum(Rata_rata_produksi)) %>%
+  arrange(desc(total_rataproduksi))
+totrataproduksi_kabkota_padi
+```
+
+```{r}
+
+# Visualisasi dengan barplot
+plot_padi_3 <- ggplot(totrataproduksi_kabkota_padi, aes(x = Kabupaten_Kota, y = total_rataproduksi, fill = Kabupaten_Kota)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Perbandingan Rata_rata Produksi Padi antara Kabupaten/Kota", x = "Kabupaten/Kota", y = "Rata_rata Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "none")  # hilangkan legend
+
+# Rotasi sumbu x agar mudah dibaca
+plot_padi_3 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+### Perbandingan Rata-rata produksi dengan Produksi Padi
+
+```{r}
+# Create a boxplot using ggplot2
+plot_padi_4 <- ggplot(Padi, aes(x = Kabupaten_Kota, y = Produksi - Rata_rata_produksi, fill = Kabupaten_Kota)) +
+  geom_boxplot() +
+  labs(title = "Perbandingan Produksi dan Rata-rata Produksi per Kabupaten/Kota", x = "Kabupaten/Kota", y = "Selisih Produksi") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+# Rotasi sumbu x agar mudah dibaca
+plot_padi_4 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+## Curah hujan terhadap Padi
+
+```{r}
+# Ambil data padi di dataset tanaman pangan yang belum di filter sumatera utara 
+Padi_Sumut <- tanaman_pangan_clean[tanaman_pangan_clean$Nama_Tanaman_Pangan == "Padi",]
+Padi_Sumut
+```
+
+```{r}
+# Filter data for "Sumatera Utara" kabupaten
+sumut_dataPadi<- Padi_Sumut %>%
+  filter(Kabupaten_Kota == "Sumatera Utara")
+sumut_dataPadi
+```
+
+```{r}
+# Mengabungkan kedua dataset
+merged_data_padi <- merge(sumut_dataPadi, rainfall_yearly, by.x = "Tahun", by.y = "year")
+merged_data_padi
+```
+
+```{r}
+# Pilih variabel yang akan diprediksi
+# dalam pengujian ini akan dilihat apakah ada pengaruh curah hujan terhadap peningkatan produksi
+data_for_var_padi <- merged_data_padi[, c("Rata_rata_produksi", "avg_rainfall")]
+data_for_var_padi
+```
+
+Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam
+format time series (ts)
+
+```{r}
+ts_data_padi <- ts(data_for_var_padi, start = c(2010,1), frequency = 1)
+ts_data_padi
+```
+
+```{r}
+best_lag_padi <- VARselect(ts_data_padi, lag.max = 5, type = "both")
+best_lag_padi
+```
+
+```{r}
+# VAR Model
+var_model_Padi <- VAR(ts_data_padi, p = best_lag_padi$selection[1], type = "both") # jumlah order dari model VAR
+summary(var_model_Padi)
+```
+
+
+Dalam model VAR ini, "avg_rainfall.l1" memiliki koefisien -0.69380 pada "Rata_rata_produksi.l1" (lag 1). Ini berarti bahwa dalam periode yang sama, jika ada peningkatan satu unit dalam curah hujan rata-rata, maka rata-rata produksi padi cenderung menurun sebesar -0.69380 unit. 
+
+p-value dari F-statistic lebih besar dari 0.05 (0.7351 dan 0.614), yang menunjukkan bahwa Anda tidak dapat menolak hipotesis nol bahwa keseluruhan model tersebut tidak signifikan secara statistik.
+
+```{r}
+# Melakukan uji Granger Causality
+granger_test_padi <- causality(var_model_Padi, cause = "avg_rainfall")
+granger_test_padi
+```
+
+*Granger* tidak memiliki bukti statistik yang cukup untuk menyatakan bahwa "avg_rainfall" Granger-cause "Rata_rata_produksi." Dengan kata lain, uji Granger Causality tidak menemukan hubungan sebab-akibat yang signifikan antara curah hujan rata-rata ("avg_rainfall") dan produksi padi rata-rata ("Rata_rata_produksi").
+
+*Instant*memiliki bukti statistik yang cukup untuk menyatakan bahwa terdapat hubungan causality instan antara "avg_rainfall" dan "Rata_rata_produksi." 
+
+*Kesimpulan*
+hasil ini menunjukkan bahwa sementara tidak ada bukti hubungan sebab-akibat jangka panjang, terdapat hubungan instan antara curah hujan rata-rata dan produksi padi rata-rata.
+
+
+```{r}
+# Membuat model regresi linier
+regression_model_padi <- lm(Rata_rata_produksi ~ avg_rainfall, data = data_for_var_padi)
+
+# Ringkasan hasil model
+summary(regression_model_padi)
+```
+
+hasil regresi linier ini menunjukkan bahwa curah hujan rata-rata ("avg_rainfall") memiliki pengaruh negatif yang tidak signifikan terhadap produksi padi rata-rata. Meskipun koefisien negatif menunjukkan bahwa ada hubungan negatif antara kedua variabel tersebut, P-value yang tinggi (0.059) mengindikasikan bahwa pengaruh ini tidak signifikan secara statistik. Dengan kata lain, Anda *tidak* dapat dengan yakin menyatakan bahwa curah hujan rata-rata secara signifikan memengaruhi produksi padi rata-rata berdasarkan hasil regresi ini.
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+correlation_Padi <- cor(data_for_var_padi$Rata_rata_produksi, data_for_var_padi$avg_rainfall)
+correlation_Padi
+```
+ koefisien korelasi Pearson adalah -0.5359986, yang mendekati -1. Ini menunjukkan bahwa ada hubungan negatif antara curah hujan rata-rata ("avg_rainfall") dan produksi padi rata-rata ("Rata_rata_produksi"). Artinya, ketika curah hujan rata-rata meningkat, produksi padi rata-rata cenderung menurun, dan sebaliknya.
+
+
+##Curah Hujan Kab Deli serdang
+
+```{r}
+rainfall_kabsumut <-read_excel("D:/OneDrive - mikroskil.ac.id/Skripsi/Curah Hujan di Kab.Sumut.xlsx")
+rainfall_kabsumut
+```
+
+
+#3. Ubi Jalar
+
+```{r}
+# Ambil data Ubi Jalar dari dataset tanaman pangan 
+Ubi_Jalar <- tanaman_pangan_filter[tanaman_pangan_filter$Nama_Tanaman_Pangan == "Ubi Jalar",]
+Ubi_Jalar
+```
+
+## EDA Ubi Jalar
+
+### Jumlah Produksi Ubi Jalar per Kabupaten/Kota
+```{r}
+# Hitung total produksi Ubi Jalar per kabupaten/kota di setiap tahun
+totproduksi_UbiJalar <- Ubi_Jalar %>% 
+  group_by(Tahun, Kabupaten_Kota, .drop = FALSE) %>%  # Add .drop argument
+  summarise(total_produksi = sum(Produksi))
+
+totproduksi_UbiJalar
+```
+
+
+```{r}
+# Hitung total produksi padi per setiap Kabupaten/Kota
+totproduksi_kabkota_UbiJalar <- Ubi_Jalar %>% 
+  group_by(Kabupaten_Kota) %>% 
+  summarise(total_produksi = sum(Produksi))%>%
+  arrange(desc(total_produksi))
+  
+totproduksi_kabkota_UbiJalar
+```
+
+
+### Tren Produksi Ubi Jalar per Kabupaten/Kota
+
+
+```{r}
+# Visualisasi Tren Produksi   Ubi Jalar per kabupaten/kota di setiap tahun
+plot_UbiJalar_1 <- ggplot(totproduksi_UbiJalar, aes(x = Tahun, y = total_produksi, color = Kabupaten_Kota)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Tren Produksi Ubi Jalar", x = "Tahun", y = "Total Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "right")
+plot_UbiJalar_1
+```
+
+
+```{r}
+
+# Visualisasi dengan barplot total produksi Ubi Jalar di setiap kabupaten/kota
+plot_UbiJalar_2<- ggplot(totproduksi_kabkota_UbiJalar, aes(x = Kabupaten_Kota, y = total_produksi, fill = Kabupaten_Kota)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Perbandingan Produksi Ubi Jalar antara Kabupaten/Kota", x = "Kabupaten/Kota", y = "Total Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "none")  # hilangkan legend
+
+# Rotasi sumbu x agar mudah dibaca
+plot_UbiJalar_2 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+Perbandingan produksi Ubi Jalar dalam kurun waktu 2010 - 2022 adalah dari Dairi yang terbanyak dengan Jumlah Produksi	328992.82 Ton
+
+### Perbandingan Rata-rata produksi Ubi Jalar per Kabupaten/Kota
+
+```{r}
+# Turn off dplyr summarise() warning
+options(dplyr.summarise.inform = FALSE)
+
+# Melihat tren rata-rata produksi Ubi Jalar
+rataproduksi_UbiJalar <- Ubi_Jalar %>% 
+  group_by(Tahun, Kabupaten_Kota, .drop = FALSE) %>%  # Add .drop argument
+  summarise(Rata_rata_produksi = sum(Rata_rata_produksi))
+rataproduksi_UbiJalar
+```
+
+```{r}
+# Hitung total rata-rata produksiUbi Jalar per Kabupaten/Kota
+totrataproduksi_kabkota_UbiJalar <- Ubi_Jalar %>% 
+  group_by(Kabupaten_Kota) %>% 
+  summarise(total_rataproduksi = sum(Rata_rata_produksi)) %>%
+  arrange(desc(total_rataproduksi))
+totrataproduksi_kabkota_UbiJalar
+```
+
+```{r}
+
+# Visualisasi dengan barplot
+plot_UbiJalar_3 <- ggplot(totrataproduksi_kabkota_UbiJalar, aes(x = Kabupaten_Kota, y = total_rataproduksi, fill = Kabupaten_Kota)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Perbandingan Rata_rata Produksi Ubi Jalar antara Kabupaten/Kota", x = "Kabupaten/Kota", y = "Rata_rata Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "none")  # hilangkan legend
+
+# Rotasi sumbu x agar mudah dibaca
+plot_UbiJalar_3 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+### Perbandingan Rata-rata produksi dengan Produksi Ubi Jalar
+
+```{r}
+# Create a boxplot using ggplot2
+plot_UbiJalar_4 <- ggplot(Ubi_Jalar, aes(x = Kabupaten_Kota, y = Produksi - Rata_rata_produksi, fill = Kabupaten_Kota)) +
+  geom_boxplot() +
+  labs(title = "Perbandingan Produksi dan Rata-rata Produksi per Kabupaten/Kota", x = "Kabupaten/Kota", y = "Selisih Produksi") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+# Rotasi sumbu x agar mudah dibaca
+plot_UbiJalar_4 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+## Curah hujan terhadap Ubi Jalar
+
+```{r}
+# Ambil data Ubi Jalar di dataset tanaman pangan yang belum di filter sumatera utara 
+UbiJalar_Sumut <- tanaman_pangan_clean[tanaman_pangan_clean$Nama_Tanaman_Pangan == "Ubi Jalar",]
+UbiJalar_Sumut
+```
+
+```{r}
+# Filter data for "Sumatera Utara" kabupaten
+sumut_data_UbiJalar<- UbiJalar_Sumut %>%
+  filter(Kabupaten_Kota == "Sumatera Utara")
+sumut_data_UbiJalar
+```
+
+```{r}
+# Mengabungkan kedua dataset
+merged_data_UbiJalar <- merge(sumut_data_UbiJalar, rainfall_yearly, by.x = "Tahun", by.y = "year")
+merged_data_UbiJalar
+```
+
+```{r}
+# Pilih variabel yang akan diprediksi
+# dalam pengujian ini akan dilihat apakah ada pengaruh curah hujan terhadap peningkatan produksi
+data_for_var_UbiJalar <- merged_data_UbiJalar[, c("Rata_rata_produksi", "avg_rainfall")]
+data_for_var_UbiJalar
+```
+
+Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam
+format time series (ts)
+
+```{r}
+ts_data_UbiJalar <- ts(data_for_var_UbiJalar, start = c(2010,1), frequency = 1)
+ts_data_UbiJalar
+```
+
+```{r}
+best_lag_UbiJalar <- VARselect(ts_data_UbiJalar, lag.max = 5, type = "both")
+best_lag_UbiJalar
+```
+
+```{r}
+# VAR Model
+var_model_UbiJalar <- VAR(ts_data_UbiJalar, p = best_lag_UbiJalar$selection[1], type = "both") # jumlah order dari model VAR
+summary(var_model_UbiJalar)
+```
+
+Dalam kesimpulan, berdasarkan hasil analisis VAR dan p-value yang tinggi, tidak ada bukti statistik yang kuat untuk mendukung bahwa peningkatan curah hujan rata-rata menyebabkan penurunan produksi ubi jalar. Hasil ini menunjukkan bahwa dalam kerangka model ini, hubungan antara curah hujan rata-rata dan produksi ubi jalar mungkin tidak signifikan secara statistik.
+
+```{r}
+# Melakukan uji Granger Causality
+granger_test_UbiJalar <- causality(var_model_UbiJalar, cause = "avg_rainfall")
+granger_test_UbiJalar
+```
+berdasarkan uji *Granger Causality* dengan F-Test, tidak ada bukti statistik yang cukup kuat untuk menyatakan bahwa curah hujan rata-rata "Granger-cause" (menyebabkan) perubahan dalam produksi ubi jalar.
+
+Pada uji *Instantaneous Causality*, p-value adalah 0.05322. ada sedikit bukti statistik untuk mendukung adanya hubungan sebab-akibat instan antara curah hujan rata-rata dan produksi ubi jalar, tetapi hasil ini mungkin belum cukup kuat untuk dianggap signifikan.
+
+
+```{r}
+# Membuat model regresi linier
+regression_model_UbiJalar <- lm(Rata_rata_produksi ~ avg_rainfall, data = data_for_var_UbiJalar)
+
+# Ringkasan hasil model
+summary(regression_model_UbiJalar)
+```
+
+enyimpulkan bahwa tidak ada bukti statistik yang kuat untuk mendukung adanya pengaruh curah hujan rata-rata terhadap produksi ubi jalar. Koefisien untuk curah hujan rata-rata tidak signifikan secara statistik, dan model regresi ini tidak sesuai dengan data dengan baik (R-squared yang rendah). Sehingga, dalam konteks model ini, curah hujan rata-rata tidak memiliki pengaruh yang signifikan terhadap produksi ubi jalar.
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+correlation_UbiJalar <- cor(data_for_var_UbiJalar$Rata_rata_produksi, data_for_var_UbiJalar$avg_rainfall)
+correlation_UbiJalar
+```
+
+Nilai -0.2818502 menunjukkan adanya hubungan korelasi negatif yang lemah antara curah hujan rata-rata dan produksi ubi jalar. Namun, nilai ini dekat dengan nol, dan tidak cukup kuat untuk mengindikasikan hubungan korelasi yang signifikan.
+
+Dengan kata lain, hasil ini menunjukkan bahwa ada sedikit korelasi negatif antara curah hujan rata-rata dan produksi ubi jalar, tetapi hubungannya sangat lemah dan tidak signifikan secara statistik.
+
+#4. Ubi Kayu
+
+```{r}
+# Ambil data Ubi Jalar dari dataset tanaman pangan 
+Ubi_Kayu <- tanaman_pangan_filter[tanaman_pangan_filter$Nama_Tanaman_Pangan == "Ubi Kayu",]
+Ubi_Kayu
+```
+
+## EDA Ubi Kayu
+
+```{r}
+# Turn off dplyr summarise() warning
+options(dplyr.summarise.inform = FALSE)
+```
+
+### Jumlah Produksi Ubi Kayu per Kabupaten/Kota
+```{r}
+# Hitung total produksi Ubi Kayu per kabupaten/kota di setiap tahun
+totproduksi_UbiKayu <- Ubi_Kayu %>% 
+  group_by(Tahun, Kabupaten_Kota, .drop = FALSE) %>%  # Add .drop argument
+  summarise(total_produksi = sum(Produksi))
+
+totproduksi_UbiKayu
+```
+
+
+```{r}
+# Hitung total produksi Ubi Kayu per setiap Kabupaten/Kota
+totproduksi_kabkota_UbiKayu <- Ubi_Kayu %>% 
+  group_by(Kabupaten_Kota) %>% 
+  summarise(total_produksi = sum(Produksi))%>%
+  arrange(desc(total_produksi))
+  
+totproduksi_kabkota_UbiKayu
+```
+
+
+### Tren Produksi Ubi Kayu per Kabupaten/Kota
+
+
+```{r}
+# Visualisasi Tren Ubi Kayu per kabupaten/kota di setiap tahun
+plot_UbiKayu_1 <- ggplot(totproduksi_UbiKayu, aes(x = Tahun, y = total_produksi, color = Kabupaten_Kota)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Tren Produksi Ubi Kayu ", x = "Tahun", y = "Total Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "right")
+plot_UbiKayu_1
+```
+
+
+```{r}
+
+# Visualisasi dengan barplot total produksi Ubi Kayu di setiap kabupaten/kota
+plot_UbiKayu_2<- ggplot(totproduksi_kabkota_UbiKayu, aes(x = Kabupaten_Kota, y = total_produksi, fill = Kabupaten_Kota)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Perbandingan Produksi Ubi Kayu antara Kabupaten/Kota", x = "Kabupaten/Kota", y = "Total Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "none")  # hilangkan legend
+
+# Rotasi sumbu x agar mudah dibaca
+plot_UbiKayu_2 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+Perbandingan produksi Ubi kayu dalam kurun waktu 2010 - 2022 adalah dari Serdang Begadai yang terbanyak dengan Jumlah Produksi 6187194.15	Ton
+
+### Perbandingan Rata-rata produksi Padi per Kabupaten/Kota
+
+```{r}
+# Turn off dplyr summarise() warning
+options(dplyr.summarise.inform = FALSE)
+
+# Melihat tren rata-rata produksi Ubi Kayu
+rataproduksi_UbiKayu <- Ubi_Kayu %>% 
+  group_by(Tahun, Kabupaten_Kota, .drop = FALSE) %>%  # Add .drop argument
+  summarise(Rata_rata_produksi = sum(Rata_rata_produksi))
+rataproduksi_UbiKayu
+```
+
+```{r}
+# Hitung total rata-rata produksi Ubi Kayu per Kabupaten/Kota
+totrataproduksi_kabkota_UbiKayu <- Ubi_Kayu %>% 
+  group_by(Kabupaten_Kota) %>% 
+  summarise(total_rataproduksi = sum(Rata_rata_produksi)) %>%
+  arrange(desc(total_rataproduksi))
+totrataproduksi_kabkota_UbiKayu
+```
+
+```{r}
+
+# Visualisasi dengan barplot
+plot_UbiKayu_3 <- ggplot(totrataproduksi_kabkota_UbiKayu, aes(x = Kabupaten_Kota, y = total_rataproduksi, fill = Kabupaten_Kota)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Perbandingan Rata_rata Produksi Ubi kayu antara Kabupaten/Kota", x = "Kabupaten/Kota", y = "Rata_rata Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "none")  # hilangkan legend
+
+# Rotasi sumbu x agar mudah dibaca
+plot_UbiKayu_3 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+### Perbandingan Rata-rata produksi dengan Produksi Ubi Kayu
+
+```{r}
+# Create a boxplot using ggplot2
+plot_UbiKayu_4 <- ggplot(Ubi_Kayu, aes(x = Kabupaten_Kota, y = Produksi - Rata_rata_produksi, fill = Kabupaten_Kota)) +
+  geom_boxplot() +
+  labs(title = "Perbandingan Produksi dan Rata-rata Produksi per Kabupaten/Kota", x = "Kabupaten/Kota", y = "Selisih Produksi") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+# Rotasi sumbu x agar mudah dibaca
+plot_UbiKayu_4 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+## Curah hujan terhadap Ubi Kayu
+
+```{r}
+# Ambil data Ubi Kayu di dataset tanaman pangan yang belum di filter sumatera utara 
+UbiKayu_Sumut <- tanaman_pangan_clean[tanaman_pangan_clean$Nama_Tanaman_Pangan == "Ubi Kayu",]
+UbiKayu_Sumut
+```
+
+```{r}
+# Filter data for "Sumatera Utara" kabupaten
+sumut_data_UbiKayu<- UbiKayu_Sumut %>%
+  filter(Kabupaten_Kota == "Sumatera Utara")
+sumut_data_UbiKayu
+```
+
+```{r}
+# Mengabungkan kedua dataset
+merged_data_UbiKayu <- merge(sumut_data_UbiKayu, rainfall_yearly, by.x = "Tahun", by.y = "year")
+merged_data_UbiKayu
+```
+
+```{r}
+# Pilih variabel yang akan diprediksi
+# dalam pengujian ini akan dilihat apakah ada pengaruh curah hujan terhadap peningkatan produksi
+data_for_var_UbiKayu <- merged_data_UbiKayu[, c("Rata_rata_produksi", "avg_rainfall")]
+data_for_var_UbiKayu
+```
+
+Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam
+format time series (ts)
+
+```{r}
+ts_data_UbiKayu <- ts(data_for_var_UbiKayu, start = c(2010,1), frequency = 1)
+ts_data_UbiKayu
+```
+
+```{r}
+best_lag_UbiKayu <- VARselect(ts_data_UbiKayu, lag.max = 5, type = "both")
+best_lag_UbiKayu
+```
+
+```{r}
+# VAR Model
+var_model_UbiKayu <- VAR(ts_data_UbiKayu, p = best_lag_UbiKayu$selection[1], type = "both") # jumlah order dari model VAR
+summary(var_model_UbiKayu)
+```
+Kesimpulan:
+
+Coefficients (Estimasi Koefisien):Untuk persamaan Rata_rata_produksi, tidak ada koefisien yang signifikan secara statistik (semua p-value lebih besar dari 0.05), termasuk koefisien avg_rainfall.l1, avg_rainfall.l2, dan avg_rainfall.l3. Hal ini menunjukkan bahwa curah hujan rata-rata tidak memiliki dampak signifikan pada produksi ubi kayu dalam model VAR ini.
+Untuk persamaan avg_rainfall, juga tidak ada koefisien yang signifikan secara statistik.
+Residual standard error: Residual standard error adalah ukuran seberapa baik model VAR ini cocok dengan data. Semakin rendah nilainya, semakin baik modelnya. Dalam kasus ini, residual standard error cukup tinggi, yang menunjukkan bahwa model ini mungkin tidak cukup baik dalam menjelaskan hubungan antara kedua variabel.
+
+Multiple R-Squared: Multiple R-Squared mengukur seberapa baik model dapat menjelaskan variasi dalam data. Nilai yang mendekati 1 menunjukkan bahwa model tersebut sangat baik dalam menjelaskan data. Namun, dalam hal ini, nilai Multiple R-Squared sangat rendah, menunjukkan bahwa model ini tidak menjelaskan variasi dalam data dengan baik.
+
+F-statistic: F-statistic digunakan untuk menguji signifikansi keseluruhan model. Nilai F-statistic yang tinggi menunjukkan bahwa model secara keseluruhan signifikan. Namun, dalam hal ini, nilai F-statistic rendah, yang menunjukkan bahwa model VAR ini mungkin tidak signifikan secara keseluruhan.
+
+```{r}
+# Melakukan uji Granger Causality
+granger_test_UbiKayu <- causality(var_model_UbiKayu, cause = "avg_rainfall")
+granger_test_UbiKayu
+```
+
+Berdasarkan hasil kedua uji ini, tidak ada bukti statistik yang kuat untuk mendukung adanya hubungan sebab-akibat antara curah hujan rata-rata dan produksi ubi kayu dalam model VAR ini.
+
+
+```{r}
+# Membuat model regresi linier
+regression_model_UbiKayu <- lm(Rata_rata_produksi ~ avg_rainfall, data = data_for_var_UbiKayu)
+
+# Ringkasan hasil model
+summary(regression_model_UbiKayu)
+```
+Berdasarkan hasil ini, kita tidak memiliki bukti statistik yang kuat untuk menyatakan bahwa curah hujan rata-rata memiliki pengaruh signifikan pada produksi ubi kayu. Nilai p-value yang tinggi (lebih besar dari tingkat signifikansi umum) menunjukkan bahwa tidak ada hubungan linier yang signifikan antara kedua variabel ini dalam model regresi ini.
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+correlation_UbiKayu <- cor(data_for_var_UbiKayu$Rata_rata_produksi, data_for_var_UbiKayu$avg_rainfall)
+correlation_UbiKayu
+```
+Meskipun terdapat hubungan negatif antara curah hujan rata-rata dan produksi ubi kayu, hubungan ini lemah, dan tidak dapat dianggap sebagai hubungan yang signifikan secara statistik.
+
+
+
+#5. Kacang Hijau
+
+```{r}
+# Ambil data Kacang Hijau dari dataset tanaman pangan 
+Kacang_Hijau <- tanaman_pangan_filter[tanaman_pangan_filter$Nama_Tanaman_Pangan == "Kacang Hijau",]
+Kacang_Hijau
+```
+
+## EDA Kacang Hijau
+
+### Jumlah Produksi Kacang Hijau per Kabupaten/Kota
+```{r}
+# Hitung total produksi Kacang Hijau per kabupaten/kota di setiap tahun
+totproduksi_KacangHijau <- Kacang_Hijau %>% 
+  group_by(Tahun, Kabupaten_Kota, .drop = FALSE) %>%  # Add .drop argument
+  summarise(total_produksi = sum(Produksi))
+
+totproduksi_KacangHijau
+```
+
+
+```{r}
+# Hitung total produksi Kacang Hijau per setiap Kabupaten/Kota
+totproduksi_kabkota_KacangHijau <- Kacang_Hijau %>% 
+  group_by(Kabupaten_Kota) %>% 
+  summarise(total_produksi = sum(Produksi))%>%
+  arrange(desc(total_produksi))
+  
+totproduksi_kabkota_KacangHijau
+```
+
+
+### Tren Produksi Kacang Hijau per Kabupaten/Kota
+
+
+```{r}
+# Visualisasi Tren Produksi Kacang Hijau per kabupaten/kota di setiap tahun
+plot_KacangHijau_1 <- ggplot(totproduksi_KacangHijau, aes(x = Tahun, y = total_produksi, color = Kabupaten_Kota)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Tren Produksi Kacang Hijau", x = "Tahun", y = "Total Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "right")
+plot_KacangHijau_1
+```
+
+
+```{r}
+
+# Visualisasi dengan barplot total produksi Kacang Hijau di setiap kabupaten/kota
+plot_KacangHijau_2<- ggplot(totproduksi_kabkota_KacangHijau, aes(x = Kabupaten_Kota, y = total_produksi, fill = Kabupaten_Kota)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Perbandingan Produksi Kacang Hijau antara Kabupaten/Kota", x = "Kabupaten/Kota", y = "Total Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "none")  # hilangkan legend
+
+# Rotasi sumbu x agar mudah dibaca
+plot_KacangHijau_2 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+Perbandingan produksi Kacang Hijau dalam kurun waktu 2010 - 2022 adalah dari Langkat yang terbanyak dengan Jumlah Produksi 8670.18	 Ton
+
+### Perbandingan Rata-rata produksi Kacang Hijau per Kabupaten/Kota
+
+```{r}
+# Turn off dplyr summarise() warning
+options(dplyr.summarise.inform = FALSE)
+
+# Melihat tren rata-rata produksi Kacang Hijau
+rataproduksi_KacangHijau <- Kacang_Hijau %>% 
+  group_by(Tahun, Kabupaten_Kota, .drop = FALSE) %>%  # Add .drop argument
+  summarise(Rata_rata_produksi = sum(Rata_rata_produksi))
+rataproduksi_KacangHijau
+```
+
+```{r}
+# Hitung total rata-rata produksi Kacang Hijau per Kabupaten/Kota
+totrataproduksi_kabkota_KacangHijau <- Kacang_Hijau %>% 
+  group_by(Kabupaten_Kota) %>% 
+  summarise(total_rataproduksi = sum(Rata_rata_produksi)) %>%
+  arrange(desc(total_rataproduksi))
+totrataproduksi_kabkota_KacangHijau
+```
+
+```{r}
+
+# Visualisasi dengan barplot
+plot_KacangHijau_3 <- ggplot(totrataproduksi_kabkota_KacangHijau, aes(x = Kabupaten_Kota, y = total_rataproduksi, fill = Kabupaten_Kota)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Perbandingan Rata_rata Produksi Kacang Hijau antara Kabupaten/Kota", x = "Kabupaten/Kota", y = "Rata_rata Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "none")  # hilangkan legend
+
+# Rotasi sumbu x agar mudah dibaca
+plot_KacangHijau_3 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+### Perbandingan Rata-rata produksi dengan Produksi Kacang Hijau
+
+```{r}
+# Create a boxplot using ggplot2
+plot_KacangHijau_4 <- ggplot(Kacang_Hijau, aes(x = Kabupaten_Kota, y = Produksi - Rata_rata_produksi, fill = Kabupaten_Kota)) +
+  geom_boxplot() +
+  labs(title = "Perbandingan Produksi dan Rata-rata Produksi per Kabupaten/Kota", x = "Kabupaten/Kota", y = "Selisih Produksi") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+# Rotasi sumbu x agar mudah dibaca
+plot_KacangHijau_4 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+## Curah hujan terhadap Kacang Hijau
+
+```{r}
+# Ambil data Kacang Hijau di dataset tanaman pangan yang belum di filter sumatera utara 
+KacangHijau_Sumut <- tanaman_pangan_clean[tanaman_pangan_clean$Nama_Tanaman_Pangan == "Kacang Hijau",]
+KacangHijau_Sumut
+```
+
+```{r}
+# Filter data for "Sumatera Utara" kabupaten
+sumut_data_KacangHijau<- KacangHijau_Sumut %>%
+  filter(Kabupaten_Kota == "Sumatera Utara")
+sumut_data_KacangHijau
+```
+
+```{r}
+# Mengabungkan kedua dataset
+merged_data_KacangHijau <- merge(sumut_data_KacangHijau, rainfall_yearly, by.x = "Tahun", by.y = "year")
+merged_data_KacangHijau
+```
+
+```{r}
+# Pilih variabel yang akan diprediksi
+# dalam pengujian ini akan dilihat apakah ada pengaruh curah hujan terhadap peningkatan produksi
+data_for_var_KacangHijau <- merged_data_KacangHijau[, c("Rata_rata_produksi", "avg_rainfall")]
+data_for_var_KacangHijau
+```
+
+Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam
+format time series (ts)
+
+```{r}
+ts_data_KacangHijau <- ts(data_for_var_KacangHijau, start = c(2010,1), frequency = 1)
+ts_data_KacangHijau
+```
+
+```{r}
+best_lag_KacangHijau <- VARselect(ts_data_KacangHijau, lag.max = 5, type = "both")
+best_lag_KacangHijau
+```
+
+```{r}
+# VAR Model
+var_model_KacangHijau <- VAR(ts_data_KacangHijau, p = best_lag_KacangHijau$selection[1], type = "both") # jumlah order dari model VAR
+summary(var_model_KacangHijau)
+```
+
+berdasarkan analisis ini, tidak ada cukup bukti statistik yang mendukung hubungan sebab-akibat antara curah hujan rata-rata dan produksi kacang hijau.
+
+```{r}
+# Melakukan uji Granger Causality
+granger_test_KacangHijau <- causality(var_model_KacangHijau, cause = "avg_rainfall")
+granger_test_KacangHijau
+```
+Secara keseluruhan, berdasarkan hasil uji Granger Causality dan Instantaneous Causality, tidak ada bukti statistik yang kuat untuk mendukung adanya hubungan sebab-akibat antara "avg_rainfall" dan "Rata_rata_produksi" dalam model VAR, baik dalam jangka waktu lag maupun dalam jangka waktu instan.
+
+
+```{r}
+# Membuat model regresi linier
+regression_model_KacangHijau <- lm(Rata_rata_produksi ~ avg_rainfall, data = data_for_var_KacangHijau)
+
+# Ringkasan hasil model
+summary(regression_model_KacangHijau)
+```
+
+Dilihat dari model regresi juga kelihatan bahwa tidak ada pengaruh curah hujan terhadap produksi padi
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+correlation_KacangHijau <- cor(data_for_var_KacangHijau$Rata_rata_produksi, data_for_var_KacangHijau$avg_rainfall)
+correlation_KacangHijau
+```
+
+Dilihat dari hubungan negatif, artinya tingginya curah hujan biasanya berhubungan dengan rata-rata produksi yang rendah.
+
+
+#6. Kacang Tanah
+
+```{r}
+# Ambil data Kacang Tanah dari dataset tanaman pangan 
+Kacang_Tanah <- tanaman_pangan_filter[tanaman_pangan_filter$Nama_Tanaman_Pangan == "Kacang Tanah",]
+Kacang_Tanah
+```
+
+## EDA Kacang Tanah
+
+### Jumlah Produksi Kacang Tanah per Kabupaten/Kota
+```{r}
+# Hitung total produksi Kacang Tanah per kabupaten/kota di setiap tahun
+totproduksi_KacangTanah <- Kacang_Tanah %>% 
+  group_by(Tahun, Kabupaten_Kota, .drop = FALSE) %>%  # Add .drop argument
+  summarise(total_produksi = sum(Produksi))
+
+totproduksi_KacangTanah
+```
+
+
+```{r}
+# Hitung total produksi Kacang Tanah per setiap Kabupaten/Kota
+totproduksi_kabkota_KacangTanah <- Kacang_Tanah %>% 
+  group_by(Kabupaten_Kota) %>% 
+  summarise(total_produksi = sum(Produksi))%>%
+  arrange(desc(total_produksi))
+  
+totproduksi_kabkota_KacangTanah
+```
+
+
+### Tren Produksi Kacang Tanah per Kabupaten/Kota
+
+
+```{r}
+# Visualisasi Tren Produksi Kacang Tanah per kabupaten/kota di setiap tahun
+plot_KacangTanah_1 <- ggplot(totproduksi_KacangTanah, aes(x = Tahun, y = total_produksi, color = Kabupaten_Kota)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Tren Produksi Kacang Tanah", x = "Tahun", y = "Total Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "right")
+plot_KacangTanah_1
+```
+
+
+```{r}
+
+# Visualisasi dengan barplot total produksi Kacang Tanah di setiap kabupaten/kota
+plot_KacangTanah_2<- ggplot(totproduksi_kabkota_KacangTanah, aes(x = Kabupaten_Kota, y = total_produksi, fill = Kabupaten_Kota)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Perbandingan Produksi Kacang Tanah antara Kabupaten/Kota", x = "Kabupaten/Kota", y = "Total Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "none")  # hilangkan legend
+
+# Rotasi sumbu x agar mudah dibaca
+plot_KacangTanah_2 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+``` 
+Perbandingan produksi Kacang Tanah dalam kurun waktu 2010 - 2022 adalah dari Tapanuli Utara yang terbanyak dengan Jumlah Produksi 26056.17	
+
+### Perbandingan Rata-rata produksi Kacang Tanah per Kabupaten/Kota
+
+```{r}
+# Turn off dplyr summarise() warning
+options(dplyr.summarise.inform = FALSE)
+
+# Melihat tren rata-rata produksi Kacang Tanah
+rataproduksi_KacangTanah <- Kacang_Tanah %>% 
+  group_by(Tahun, Kabupaten_Kota, .drop = FALSE) %>%  # Add .drop argument
+  summarise(Rata_rata_produksi = sum(Rata_rata_produksi))
+rataproduksi_KacangTanah
+```
+
+```{r}
+# Hitung total rata-rata produksi Kacang Tanah per Kabupaten/Kota
+totrataproduksi_kabkota_KacangTanah <- Kacang_Tanah %>% 
+  group_by(Kabupaten_Kota) %>% 
+  summarise(total_rataproduksi = sum(Rata_rata_produksi)) %>%
+  arrange(desc(total_rataproduksi))
+totrataproduksi_kabkota_KacangTanah
+```
+
+```{r}
+
+# Visualisasi dengan barplot
+plot_KacangTanah_3 <- ggplot(totrataproduksi_kabkota_KacangTanah, aes(x = Kabupaten_Kota, y = total_rataproduksi, fill = Kabupaten_Kota)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Perbandingan Rata_rata Produksi Kacang Tanah antara Kabupaten/Kota", x = "Kabupaten/Kota", y = "Rata_rata Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "none")  # hilangkan legend
+
+# Rotasi sumbu x agar mudah dibaca
+plot_KacangTanah_3 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+### Perbandingan Rata-rata produksi dengan Produksi Kacang Tanah
+
+```{r}
+# Create a boxplot using ggplot2
+plot_KacangTanah_4 <- ggplot(Kacang_Tanah, aes(x = Kabupaten_Kota, y = Produksi - Rata_rata_produksi, fill = Kabupaten_Kota)) +
+  geom_boxplot() +
+  labs(title = "Perbandingan Produksi dan Rata-rata Produksi per Kabupaten/Kota", x = "Kabupaten/Kota", y = "Selisih Produksi") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+# Rotasi sumbu x agar mudah dibaca
+plot_KacangTanah_4 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+## Curah hujan terhadap Kacang Tanah
+
+```{r}
+# Ambil data Kacang Tanah di dataset tanaman pangan yang belum di filter sumatera utara 
+KacangTanah_Sumut <- tanaman_pangan_clean[tanaman_pangan_clean$Nama_Tanaman_Pangan == "Kacang Tanah",]
+KacangTanah_Sumut
+```
+
+```{r}
+# Filter data for "Sumatera Utara" kabupaten
+sumut_data_KacangTanah<- KacangTanah_Sumut %>%
+  filter(Kabupaten_Kota == "Sumatera Utara")
+sumut_data_KacangTanah
+```
+
+```{r}
+# Mengabungkan kedua dataset
+merged_data_KacangTanah <- merge(sumut_data_KacangTanah, rainfall_yearly, by.x = "Tahun", by.y = "year")
+merged_data_KacangTanah
+```
+
+```{r}
+# Pilih variabel yang akan diprediksi
+# dalam pengujian ini akan dilihat apakah ada pengaruh curah hujan terhadap peningkatan produksi
+data_for_var_KacangTanah <- merged_data_KacangTanah[, c("Rata_rata_produksi", "avg_rainfall")]
+data_for_var_KacangTanah
+```
+
+Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam
+format time series (ts)
+
+```{r}
+ts_data_KacangTanah <- ts(data_for_var_KacangTanah, start = c(2010,1), frequency = 1)
+ts_data_KacangTanah
+```
+
+```{r}
+best_lag_KacangTanah <- VARselect(ts_data_KacangTanah, lag.max = 5, type = "both")
+best_lag_KacangTanah
+```
+
+```{r}
+# VAR Model
+var_model_KacangTanah <- VAR(ts_data_KacangHijau, p = best_lag_KacangTanah$selection[1], type = "both") # jumlah order dari model VAR
+summary(var_model_KacangTanah)
+```
+
+Model VAR yang digunakan menunjukkan bahwa ada beberapa koefisien regresi yang signifikan secara statistik. Dalam hal ini, koefisien lag pertama Rata_rata_produksi.l1 adalah -3.2634 dan signifikan pada tingkat signifikansi 0.05, yang mengindikasikan adanya dampak yang signifikan dari variabel Rata_rata_produksi pada dirinya sendiri pada periode sebelumnya. Namun, koefisien lag pertama avg_rainfall.l1 adalah -0.5136 dan tidak signifikan pada tingkat signifikansi 0.05.
+
+Multiple R-Squared untuk model ini adalah 0.9624, yang menunjukkan tingkat variasi yang dapat dijelaskan oleh model terhadap variabel respons (Rata_rata_produksi). Namun, untuk variabel curah hujan rata-rata (avg_rainfall), Multiple R-Squared adalah 0.7683.
+
+Hasil uji F-statistic menunjukkan bahwa model secara keseluruhan tidak signifikan (p-value > 0.05), yang berarti bahwa model tidak dapat secara statistik menjelaskan hubungan antara curah hujan rata-rata dan produksi kacang hijau.
+
+Hasil analisis Granger Causality juga tidak memberikan cukup bukti statistik untuk mendukung adanya hubungan sebab-akibat antara curah hujan rata-rata (avg_rainfall) dan produksi kacang hijau (Rata_rata_produksi).
+
+Dengan demikian, berdasarkan analisis ini, tidak ada cukup bukti statistik yang mendukung hubungan sebab-akibat antara curah hujan rata-rata dan produksi kacang hijau.
+
+
+```{r}
+# Melakukan uji Granger Causality
+granger_test_KacangTanah <- causality(var_model_KacangTanah, cause = "avg_rainfall")
+granger_test_KacangTanah
+```
+Secara keseluruhan, berdasarkan hasil uji Granger Causality dan Instantaneous Causality, tidak ada bukti statistik yang kuat untuk mendukung adanya hubungan sebab-akibat antara "avg_rainfall" dan "Rata_rata_produksi" dalam model VAR, baik dalam jangka waktu lag maupun dalam jangka waktu instan.
+
+
+```{r}
+# Membuat model regresi linier
+regression_model_KacangTanah <- lm(Rata_rata_produksi ~ avg_rainfall, data = data_for_var_KacangTanah)
+
+# Ringkasan hasil model
+summary(regression_model_KacangTanah)
+```
+
+Dilihat dari model regresi juga kelihatan bahwa tidak ada pengaruh curah hujan terhadap produksi padi
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+correlation_KacangTanah <- cor(data_for_var_KacangTanah$Rata_rata_produksi, data_for_var_KacangTanah$avg_rainfall)
+correlation_KacangTanah
+```
+
+Dilihat dari hubungan negatif, artinya tingginya curah hujan biasanya berhubungan dengan rata-rata produksi yang rendah.
+
+
+#7. Kacang Kedelai
+
+```{r}
+# Ambil data Kacang Kedelai dari dataset tanaman pangan 
+Kacang_Kedelai <- tanaman_pangan_filter[tanaman_pangan_filter$Nama_Tanaman_Pangan == "Kacang Kedelai",]
+Kacang_Kedelai
+```
+
+## EDA Kacang Kedelai
+
+### Jumlah Produksi Kacang Kedelai per Kabupaten/Kota
+```{r}
+# Hitung total produksi Kacang_Kedelai per kabupaten/kota di setiap tahun
+totproduksi_Kedelai <- Kacang_Kedelai %>% 
+  group_by(Tahun, Kabupaten_Kota, .drop = FALSE) %>%  # Add .drop argument
+  summarise(total_produksi = sum(Produksi))
+
+totproduksi_Kedelai
+```
+
+
+```{r}
+# Hitung total produksi Kacang Kedelai  per setiap Kabupaten/Kota
+totproduksi_kabkota_Kedelai <- Kacang_Kedelai %>% 
+  group_by(Kabupaten_Kota) %>% 
+  summarise(total_produksi = sum(Produksi))%>%
+  arrange(desc(total_produksi))
+  
+totproduksi_kabkota_Kedelai
+```
+
+
+### Tren Produksi Kacang Kedelai  per Kabupaten/Kota
+
+
+```{r}
+# Visualisasi Tren Produksi Kacang Kedelai  per kabupaten/kota di setiap tahun
+plot_Kedelai_1 <- ggplot(totproduksi_Kedelai, aes(x = Tahun, y = total_produksi, color = Kabupaten_Kota)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Tren Produksi Kacang Kedelai ", x = "Tahun", y = "Total Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "right")
+plot_Kedelai_1
+```
+
+
+```{r}
+
+# Visualisasi dengan barplot total produksi Kacang Kedelai  di setiap kabupaten/kota
+plot_Kedelai_2<- ggplot(totproduksi_kabkota_UbiJalar, aes(x = Kabupaten_Kota, y = total_produksi, fill = Kabupaten_Kota)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Perbandingan Produksi Kacang Kedelai  antara Kabupaten/Kota", x = "Kabupaten/Kota", y = "Total Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "none")  # hilangkan legend
+
+# Rotasi sumbu x agar mudah dibaca
+plot_Kedelai_2 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+Perbandingan produksi Kacang Kedelai dalam kurun waktu 2010 - 2022 adalah dari Simalungu yang terbanyak dengan Jumlah Produksi 16699.54	
+
+### Perbandingan Rata-rata produksi Kacang Kedelai  per Kabupaten/Kota
+
+```{r}
+# Turn off dplyr summarise() warning
+options(dplyr.summarise.inform = FALSE)
+
+# Melihat tren rata-rata produksi Kacang Kedelai 
+rataproduksi_Kedelai <- Kacang_Kedelai %>% 
+  group_by(Tahun, Kabupaten_Kota, .drop = FALSE) %>%  # Add .drop argument
+  summarise(Rata_rata_produksi = sum(Rata_rata_produksi))
+rataproduksi_Kedelai
+```
+
+```{r}
+# Hitung total rata-rata produksi Kacang Kedelai per Kabupaten/Kota
+totrataproduksi_kabkota_Kedelai <- Kacang_Kedelai %>% 
+  group_by(Kabupaten_Kota) %>% 
+  summarise(total_rataproduksi = sum(Rata_rata_produksi)) %>%
+  arrange(desc(total_rataproduksi))
+totrataproduksi_kabkota_Kedelai
+```
+
+```{r}
+
+# Visualisasi dengan barplot
+plot_Kedelai_3 <- ggplot(totrataproduksi_kabkota_Kedelai, aes(x = Kabupaten_Kota, y = total_rataproduksi, fill = Kabupaten_Kota)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Perbandingan Rata_rata Produksi Kacang Kedelai antara Kabupaten/Kota", x = "Kabupaten/Kota", y = "Rata_rata Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "none")  # hilangkan legend
+
+# Rotasi sumbu x agar mudah dibaca
+plot_Kedelai_3 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+### Perbandingan Rata-rata produksi dengan Produksi Kacang Kedelai
+
+```{r}
+# Create a boxplot using ggplot2
+plot_Kedelai_4 <- ggplot(Kacang_Kedelai, aes(x = Kabupaten_Kota, y = Produksi - Rata_rata_produksi, fill = Kabupaten_Kota)) +
+  geom_boxplot() +
+  labs(title = "Perbandingan Produksi dan Rata-rata Produksi per Kabupaten/Kota", x = "Kabupaten/Kota", y = "Selisih Produksi") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+# Rotasi sumbu x agar mudah dibaca
+plot_Kedelai_4 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+## Curah hujan terhadap Kacang Kedelai
+
+```{r}
+# Ambil data Kacang Kedelai di dataset tanaman pangan yang belum di filter sumatera utara 
+Kedelai_Sumut <- tanaman_pangan_clean[tanaman_pangan_clean$Nama_Tanaman_Pangan == "Kacang Kedelai",]
+Kedelai_Sumut
+```
+
+```{r}
+# Filter data for "Sumatera Utara" kabupaten
+sumut_data_Kedelai<- Kedelai_Sumut %>%
+  filter(Kabupaten_Kota == "Sumatera Utara")
+sumut_data_Kedelai
+```
+
+```{r}
+# Mengabungkan kedua dataset
+merged_data_Kedelai <- merge(sumut_data_Kedelai, rainfall_yearly, by.x = "Tahun", by.y = "year")
+merged_data_Kedelai
+```
+
+```{r}
+# Pilih variabel yang akan diprediksi
+# dalam pengujian ini akan dilihat apakah ada pengaruh curah hujan terhadap peningkatan produksi
+data_for_var_Kedelai <- merged_data_Kedelai[, c("Rata_rata_produksi", "avg_rainfall")]
+data_for_var_Kedelai
+```
+
+Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam
+format time series (ts)
+
+```{r}
+ts_data_Kedelai <- ts(data_for_var_Kedelai, start = c(2010,1), frequency = 1)
+ts_data_Kedelai
+```
+
+```{r}
+best_lag_Kedelai <- VARselect(ts_data_Kedelai, lag.max = 2, type = "both")
+best_lag_Kedelai
+```
+
+```{r}
+# VAR Model
+var_model_Kedelai <- VAR(ts_data_Kedelai, p = best_lag_Kedelai$selection[1], type = "both") # jumlah order dari model VAR
+summary(var_model_Kedelai)
+```
+
+Kalau dilihat dari hasil model VAR diatas, peningkatan curah hujan pada lag 1 akan cenderung menyebabkan penurunan produksi kacang kedelai saat ini, sementara peningkatan curah hujan pada lag 2 akan cenderung menyebabkan peningkatan produksi kacang kedelai saat ini.
+
+p-value F-statistic adalah 0.06078, dan  0.7444 yang lebih besar dari 0.05. Oleh karena itu, berdasarkan tingkat signifikansi 0.05, kita tidak dapat mengatakan bahwa model secara keseluruhan signifikan. 
+
+```{r}
+# Melakukan uji Granger Causality
+granger_test_Kedelai<- causality(var_model_Kedelai, cause = "avg_rainfall")
+granger_test_Kedelai
+```
+
+*Uji Granger* menyatakan bahwa "avg_rainfall" Granger-cause "Rata_rata_produksi." Dalam konteks ini, terdapat bukti yang mendukung adanya hubungan sebab-akibat antara curah hujan rata-rata ("avg_rainfall") dan produksi kedelai ("Rata_rata_produksi").
+
+*Uji Instant* P-value dari uji chi-squared adalah 0.7063. Dalam uji ini, p-value lebih besar dari 0.05, yang menunjukkan bahwa Anda tidak dapat menolak hipotesis nol. Ini berarti bahwa tidak ada bukti statistik yang cukup untuk menyatakan bahwa terdapat hubungan causality instan antara "avg_rainfall" dan "Rata_rata_produksi."
+
+
+```{r}
+# Membuat model regresi linier
+regression_model_Kedelai<- lm(Rata_rata_produksi ~ avg_rainfall, data = data_for_var_Kedelai)
+
+# Ringkasan hasil model
+summary(regression_model_Kedelai)
+```
+
+Dalam kesimpulan, hasil regresi linier ini menunjukkan bahwa tidak ada bukti statistik yang cukup untuk menyatakan bahwa curah hujan rata-rata ("avg_rainfall") memiliki pengaruh signifikan terhadap produksi kacang kedelai ("Rata_rata_produksi"). Hasil ini mencerminkan kurangnya hubungan linear yang kuat antara kedua variabel tersebut dalam kerangka model ini.
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+correlation_Kedelai <- cor(data_for_var_Kedelai$Rata_rata_produksi, data_for_var_Kedelai$avg_rainfall)
+correlation_Kedelai
+```
+
+koefisien korelasi Pearson adalah -0.2732312, yang mendekati -1. Ini mengindikasikan bahwa terdapat hubungan negatif antara curah hujan rata-rata ("avg_rainfall") dan produksi kacang kedelai ("Rata_rata_produksi"). Artinya, ketika curah hujan rata-rata meningkat, produksi kacang kedelai cenderung menurun, dan sebaliknya.
+
+
+#8. Jagung
+
+```{r}
+# Ambil data Jagung dari dataset tanaman pangan 
+Jagung <- tanaman_pangan_filter[tanaman_pangan_filter$Nama_Tanaman_Pangan == "Jagung",]
+Jagung
+```
+
+## EDA Jagung
+
+### Jumlah Produksi Jagung per Kabupaten/Kota
+```{r}
+# Hitung total produksi Jagung per kabupaten/kota di setiap tahun
+totproduksi_Jagung <-Jagung %>% 
+  group_by(Tahun, Kabupaten_Kota, .drop = FALSE) %>%  # Add .drop argument
+  summarise(total_produksi = sum(Produksi))
+
+totproduksi_Jagung
+```
+
+
+```{r}
+# Hitung total produksi Jagung per setiap Kabupaten/Kota
+totproduksi_kabkota_Jagung <- Jagung %>% 
+  group_by(Kabupaten_Kota) %>% 
+  summarise(total_produksi = sum(Produksi))%>%
+  arrange(desc(total_produksi))
+  
+totproduksi_kabkota_Jagung
+```
+
+
+### Tren Produksi Jagung per Kabupaten/Kota
+
+
+```{r}
+# Visualisasi Tren Produksi tanaman pangan per kabupaten/kota di setiap tahun
+plot_Jagung_1 <- ggplot(totproduksi_Jagung, aes(x = Tahun, y = total_produksi, color = Kabupaten_Kota)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Tren Produksi Jagung", x = "Tahun", y = "Total Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "right")
+plot_Jagung_1
+```
+
+
+```{r}
+
+# Visualisasi dengan barplot total produksi padi di setiap kabupaten/kota
+plot_Jagung_2<- ggplot(totproduksi_kabkota_Jagung, aes(x = Kabupaten_Kota, y = total_produksi, fill = Kabupaten_Kota)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Perbandingan Produksi Jagung antara Kabupaten/Kota", x = "Kabupaten/Kota", y = "Total Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "none")  # hilangkan legend
+
+# Rotasi sumbu x agar mudah dibaca
+plot_Jagung_2 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+Perbandingan produksi Jagung dalam kurun waktu 2011 - 2022 adalah dari Karo yang terbanyak dengan Jumlah Produksi 11164760.42	ton
+
+### Perbandingan Rata-rata produksi Jagung per Kabupaten/Kota
+
+```{r}
+# Turn off dplyr summarise() warning
+options(dplyr.summarise.inform = FALSE)
+
+# Melihat tren rata-rata produksi Jagung
+rataproduksi_Jagung<- Jagung %>% 
+  group_by(Tahun, Kabupaten_Kota, .drop = FALSE) %>%  # Add .drop argument
+  summarise(Rata_rata_produksi = sum(Rata_rata_produksi))
+rataproduksi_Jagung
+```
+
+```{r}
+# Hitung total rata-rata produksi padi per Kabupaten/Kota
+totrataproduksi_kabkota_Jagung<- Jagung %>% 
+  group_by(Kabupaten_Kota) %>% 
+  summarise(total_rataproduksi = sum(Rata_rata_produksi)) %>%
+  arrange(desc(total_rataproduksi))
+totrataproduksi_kabkota_Jagung
+```
+
+```{r}
+
+# Visualisasi dengan barplot
+plot_Jagung_3 <- ggplot(totrataproduksi_kabkota_Jagung, aes(x = Kabupaten_Kota, y = total_rataproduksi, fill = Kabupaten_Kota)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Perbandingan Rata_rata Produksi Jagung antara Kabupaten/Kota", x = "Kabupaten/Kota", y = "Rata_rata Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "none")  # hilangkan legend
+
+# Rotasi sumbu x agar mudah dibaca
+plot_Jagung_3 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+### Perbandingan Rata-rata produksi dengan Produksi Jagung
+
+```{r}
+# Create a boxplot using ggplot2
+plot_Jagung_4 <- ggplot(Jagung, aes(x = Kabupaten_Kota, y = Produksi - Rata_rata_produksi, fill = Kabupaten_Kota)) +
+  geom_boxplot() +
+  labs(title = "Perbandingan Produksi dan Rata-rata Produksi per Kabupaten/Kota", x = "Kabupaten/Kota", y = "Selisih Produksi") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+# Rotasi sumbu x agar mudah dibaca
+plot_Jagung_4 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+## Curah hujan terhadap Jagung
+
+```{r}
+# Ambil data Kacang Kedelai di dataset tanaman pangan yang belum di filter sumatera utara 
+Jagung_Sumut <- tanaman_pangan_clean[tanaman_pangan_clean$Nama_Tanaman_Pangan == "Jagung",]
+Jagung_Sumut
+```
+
+```{r}
+# Filter data for "Sumatera Utara" kabupaten
+sumut_data_Jagung<- Jagung_Sumut %>%
+  filter(Kabupaten_Kota == "Sumatera Utara")
+sumut_data_Jagung
+```
+
+```{r}
+# Mengabungkan kedua dataset
+merged_data_Jagung <- merge(sumut_data_Jagung, rainfall_yearly, by.x = "Tahun", by.y = "year")
+merged_data_Jagung
+```
+
+```{r}
+# Pilih variabel yang akan diprediksi
+# dalam pengujian ini akan dilihat apakah ada pengaruh curah hujan terhadap peningkatan produksi
+data_for_var_Jagung <- merged_data_Jagung[, c("Rata_rata_produksi", "avg_rainfall")]
+data_for_var_Jagung
+```
+
+Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam
+format time series (ts)
+
+```{r}
+ts_data_Jagung <- ts(data_for_var_Jagung, start = c(2010,1), frequency = 1)
+ts_data_Jagung
+```
+
+```{r}
+best_lag_Jagung <- VARselect(ts_data_Jagung, lag.max = 5, type = "both")
+best_lag_Jagung
+```
+
+```{r}
+# VAR Model
+var_model_Jagung <- VAR(ts_data_Jagung, p = best_lag_Jagung$selection[1], type = "both") # jumlah order dari model VAR
+summary(var_model_Jagung)
+```
+
+###Revisi
+
+Untuk persamaan "Rata_rata_produksi":
+Koefisien "avg_rainfall.l1" adalah -3.9523.
+P-value untuk "avg_rainfall.l1" adalah 0.427.
+Koefisien "avg_rainfall.l1" adalah negatif, yang berarti bahwa ada hubungan negatif antara curah hujan rata-rata dan produksi jagung dalam periode lalu (lag 1). Namun, p-value adalah 0.427, yang lebih besar dari 0.05 (tingkat signifikansi yang umumnya digunakan). Ini menunjukkan bahwa dalam periode lalu (lag 1), pengaruh curah hujan rata-rata tidak signifikan secara statistik terhadap produksi jagung.
+
+Untuk persamaan "avg_rainfall":
+Koefisien "Rata_rata_produksi.l1" adalah 0.10642.
+P-value untuk "Rata_rata_produksi.l1" adalah 0.789.
+Koefisien "Rata_rata_produksi.l1" adalah positif, namun p-value adalah 0.789, yang juga lebih besar dari 0.05. Ini menunjukkan bahwa dalam periode lalu (lag 1), pengaruh produksi jagung tidak signifikan secara statistik terhadap curah hujan rata-rata.
+
+Selain itu, nilai-nilai Adjusted R-squared (R-squared yang disesuaikan) untuk kedua persamaan tersebut juga rendah, menunjukkan bahwa model VAR ini mungkin tidak sangat baik dalam menjelaskan hubungan antara kedua variabel.
+
+
+```{r}
+# Melakukan uji Granger Causality
+granger_test_Jagung<- causality(var_model_Jagung, cause = "avg_rainfall")
+granger_test_Jagung
+```
+hasil uji Granger Causality menunjukkan bahwa dalam model VAR yang Anda gunakan, tidak ada bukti statistik yang mendukung hubungan sebab-akibat antara curah hujan rata-rata ("avg_rainfall") dan produksi jagung ("Rata_rata_produksi"). Baik uji Granger maupun uji causality instan tidak menemukan hubungan yang signifikan antara kedua variabel tersebut dalam kerangka model ini
+
+
+```{r}
+# Membuat model regresi linier
+regression_model_Jagung<- lm(Rata_rata_produksi ~ avg_rainfall, data = data_for_var_Jagung)
+
+# Ringkasan hasil model
+summary(regression_model_Jagung)
+```
+
+hasil regresi linier ini menunjukkan bahwa ada kemungkinan pengaruh curah hujan rata-rata ("avg_rainfall") terhadap produksi jagung rata-rata ("Rata_rata_produksi"). Namun, pengaruh ini mungkin tidak terlalu kuat, dan ada sedikit bukti statistik yang mendukung signifikansinya. 
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+correlation_Jagung <- cor(data_for_var_Jagung$Rata_rata_produksi, data_for_var_Jagung$avg_rainfall)
+correlation_Jagung
+```
+oefisien korelasi Pearson adalah -0.5196848, yang mendekati -1. Ini menunjukkan bahwa ada hubungan negatif antara curah hujan rata-rata ("avg_rainfall") dan produksi jagung rata-rata ("Rata_rata_produksi"). Artinya, ketika curah hujan rata-rata meningkat, produksi jagung rata-rata cenderung menurun, dan sebaliknya.
+
