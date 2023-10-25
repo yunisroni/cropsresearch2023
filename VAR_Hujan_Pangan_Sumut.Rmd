@@ -1972,3 +1972,141 @@ correlation_sumut_padi
 Nilai korelasi sekitar 0.2187 mengindikasikan bahwa ada korelasi positif antara "Produksi" dan "Curah_hujan," tetapi korelasinya lemah.
 Lebih khusus, hasil ini menunjukkan bahwa ada hubungan positif antara kenaikan curah hujan dan kenaikan produksi tanaman padi, namun hubungan ini tidak kuat.
 
+
+## Scenario baru 1
+
+-Menggunakan koefisien korelasi Pearson pada scenario pengujian hubungan antara jumlah curah hujan pada luas panen karena Koefisien korelasi Pearson adalah metode yang paling sesuai untuk mengukur hubungan linear antara dua variabel. Dapat mengetahui sejauh mana perubahan dalam satu variabel (curah hujan) berkaitan dengan perubahan dalam variabel lain (produksi atau luas panen) dalam hubungan yang bersifat linear. 
+
+*A.Curah hujan terhadap luas panen padi di Sumatera 1993-2020*
+
+### Sebelum menggunakan korelasi pearson, saya akan memodelkan VAR curah hujan terhadap luas panen padi di Sumatera tahun 1993-2020
+
+```{r}
+# Pilih variabel yang akan diprediksi
+# dalam pengujian ini akan dilihat apakah ada pengaruh curah hujan terhadap peningkatan produksi
+var_luaspanen_1 <- sumatera_padi[, c("Curah_hujan", "Luas_panen")]
+var_luaspanen_1
+```
+
+Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam
+format time series (ts)
+
+```{r}
+ts_luaspanen_1 <- ts(var_luaspanen_1, start = c(1993,1), frequency = 1)
+ts_luaspanen_1
+```
+
+```{r}
+lag_luaspanen_1 <- VARselect(ts_luaspanen_1, lag.max = 5, type = "both")
+lag_luaspanen_1
+```
+
+```{r}
+# VAR Model
+Model_Var1_luaspanen <- VAR(ts_luaspanen_1, p = lag_luaspanen_1$selection[1], type = "both") # jumlah order dari model VAR
+summary(Model_Var1_luaspanen)
+```
+
+
+*Kesimpulan*
+- Estimation results for equation Curah_hujan: 
+Koefisien estimasi Curah_hujan.l1 adalah 3.369e-01 atau 0.3369. Ini adalah nilai yang menggambarkan hubungan antara Curah_hujan pada bulan sebelumnya (lag 1) dan Curah_hujan saat ini. Koefisien ini menunjukkan bahwa ketika Curah_hujan pada bulan sebelumnya naik sebanyak 1 unit, Curah_hujan saat ini diperkirakan akan naik sekitar 0.3369 unit.
+
+Koefisien ini memiliki t-value sebesar 5.102 dan p-value sekitar 7.44e-07 (sangat kecil), yang menunjukkan bahwa koefisien tersebut signifikan secara statistik. Ini berarti terdapat hubungan yang signifikan antara Curah_hujan pada bulan sebelumnya dan Curah_hujan saat ini, dan koefisien ini memberikan perkiraan seberapa besar pengaruhnya.
+
+Dalam hal ini, nilai koefisien "Luas_panen.l1" adalah -3.288e-04. Artinya, ketika "Luas_panen" pada lag satu mengalami peningkatan sebesar satu satuan (misalnya hektar), maka variabel "Curah_hujan" pada saat ini akan mengalami penurunan sekitar -3.288e-04 satuan. Ini menunjukkan bahwa korelasi antara "Luas_panen" pada lag satu dan "Curah_hujan" saat ini adalah negatif dan cukup kecil.
+
+Namun, perlu diperhatikan bahwa nilai p-value untuk koefisien "Luas_panen.l1" adalah 0.682516, yang lebih besar dari 0.05, sehingga koefisien ini tidak signifikan secara statistik. Ini berarti bahwa perubahan dalam "Luas_panen" pada lag satu tidak memiliki pengaruh yang signifikan terhadap perubahan dalam "Curah_hujan" saat ini dalam model ini.
+
+dilihat dari nilai F-statistic menguji signifikansi keseluruhan model. Nilai p-value dari F-statistic adalah nilai p-value: 1.35e-12 jauh lebih kecil dari 0.05
+
+-Estimation results for equation Luas_panen:
+Jadi, untuk "Curah_hujan.l1" pada "Luas_panen" (luas panen), koefisien estimasi 8.929e-01 menunjukkan bahwa perubahan satu unit di "Curah_hujan" pada lag 1 berkorelasi dengan peningkatan 8.929e-01 unit di "Luas_panen" saat ini. Koefisien ini adalah positif, sehingga peningkatan curah hujan pada lag 1 cenderung berkorelasi dengan peningkatan luas panen saat ini.
+
+Namun, untuk "Curah_hujan.l1" pada "Curah_hujan" (curah hujan itu sendiri), koefisien estimasi 3.138e+00 menunjukkan bahwa perubahan satu unit di "Curah_hujan" pada lag 1 berkorelasi dengan peningkatan sekitar 3.138e+00 unit di "Curah_hujan" saat ini. Ini juga adalah koefisien positif, yang menunjukkan bahwa tingkat curah hujan yang tinggi pada lag 1 berkorelasi dengan tingkat curah hujan yang tinggi pada saat ini.
+
+Penting untuk memahami bahwa koefisien dan nilai-nilai p-value memberikan wawasan tentang hubungan dan signifikansinya dalam konteks model VAR. Koefisien positif menunjukkan korelasi positif, sedangkan p-value yang sangat kecil (<2e-16) menunjukkan bahwa hubungan ini sangat signifikan secara statistik.
+
+```{r}
+# Melakukan uji Granger Causality
+granger_luaspanen_1 <- causality(Model_Var1_luaspanen, cause = "Curah_hujan")
+granger_luaspanen_1
+```
+Secara keseluruhan, berdasarkan hasil uji Granger Causality dan Instantaneous Causality, tidak ada bukti statistik yang kuat untuk mendukung adanya hubungan sebab-akibat antara "avg_rainfall" dan "Rata_rata_produksi" dalam model VAR, baik dalam jangka waktu lag maupun dalam jangka waktu instan.
+
+
+```{r}
+# Membuat model regresi linier
+regression_1 <- lm(Luas_panen ~ Curah_hujan, data = var_luaspanen_1)
+
+# Ringkasan hasil model
+summary(regression_1)
+```
+
+Dilihat dari model regresi juga kelihatan bahwa tidak ada pengaruh curah hujan terhadap produksi padi
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+correlation_1 <- cor(var_luaspanen_1$Luas_panen, var_luaspanen_1$Curah_hujan)
+correlation_1
+```
+
+
+*B.Curah hujan terhadap luas panen padi di SUMUT 1993-2020*
+
+### Sebelum menggunakan korelasi pearson, saya akan memodelkan VAR curah hujan terhadap luas panen padi di SUMUT tahun 1993-2020
+
+```{r}
+# Pilih variabel yang akan diprediksi
+# dalam pengujian ini akan dilihat apakah ada pengaruh curah hujan terhadap peningkatan produksi
+var_luaspanen_2 <- sumut_padi_filter[, c("Curah_hujan", "Luas_panen")]
+var_luaspanen_2
+```
+
+Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam
+format time series (ts)
+
+```{r}
+ts_luaspanen_2 <- ts(var_luaspanen_2, start = c(1993,1), frequency = 1)
+ts_luaspanen_2
+```
+
+```{r}
+lag_luaspanen_2 <- VARselect(ts_luaspanen_2, lag.max = 5, type = "both")
+lag_luaspanen_2
+```
+
+```{r}
+# VAR Model
+Model_Var2_luaspanen <- VAR(ts_luaspanen_2, p = lag_luaspanen_2$selection[1], type = "both") # jumlah order dari model VAR
+summary(Model_Var2_luaspanen)
+```
+
+Kalau dilihat dari hasil model VAR diatas, maka bisa disimpulkan bahwa peningkatan jumlah rata-rata curah hujan menyebabkan penurunan rata-rata produksi padi. 
+hal ini bisa diidentifikan bahwa Koefisien estimasi untuk "avg_rainfall.l1" adalah -0.7378, yang mengindikasikan bahwa peningkatan "avg_rainfall" pada satu periode sebelumnya (lag 1) akan menyebabkan penurunan sekitar 0.7378 pada "Rata_rata_produksi" saat ini. dilihat dari nilai F-statistic menguji signifikansi keseluruhan model. Nilai p-value dari F-statistic adalah 0.3383, yang lebih besar dari 0.05, sehingga model secara keseluruhan tidak signifikan secara statistik.
+
+```{r}
+# Melakukan uji Granger Causality
+granger_luaspanen_2 <- causality(Model_Var2_luaspanen, cause = "Curah_hujan")
+granger_luaspanen_2
+```
+Secara keseluruhan, berdasarkan hasil uji Granger Causality dan Instantaneous Causality, tidak ada bukti statistik yang kuat untuk mendukung adanya hubungan sebab-akibat antara "avg_rainfall" dan "Rata_rata_produksi" dalam model VAR, baik dalam jangka waktu lag maupun dalam jangka waktu instan.
+
+
+```{r}
+# Membuat model regresi linier
+regression_2 <- lm(Luas_panen ~ Curah_hujan, data = var_luaspanen_2)
+
+# Ringkasan hasil model
+summary(regression_2)
+```
+
+Dilihat dari model regresi juga kelihatan bahwa tidak ada pengaruh curah hujan terhadap produksi padi
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+correlation_2 <- cor(var_luaspanen_2$Luas_panen, var_luaspanen_2$Curah_hujan)
+correlation_2
+```
+
+
