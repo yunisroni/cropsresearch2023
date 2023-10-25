@@ -1124,7 +1124,7 @@ cat("MSE:", mse_jagung_jangkapanjang, "\n")
 cat("RMSE:", rmse_jagung_jangkapanjang, "\n")
 
 ```
-Hasil evaluasi model Random Forest menunjukkan perbedaan yang signifikan antara prediksi produksi jagung dalam jangka pendek dan jangka panjang. Dalam prediksi jangka pendek, model memiliki tingkat kesalahan yang relatif rendah, dengan MAE sekitar 1.04 juta dan MAPE sekitar 12.74%. Hal ini menunjukkan bahwa rata-rata kesalahan prediksi model ini dalam jangka pendek adalah sekitar 1.04 juta ton, dan sekitar 12.74% dari nilai aktual. Selain itu, MSE dan RMSE juga relatif rendah, masing-masing sekitar 1.84 triliun dan 1.36 juta, menunjukkan bahwa sebagian besar prediksi berada dalam kisaran yang cukup dekat dengan nilai aktual. Namun, dalam prediksi jangka panjang, hasil evaluasi menunjukkan performa yang kurang baik. MAE mencapai sekitar 7.2 juta dan MAPE mencapai 88.68%, mengindikasikan tingkat kesalahan yang jauh lebih tinggi dibandingkan dengan prediksi jangka pendek. MSE dan RMSE juga signifikan, masing-masing sekitar 70.81 triliun dan 8.41 juta, menunjukkan bahwa model cenderung memberikan prediksi yang jauh dari nilai aktual dalam jangka panjang. Dari hasil ini, dapat disimpulkan bahwa model Random Forest lebih cocok untuk digunakan dalam prediksi jangka pendek daripada jangka panjang. 
+Hasil evaluasi model Random Forest menunjukkan perbedaan yang signifikan antara prediksi produksi jagung dalam jangka pendek dan jangka panjang. Dalam prediksi jangka pendek, model memiliki tingkat kesalahan yang relatif rendah, dengan MAE sekitar 1.04 juta dan MAPE sekitar 12.74%. Hal ini menunjukkan bahwa rata-rata kesalahan prediksi model ini dalam jangka pendek adalah sekitar 1.04 juta ton, dan sekitar 12.74% dari nilai aktual. Selain itu, MSE dan RMSE juga relatif rendah, masing-masing sekitar 1.84 triliun dan 1.36 juta, menunjukkan bahwa sebagian besar prediksi berada dalam kisaran yang cukup dekat dengan nilai aktual. Namun, dalam prediksi jangka panjang, hasil evaluasi menunjukkan performa yang kurang baik. MAE mencapai sekitar 7.2 juta dan MAPE mencapai 88.68%, mengindikasikan tingkat kesalahan yang jauh lebih tinggi dibandingkan dengan prediksi jangka pendek. MSE dan RMSE juga signifikan, masing-masing sekitar 70.81 triliun dan 8.41 juta, menunjukkan bahwa model cenderung memberikan prediksi yang jauh dari nilai aktual dalam jangka panjang. Dari hasil ini, dapat disimpulkan bahwa model Random Forest lebih cocok untuk digunakan dalam prediksi jagung jangka pendek daripada jangka panjang. 
 
 
 ## 2. Kacang Hijau
@@ -1243,7 +1243,6 @@ summary_data_kacangkedelai <- KacangKedelai %>%
   summarise(TotalProduksi = sum(Produksi))
 summary_data_kacangkedelai
 ```
-
 ```{r}
 # Membuat bar chart atau line chart
 ggplot(summary_data_kacangkedelai, aes(x = Tahun, y = TotalProduksi)) +
@@ -1254,8 +1253,6 @@ ggplot(summary_data_kacangkedelai, aes(x = Tahun, y = TotalProduksi)) +
        x = "Tahun",
        y = "Total Produksi")
 ```
-
-
 ```{r}
 data_kacangkedelai <- summary_data_kacangkedelai %>% 
   rename(
@@ -1265,8 +1262,6 @@ data_kacangkedelai <- summary_data_kacangkedelai %>%
 data_kacangkedelai
 
 ```
-
-
 ```{r}
 # Membagi data menjadi data pelatihan dan pengujian - Kacang Kedelai
 set.seed(123) #menentukan nilai acak dari data
@@ -1283,6 +1278,8 @@ kacangkedelai_testing_data
 rf_model_kacangkedelai <- randomForest(Produksi_Kacangkedelai ~., data = kacangkedelai_training_data, ntree = 500)
 rf_model_kacangkedelai
 ```
+Dalam model ini, terdapat 500 pohon keputusan yang digunakan untuk membuat prediksi.
+
 #### - Melakukan prediksi
 ```{r}
 # Melakukan prediksi jangka pendek
@@ -1342,6 +1339,7 @@ cat("MSE:", mse_kacangkedelai_jangkapanjang, "\n")
 cat("RMSE:", rmse_kacangkedelai_jangkapanjang, "\n")
 
 ```
+Hasil evaluasi model Random Forest untuk prediksi produksi kacang kedelai menunjukkan perbedaan yang signifikan antara prediksi jangka pendek dan jangka panjang. Dalam prediksi jangka pendek, model memiliki tingkat kesalahan yang relatif rendah, dengan MAE sekitar 104.49 ribu dan MAPE sekitar 9.18%. Ini mengindikasikan bahwa rata-rata kesalahan prediksi model ini dalam jangka pendek adalah sekitar 104.49 ribu ton, dan sekitar 9.18% dari nilai aktual. Selain itu, MSE dan RMSE juga relatif rendah, masing-masing sekitar 15.07 miliar dan 122.76 ribu, menunjukkan bahwa sebagian besar prediksi berada dalam kisaran yang cukup dekat dengan nilai aktual. Namun, dalam prediksi jangka panjang, hasil evaluasi menunjukkan performa yang kurang baik. MAE mencapai sekitar 335.13 ribu dan MAPE mencapai 23.59%, mengindikasikan tingkat kesalahan yang jauh lebih tinggi dibandingkan dengan prediksi jangka pendek. MSE dan RMSE juga signifikan, masing-masing sekitar 199.43 miliar dan 446.57 ribu, menunjukkan bahwa model cenderung memberikan prediksi yang jauh dari nilai aktual dalam jangka panjang. Dari hasil ini, dapat disimpulkan bahwa model Random Forest lebih cocok digunakan untuk prediksi kacang kedelai dalam jangka pendek daripada jangka panjang. 
 
 
 ## 4. Kacang Tanah
@@ -1364,7 +1362,6 @@ ggplot(summary_data_kacangtanah, aes(x = Tahun, y = TotalProduksi)) +
        y = "Total Produksi")
 ```
 
-
 ```{r}
 data_kacangtanah <- summary_data_kacangtanah %>% 
   rename(
@@ -1374,7 +1371,6 @@ data_kacangtanah <- summary_data_kacangtanah %>%
 data_kacangtanah
 
 ```
-
 
 ```{r}
 # Membagi data menjadi data pelatihan dan pengujian - Kacang Tanah
@@ -1392,6 +1388,8 @@ kacangtanah_testing_data
 rf_model_kacangtanah <- randomForest(Produksi_Kacangtanah ~., data = kacangtanah_training_data, ntree = 500)
 rf_model_kacangtanah
 ```
+Dalam model ini, terdapat 500 pohon keputusan yang digunakan untuk membuat prediksi.
+
 #### - Melakukan prediksi
 ```{r}
 # Melakukan prediksi jangka pendek
