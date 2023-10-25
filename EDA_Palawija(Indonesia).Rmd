@@ -1068,6 +1068,8 @@ jagung_testing_data
 rf_model_jagung <- randomForest(Produksi_Jagung ~., data = jagung_training_data, ntree = 500)
 rf_model_jagung
 ```
+Dalam model ini, terdapat 500 pohon keputusan yang digunakan untuk membuat prediksi.
+
 #### - Melakukan prediksi
 ```{r}
 # Melakukan prediksi jangka pendek
@@ -1127,7 +1129,7 @@ cat("MSE:", mse_jagung_jangkapanjang, "\n")
 cat("RMSE:", rmse_jagung_jangkapanjang, "\n")
 
 ```
-
+Hasil evaluasi model Random Forest menunjukkan perbedaan yang signifikan antara prediksi produksi jagung dalam jangka pendek dan jangka panjang. Dalam prediksi jangka pendek, model memiliki tingkat kesalahan yang relatif rendah, dengan MAE sekitar 1.04 juta dan MAPE sekitar 12.74%. Hal ini menunjukkan bahwa rata-rata kesalahan prediksi model ini dalam jangka pendek adalah sekitar 1.04 juta ton, dan sekitar 12.74% dari nilai aktual. Selain itu, MSE dan RMSE juga relatif rendah, masing-masing sekitar 1.84 triliun dan 1.36 juta, menunjukkan bahwa sebagian besar prediksi berada dalam kisaran yang cukup dekat dengan nilai aktual. Namun, dalam prediksi jangka panjang, hasil evaluasi menunjukkan performa yang kurang baik. MAE mencapai sekitar 7.2 juta dan MAPE mencapai 88.68%, mengindikasikan tingkat kesalahan yang jauh lebih tinggi dibandingkan dengan prediksi jangka pendek. MSE dan RMSE juga signifikan, masing-masing sekitar 70.81 triliun dan 8.41 juta, menunjukkan bahwa model cenderung memberikan prediksi yang jauh dari nilai aktual dalam jangka panjang. Dari hasil ini, dapat disimpulkan bahwa model Random Forest lebih cocok untuk digunakan dalam prediksi jangka pendek daripada jangka panjang. 
 
 
 
