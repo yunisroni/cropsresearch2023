@@ -1133,7 +1133,6 @@ Hasil evaluasi model Random Forest menunjukkan perbedaan yang signifikan antara 
 
 
 
-
 ## 2. Kacang Hijau
 ```{r}
 # Menghitung total produksi untuk setiap tahun
