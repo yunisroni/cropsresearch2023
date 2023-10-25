@@ -329,7 +329,7 @@ cat("Koefisien Korelasi Pearson Luas Panen dan Produksi:", correlation_padi_1)
 ```
 
 
-## Curah hujan terhadap Padi
+## a. Curah hujan terhadap Padi
 
 ```{r}
 # Ambil data padi di dataset tanaman pangan yang belum di filter sumatera utara 
@@ -412,13 +412,6 @@ correlation_Padi
 ```
  koefisien korelasi Pearson adalah -0.5359986, yang mendekati -1. Ini menunjukkan bahwa ada hubungan negatif antara curah hujan rata-rata ("avg_rainfall") dan produksi padi rata-rata ("Rata_rata_produksi"). Artinya, ketika curah hujan rata-rata meningkat, produksi padi rata-rata cenderung menurun, dan sebaliknya.
 
-
-##Curah Hujan Kab Deli serdang
-
-```{r}
-rainfall_kabsumut <-read_excel("D:/OneDrive - mikroskil.ac.id/Skripsi/Curah Hujan di Kab.Sumut.xlsx")
-rainfall_kabsumut
-```
 
 
 #3. Ubi Jalar
@@ -535,7 +528,7 @@ plot_UbiJalar_4 <- ggplot(Ubi_Jalar, aes(x = Kabupaten_Kota, y = Produksi - Rata
 # Rotasi sumbu x agar mudah dibaca
 plot_UbiJalar_4 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
-## Curah hujan terhadap Ubi Jalar
+## b. Curah hujan terhadap Ubi Jalar
 
 ```{r}
 # Ambil data Ubi Jalar di dataset tanaman pangan yang belum di filter sumatera utara 
@@ -1626,63 +1619,266 @@ correlation_Jagung
 oefisien korelasi Pearson adalah -0.5196848, yang mendekati -1. Ini menunjukkan bahwa ada hubungan negatif antara curah hujan rata-rata ("avg_rainfall") dan produksi jagung rata-rata ("Rata_rata_produksi"). Artinya, ketika curah hujan rata-rata meningkat, produksi jagung rata-rata cenderung menurun, dan sebaliknya.
 
 
-#Padi sumut tahun 1993-2020
 
-## Obstain - Load Dataset Padi Sumut
+#9. Padi Sumatera tahun 1993-2020
+
+## Obstain - Load Dataset Padi Sumatera tahun 1993-2020
 
 ```{r}
-sumut_padi <- read.csv("D:/OneDrive - mikroskil.ac.id/Skripsi/Data_Tanaman_Padi_Sumatera_V1.csv")
-sumut_padi
+sumatera_padi <- read.csv("D:/OneDrive - mikroskil.ac.id/Skripsi/Data_Tanaman_Padi_Sumatera_V1.csv")
+sumatera_padi
 ```
 
 
 ```{r}
-# Merubah nama variabel Kabupaten Kota, Rata-rata Produksi dan Luas Panen
-names(sumut_padi)[names(sumut_padi) == "Curah.hujan"] <- "Curah_hujan"
-names(sumut_padi)[names(sumut_padi) == "Suhu.rata.rata"] <- "Suhu_rata_rata"
-names(sumut_padi)[names(sumut_padi) == "Luas.Panen"] <- "Luas_panen"
-glimpse(sumut_padi)
+# Merubah nama variabel 
+names(sumatera_padi)[names(sumatera_padi) == "Curah.hujan"] <- "Curah_hujan"
+names(sumatera_padi)[names(sumatera_padi) == "Suhu.rata.rata"] <- "Suhu_rata_rata"
+names(sumatera_padi)[names(sumatera_padi) == "Luas.Panen"] <- "Luas_panen"
+glimpse(sumatera_padi)
 ```
 ### a. Merubah type data
 ```{r}
 # Merubah type data karakter menjadi numeric
-sumut_padi$Produksi <- as.numeric(sumut_padi$Produksi)
-sumut_padi$`Luas_panen` <- as.numeric(sumut_padi$Luas_panen)
-sumut_padi$Curah_hujan <- as.numeric(sumut_padi$Curah_hujan)
-sumut_padi$Kelembapan <- as.numeric(sumut_padi$Kelembapan)
-sumut_padi$Suhu_rata_rata <- as.numeric(sumut_padi$Suhu_rata_rata)
-sumut_padi
+sumatera_padi$Produksi <- as.numeric(sumatera_padi$Produksi)
+sumatera_padi$`Luas_panen` <- as.numeric(sumatera_padi$Luas_panen)
+sumatera_padi$Curah_hujan <- as.numeric(sumatera_padi$Curah_hujan)
+sumatera_padi$Kelembapan <- as.numeric(sumatera_padi$Kelembapan)
+sumatera_padi$Suhu_rata_rata <- as.numeric(sumatera_padi$Suhu_rata_rata)
+sumatera_padi
 ```
 
 ```{r}
 # Merubah type Tahun menjadi Date
-sumut_padi$Tahun <- make_date(sumut_padi$Tahun)
-glimpse(sumut_padi)
+sumatera_padi$Tahun <- make_date(sumatera_padi$Tahun)
+glimpse(sumatera_padi)
 ```
 ### b. Menghapus Data Kosong
 
 ```{r}
 # Menampikan variabel dengan baris kosong
-colSums(is.na(sumut_padi))
+colSums(is.na(sumatera_padi))
 ```
+
+## EDA Padi Sumatera tahun 1993-2020
+
+### Jumlah Produksi Padi per Provinsi
+
 ```{r}
-# Filter data for "Sumatera Utara" kabupaten
-sumut_data <- padi_sumut %>%
-  filter(Kabupaten_kota == "Sumatera Utara")
-sumut_data
+plot_sumatera <- ggplot(sumatera_padi, aes(x = Tahun, y = Produksi, group = Provinsi, color = Provinsi)) +
+  geom_line() +
+  labs(title = "Jumlah Produksi Padi", x = "Tahun", y = "Produksi Padi (Ha)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "right")
+plot_sumatera
+
 ```
 
 ```{r}
-sumut_padi_filter <- sumut_padi %>%
+# Turn off dplyr summarise() warning
+options(dplyr.summarise.inform = FALSE) # untuk menonaktifkan pesan peringatan yang biasanya muncul ketika Anda menggunakan summarise() untuk menghitung statistik tertentu
+
+# Hitung total produksi per kabupaten di setiap tahun
+totproduksi <- sumatera_padi %>% 
+  group_by(Tahun, Provinsi, .drop = FALSE) %>%  # Add .drop argument
+  summarise(total_produksi = sum(Produksi))
+
+totproduksi
+```
+
+### Tren Produksi Padi per Provinsi
+
+```{r}
+# Visualisasi Tren Produksi Padi
+plot_2_sumatera <- ggplot(totproduksi, aes(x = Tahun, y = total_produksi, color = Provinsi)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Tren Produksi Padi di Sumatera", x = "Tahun", y = "Total Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "right")
+plot_2_sumatera
+```
+
+```{r}
+# Hitung total produksi padi per Provinsi dan kemudian di urutkan dari yang tertingi ke terkecil
+totproduksi_provinsi <- sumatera_padi %>% 
+  group_by(Provinsi) %>% 
+  summarise(total_produksi = sum(Produksi))%>%
+  arrange(desc(total_produksi))
+  
+totproduksi_provinsi
+```
+
+Jadi produksi tertingi di sumatera tahun 1993-2020 adalah dari provinsi Sumatera Utara yaitu sebesar 93253195 ton
+
+
+```{r}
+# Visualisasi Produksi tertingi Provinsi dengan barplot
+plot_3_sumatera <- ggplot(totproduksi_provinsi, aes(x = Provinsi, y = total_produksi, fill = Provinsi)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Perbandingan Produksi Padi antara Provinsi di Sumatera", x = "Provinsi", y = "Total Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "none")  # hilangkan legend
+
+# Rotasi sumbu x agar mudah dibaca
+plot_3_sumatera + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+Perbandingan produksi padi dalam kurun waktu 1993 - 2020 adalah dari provinsi sumatera utara yang terbanyak dengan Jumlah Produksi Padi sebesar 93253195 ton
+
+
+### Korelasi Luas Panen dan Produksi Padi
+
+```{r}
+#menghitung total luas panen lalu mengurutkan dari terbesar
+totluaspanen_sumatera<- sumatera_padi %>% 
+  group_by(Provinsi) %>% 
+  summarise(total_luas_panen = sum(Luas_panen)) %>%
+  arrange(desc(total_luas_panen))
+
+totluaspanen_sumatera
+```
+
+```{r}
+# Visualisasi korelasi luas panen dan produksi padi
+plot_5_sumatera <- ggplot(sumatera_padi, aes(x = Luas_panen, y = Produksi, color = Provinsi)) +
+  geom_point() +
+  labs(title = "Korelasi Produksi dan Luas Panen di Sumatera", x = "Luas Panen (Ha)", y = "Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "right")
+plot_5_sumatera
+```
+
+```{r}
+# Hitung Pearson correlation coefficient
+correlation_sumatera<- cor(sumatera_padi$Luas_panen, sumatera_padi$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson Luas Panen dan Produksi:", correlation_sumatera)
+```
+
+Berdasarkan grafik diatas bisa lihat bahwa ada korelasi antara luas
+panen dan produksi. Hubungan korelasi adalah positif dengan nilai
+korelasi sebesar 0,90, sehingga bisa disimpulkan bahwa jika semakin
+banyak luas panen maka akan meningkat jumlah produksi padi.
+
+
+### c. Model VAR Curah hujan pada produksi Padi Sumatera
+
+
+```{r}
+# Pilih variabel yang akan diprediksi di dataset sumatera
+# dalam pengujian ini akan dilihat apakah ada pengaruh curah hujan terhadap peningkatan produksi
+
+Var_sumatera <- sumatera_padi[, c("Curah_hujan", "Produksi")] #subdataset yang hanya berisikan 2 kolom
+Var_sumatera
+```
+
+Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam
+format time series (ts)
+
+```{r}
+ts_sumatera <- ts(Var_sumatera, start = c(1993,1), frequency = 1)
+ts_sumatera
+```
+
+```{r}
+#menetukan jumlah lag yang optimal dlm Var
+best_lag_sumatera <- VARselect(ts_sumatera, lag.max = 5, type = "both")
+best_lag_sumatera
+
+#akan berisi hasil pemilihan model VAR terbaik berdasarkan perbandingan AIC dan BIC untuk berbagai jumlah lag
+```
+
+```{r}
+# VAR Model
+var_model_sumatera <- VAR(ts_sumatera, p = best_lag_sumatera$selection[1], type = "both") # jumlah order dari model VAR
+summary(var_model_sumatera)
+
+#Tujuan dari coding ini adalah untuk membangun model VAR yang sesuai dengan jumlah lag terbaik yang telah Anda tentukan sebelumnya dan kemudian menganalisis model tersebut dengan melihat ringkasan yang dihasilkan. 
+```
+
+*Kesimpulan*
+-Estimation results for equation Curah_hujan:
+Pada "Curah_hujan lag 1,2,3 dan 4 terdapat hubungan positif yang signifikan (p-value < 0.05) antara curah hujan dan dirinya sendiri. Ini menunjukkan bahwa curah hujan pada lag 1,2,3 dan 4 memiliki pengaruh yang signifikan terhadap dirinya sendiri.
+
+-Estimation results for equation Produksi:
+Pada "Produksi.l1" (lag 1), terdapat hubungan positif yang signifikan (p-value < 0.05) antara produksi tanaman padi dan curah hujan pada lag 1. Ini menunjukkan bahwa curah hujan pada lag 1 memiliki pengaruh yang signifikan terhadap produksi tanaman padi.
+
+Selain itu, "Produksi.l4" (lag 4) juga memiliki hubungan positif yang signifikan dengan curah hujan pada tingkat signifikansi 0.05. Ini mengindikasikan pengaruh positif yang signifikan dari curah hujan pada lag 4 terhadap produksi.
+
+
+```{r}
+# Melakukan uji Granger Causality
+granger_test_sumatera <- causality(var_model_sumatera, cause = "Curah_hujan")
+granger_test_sumatera
+
+#Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
+```
+*Kesimpulan*
+- P-value adalah 0.0972.
+Hasil ini menunjukkan bahwa pada tingkat signifikansi 0.05, tidak ada cukup bukti statistik untuk mendukung hipotesis bahwa "Curah_hujan menjadi penyebab Granger dari Produksi
+-P-value adalah 0.08623.
+Hasil ini menunjukkan bahwa pada tingkat signifikansi 0.05, tidak ada cukup bukti statistik untuk mendukung adanya hubungan kausal instan (pengaruh yang terjadi secara langsung) antara Curah_hujan dan Produksi. Meskipun p-value (0.08623) mendekati tingkat signifikansi 0.05, hasil ini belum mencapai tingkat signifikansi yang umumnya digunakan.
+
+
+```{r}
+# Membuat model regresi linier
+regression_model_sumatera <- lm(Produksi ~ Curah_hujan, data = Var_sumatera)
+
+# Ringkasan hasil model
+summary(regression_model_sumatera)
+```
+*kesimpulan*
+
+model regresi linier ini tidak memberikan bukti yang kuat untuk mengatakan bahwa curah hujan memiliki pengaruh yang signifikan terhadap produksi tanaman padi dalam data Anda. Koefisien "Curah_hujan" tidak signifikan, dan model regresi ini memiliki nilai R-squared yang sangat rendah, menunjukkan bahwa model ini tidak efektif dalam menjelaskan variasi dalam produksi.
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+correlation_sumatera <- cor(Var_sumatera$Produksi, Var_sumatera$Curah_hujan)
+correlation_sumatera
+
+```
+*Kesiimpulan*
+
+Hasil (-0.0421286) menunjukkan adanya korelasi negatif yang sangat lemah antara kedua variabel tersebut. Korelasi negatif menunjukkan bahwa saat satu variabel naik, variabel lainnya cenderung turun, dan sebaliknya. Meskipun ada korelasi, nilainya sangat rendah, sehingga hubungan antara curah hujan dan produksi tanaman padi tidak terlalu kuat.
+
+
+# 10. Curah hujan dan tanaman padi provinsi Sumatera Utara tahun 1993-2020
+
+## Curah hujan terhadap tanaman padi sumut tahun 1993-2020
+
+```{r}
+#mengambil data sumut saja
+sumut_padi_filter <- sumatera_padi %>%
   filter(Provinsi == "Sumatera Utara")
 sumut_padi_filter
 ```
 
-## Eksplorasi Data Analisis (EDA)
+## Eksplorasi Data Analisis (EDA) Sumut padi tahun 1993-2020
 
-### Jumlah Produksi Padi 
+### Jumlah Produksi Padi tertingi berdasarkan tahun
+```{r}
+# Turn off dplyr summarise() warning
+options(dplyr.summarise.inform = FALSE) # untuk menonaktifkan pesan peringatan yang biasanya muncul ketika Anda menggunakan summarise() untuk menghitung statistik tertentu
+
+# Hitung total produksi padi di setiap tahun
+totproduksi <- sumut_padi_filter %>% 
+  group_by(Tahun, Provinsi, .drop = FALSE) %>%  # Add .drop argument
+  summarise(total_produksi = sum(Produksi)) %>%
+  arrange(desc(total_produksi))
+
+totproduksi
+```
+Tahun tertinggi Produksi padi di sumatera utara adalah tahun 2017
 
 ```{r}
+#Menvisualisasikan jumlah produksi tertingi di setiap tahun di Provinsi Sumut
+
 plot_sumut_padi <- ggplot(sumut_padi_filter, aes(x = Tahun, y = Produksi, color = Produksi)) +
   geom_line() +
   geom_point() +
@@ -1694,7 +1890,6 @@ plot_sumut_padi
 ```
 
 
-
 ```{r}
 # Hitung Pearson correlation coefficient
 correlation_padi <- cor(sumut_padi_filter$Luas_panen, sumut_padi_filter$Produksi)
@@ -1704,11 +1899,13 @@ cat("Koefisien Korelasi Pearson Luas Panen dan Produksi:", correlation_padi)
 ```
 Berdasarkan grafik diatas bisa lihat bahwa ada korelasi antara luas panen dan produksi. Hubungan korelasi adalah positif dengan nilai korelasi sebesar 0,23, sehingga bisa disimpulkan bahwa jika Luas Panen meningkat, Produksi juga cenderung meningkat, tetapi tingkat kenaikan dalam Produksi tidak sangat dipengaruhi oleh kenaikan dalam Luas Panen.
 
+
 ```{r}
 # Pilih variabel yang akan diprediksi
 # dalam pengujian ini akan dilihat apakah ada pengaruh curah hujan terhadap peningkatan produksi
 
-Var_sumut_padi <- sumut_padi[, c("Produksi", "Curah_hujan")] #subdataset yang hanya berisikan 2 kolom
+Var_sumut_padi <- sumut_padi_filter[, c("Produksi", "Curah_hujan")] #subdataset yang hanya berisikan 2 kolom
+Var_sumut_padi
 ```
 
 Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam
@@ -1734,9 +1931,12 @@ summary(var_model_sumut_padi)
 
 #Tujuan dari coding ini adalah untuk membangun model VAR yang sesuai dengan jumlah lag terbaik yang telah Anda tentukan sebelumnya dan kemudian menganalisis model tersebut dengan melihat ringkasan yang dihasilkan. 
 ```
+*Kesimpulan*
+- Hasil estimasi persamaan Produksi :
+Variabel "Produksi" pada lag 3 memiliki pengaruh signifikan (p-value < 0.01) terhadap dirinya sendiri. Namun, pengaruh variabel "Curah_hujan" pada "Produksi" dan sebaliknya tampaknya tidak signifikan pada tingkat signifikansi yakni 0,05
 
-Kalau dilihat dari hasil model VAR diatas, maka bisa disimpulkan bahwa peningkatan jumlah rata-rata curah hujan menyebabkan penurunan rata-rata produksi padi. 
-hal ini bisa diidentifikan bahwa Koefisien estimasi untuk "avg_rainfall.l1" adalah -0.7378, yang mengindikasikan bahwa peningkatan "avg_rainfall" pada satu periode sebelumnya (lag 1) akan menyebabkan penurunan sekitar 0.7378 pada "Rata_rata_produksi" saat ini. dilihat dari nilai F-statistic menguji signifikansi keseluruhan model. Nilai p-value dari F-statistic adalah 0.3383, yang lebih besar dari 0.05, sehingga model secara keseluruhan tidak signifikan secara statistik.
+- Hasil estimasi persamaan Curah_hujan :
+"Produksi.l1" pada "Curah_hujan" dengan p-value 0.0363. Ini berarti bahwa curah hujan pada lag 1 mungkin memiliki pengaruh yang lemah terhadap produksi tanaman padi.
 
 ```{r}
 # Melakukan uji Granger Causality
@@ -1745,8 +1945,13 @@ granger_test_sumut_padi
 
 #Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
 ```
-Secara keseluruhan, berdasarkan hasil uji Granger Causality dan Instantaneous Causality, tidak ada bukti statistik yang kuat untuk mendukung adanya hubungan sebab-akibat antara "avg_rainfall" dan "Rata_rata_produksi" dalam model VAR, baik dalam jangka waktu lag maupun dalam jangka waktu instan.
+*Granger*
+P-value adalah 0.445.
+Hasil ini menunjukkan bahwa pada tingkat signifikansi 0.05, tidak ada cukup bukti statistik untuk mendukung hipotesis bahwa "Curah_hujan menjadi penyebab Granger dari Produksi." Dengan kata lain, berdasarkan hasil ini, tidak ada bukti statistik yang mendukung adanya hubungan kausal dari curah hujan ke produksi tanaman padi dalam model VAR.
 
+*Instant*
+P-value adalah 0.05523.
+Hasil ini menunjukkan bahwa pada tingkat signifikansi 0.05, terdapat bukti yang hampir signifikan (p-value mendekati 0.05) yang mengindikasikan adanya hubungan kausal instan antara Curah_hujan dan Produksi. Namun, hasil ini belum mencapai tingkat signifikansi 0.05 secara eksak, sehingga mungkin perlu melakukan analisis lebih lanjut untuk memahami apakah hubungan ini benar-benar signifikan atau mungkin hanya karena fluktuasi kecil dalam data.
 
 ```{r}
 # Membuat model regresi linier
@@ -1755,8 +1960,15 @@ regression_model_sumut_padi <- lm(Produksi ~ Curah_hujan, data = Var_sumut_padi)
 # Ringkasan hasil model
 summary(regression_model_sumut_padi)
 ```
+*Kesimpulan* 
+tidak ada bukti statistik yang cukup untuk mendukung bahwa "Curah_hujan" memiliki pengaruh yang signifikan terhadap "Produksi." Nilai p-value untuk koefisien "Curah_hujan" adalah lebih besar dari tingkat signifikansi (0.05). Selain itu, Multiple R-squared yang rendah juga menunjukkan bahwa variabel "Curah_hujan" tidak menjelaskan variasi yang signifikan dalam "Produksi."
+
 ```{r}
 # Menghitung koefisien korelasi Pearson
 correlation_sumut_padi <- cor(Var_sumut_padi$Produksi, Var_sumut_padi$Curah_hujan)
 correlation_sumut_padi
 ```
+*Kesimpulan*
+Nilai korelasi sekitar 0.2187 mengindikasikan bahwa ada korelasi positif antara "Produksi" dan "Curah_hujan," tetapi korelasinya lemah.
+Lebih khusus, hasil ini menunjukkan bahwa ada hubungan positif antara kenaikan curah hujan dan kenaikan produksi tanaman padi, namun hubungan ini tidak kuat.
+
