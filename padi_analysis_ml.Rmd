@@ -1,0 +1,541 @@
+---
+title: "Food Crops Prediction using Machine Learning"
+author: "Roni Yunis"
+date: "2023-10-25"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Load Library/Packages
+
+```{r}
+# library manipulasi data
+library(tidyverse)
+# library model VAR
+library(vars)
+# library untuk model Random Forest
+library(randomForest)
+# library untuk model SVR
+library(e1071)
+# library Untuk partisi dataset
+library(caret) 
+# library untuk evaluasi model
+library(Metrics)
+# library untuk model XGBoost
+library(xgboost)
+# library untuk model KNN
+library (class)
+```
+
+
+# Obstain - Load Dataset
+
+```{r}
+padi <- read.csv("dataset/Data_Tanaman_Padi_Sumatera_V1.csv")
+padi
+```
+
+```{r}
+# Merubah nama variabel Kabupaten Kota, Rata-rata Produksi dan Luas Panen
+names(padi)[names(padi) == "Curah.hujan"] <- "Curah_hujan"
+names(padi)[names(padi) == "Suhu.rata.rata"] <- "Suhu_rata_rata"
+names(padi)[names(padi) == "Luas.Panen"] <- "Luas_panen"
+glimpse(padi)
+```
+
+## a. Merubah type data
+
+```{r}
+# Merubah type data karakter menjadi numeric
+padi$Produksi <- as.numeric(padi$Produksi)
+padi$`Luas_panen` <- as.numeric(padi$Luas_panen)
+padi$Curah_hujan <- as.numeric(padi$Curah_hujan)
+padi$Kelembapan <- as.numeric(padi$Kelembapan)
+padi$Suhu_rata_rata <- as.numeric(padi$Suhu_rata_rata)
+padi
+```
+
+```{r}
+# Merubah type Tahun menjadi Date
+padi$Tahun <- make_date(padi$Tahun)
+glimpse(padi)
+```
+
+## b. Menghapus Data Kosong
+
+```{r}
+# Menampilkan variabel dengan baris kosong
+colSums(is.na(padi))
+```
+
+```{r}
+unique(padi$Provinsi)
+```
+
+```{r}
+# Filter data dari Provinsi "Aceh"
+aceh_data <- padi %>%
+  filter(Provinsi == "Aceh")
+aceh_data
+```
+
+```{r}
+# Filter data dari Provinsi "Sumatera Utara"
+sumut_data <- padi %>%
+  filter(Provinsi == "Sumatera Utara")
+sumut_data
+```
+
+```{r}
+# Filter data dari Provinsi "Sumatera Barat"
+sumbar_data <- padi %>%
+  filter(Provinsi == "Sumatera Barat")
+sumbar_data
+```
+
+```{r}
+# Filter data dari Provinsi "Riau"
+riau_data <- padi %>%
+  filter(Provinsi == "Riau")
+riau_data
+```
+
+```{r}
+# Filter data dari Provinsi "Jambi"
+jambi_data <- padi %>%
+  filter(Provinsi == "Jambi")
+jambi_data
+```
+
+```{r}
+# Filter data dari Provinsi "Sumatera Selatan"
+sumsel_data <- padi %>%
+  filter(Provinsi == "Sumatera Selatan")
+sumsel_data
+```
+
+```{r}
+# Filter data dari Provinsi "Bengkulu"
+bengkulu_data <- padi %>%
+  filter(Provinsi == "Bengkulu")
+bengkulu_data
+```
+
+```{r}
+# Filter data dari Provinsi "Lampung"
+lampung_data <- padi %>%
+  filter(Provinsi == "Lampung")
+lampung_data
+```
+
+## Eksplorasi Data Analisis (EDA)
+
+### Jumlah Produksi Padi
+
+```{r}
+plot_padi <- ggplot(sumut_data, aes(x = Tahun, y = Produksi, color = Produksi)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Jumlah Produksi Padi di Sumatera Utara", x = "Tahun", y = "Produksi Padi (Ha)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "right")
+plot_padi
+```
+
+```{r}
+# Hitung Pearson correlation coefficient
+correlation_padi <- cor(padi$Luas_panen, padi$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson Luas Panen dan Produksi:", correlation_padi)
+```
+
+Berdasarkan grafik diatas bisa lihat bahwa ada korelasi antara luas panen dan produksi. Hubungan korelasi adalah besar dengan nilai korelasi sebesar 0,905. Hubungan luas panen dan produksi padi bisa disimpulkan bahwa jumlah panen yang besar akan meningkatkan jumlah produksi padi.
+
+```{r}
+# Hitung Pearson correlation coefficient
+correlation_hujan <- cor(padi$Curah_hujan, padi$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson Curah Hujan dan Produksi:", correlation_hujan)
+```
+
+```{r}
+# Menghitung total produksi untuk setiap tahun
+summary_padi <- padi %>%
+  group_by(Tahun) %>%
+  summarise(TotalProduksi = sum(Produksi))
+summary_padi
+```
+
+```{r}
+# Visulisasi Produksi Padi Sepanjang Tahun 1993-2022
+ggplot(summary_padi, aes(x = Tahun, y = TotalProduksi)) +
+  geom_line() +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  labs(title = "Perubahan Jumlah Produksi Padi dari 1993 - 2020",
+       subtitle = "Pulau Sumatera",
+       x = "Tahun",
+       y = "Total Produksi")
+```
+
+# Model
+## VAR Model
+```{r}
+# Pilih variabel yang akan diprediksi
+# dalam pengujian ini akan dilihat apakah ada pengaruh curah hujan terhadap peningkatan produksi
+
+Var_padi <- padi[, c("Produksi", "Curah_hujan", "Luas_panen", "Kelembapan", "Suhu_rata_rata")] #subdataset yang hanya berisikan 5 kolom
+```
+
+Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam format time series (ts)
+
+```{r}
+ts_padi <- ts(Var_padi, start = c(1993,1), frequency = 1)
+head(ts_padi)
+```
+
+```{r}
+#menetukan jumlah lag yang optimal dlm Var
+best_lag_padi <- VARselect(ts_padi, lag.max = 5, type = "both")
+best_lag_padi
+
+#akan berisi hasil pemilihan model VAR terbaik berdasarkan perbandingan AIC dan BIC untuk berbagai jumlah lag
+```
+
+```{r}
+# VAR Model
+var_model_padi <- VAR(ts_padi, p = best_lag_padi$selection[1], type = "both") # jumlah order dari model VAR
+summary(var_model_padi)
+
+#Tujuan dari coding ini adalah untuk membangun model VAR yang sesuai dengan jumlah lag terbaik yang telah Anda tentukan sebelumnya dan kemudian menganalisis model tersebut dengan melihat ringkasan yang dihasilkan. 
+```
+
+Kalau dilihat dari hasil model VAR diatas, bahwa variabel yang sangat berdampak pada produksi padi adalah variabel Luas_panen, karena nilai P-Value dari 3 lag yaitu Lag1, Lag2 dan Lag4 lebih rendah dari 0,05. Sementara untuk variabel curah_hujan, kelembapan, suhu_rata_rata pada lag yang diuji tidak tampak signifikan karena nilai P-Value lebih besar dari 0,05
+
+```{r}
+# Melakukan uji Granger Causality
+granger_test_padi <- causality(var_model_padi, cause = "Curah_hujan")
+granger_test_padi
+
+#Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
+```
+
+Secara keseluruhan, berdasarkan hasil uji Granger Causality dan Instantaneous Causality, tidak ada bukti statistik yang kuat untuk mendukung adanya hubungan sebab-akibat antara "avg_rainfall" dan "Produksi" dalam model VAR, baik dalam jangka waktu lag maupun dalam jangka waktu instan.
+
+```{r}
+# Membuat model regresi linier
+regression_model_padi <- lm(Produksi ~ Curah_hujan + Kelembapan + Luas_panen + Suhu_rata_rata, data = Var_padi)
+
+# Ringkasan hasil model
+summary(regression_model_padi)
+```
+Hasil analisis regresi linear dari model regresi yang mencoba memprediksi variabel "Produksi" berdasarkan variabel-variabel prediktor, yaitu "Curah_hujan," "Kelembapan," "Luas_panen," dan "Suhu_rata_rata." Berikut adalah interpretasi hasil dari model ini:
+
+1. **Intercept (Intersepsi)**:
+Nilai intercept adalah sekitar 2.183e+06 (atau sekitar 2.183 juta). Ini adalah estimasi nilai Produksi ketika semua variabel prediktor (Curah_hujan, Kelembapan, Luas_panen, dan Suhu_rata_rata) adalah nol. Meskipun p-value untuk intersepsi adalah 0.0738, yang agak lebih besar dari tingkat signifikansi 0.05, sehingga tidak secara kuat signifikan, nilai intersepsi tetap digunakan dalam model sebagai titik awal.
+
+2. **Curah_hujan (Rainfall )**:
+Koefisien untuk Curah_hujan adalah sekitar 32.25. Ini menunjukkan bahwa ketika Curah_hujan naik satu satuan, Produksi diperkirakan akan meningkat sekitar 32.25 unit. Namun, p-value (0.3255) untuk Curah_hujan adalah lebih besar dari tingkat signifikansi 0.05, yang mengindikasikan bahwa Curah_hujan tidak secara signifikan mempengaruhi Produksi.
+
+3. **Kelembapan (Humidity)**:
+Koefisien untuk Kelembapan adalah sekitar -6207. Ini menunjukkan bahwa ketika Kelembapan naik satu satuan, Produksi diperkirakan akan menurun sekitar 6207 unit. Namun, p-value (0.4002) untuk Kelembapan adalah lebih besar dari tingkat signifikansi 0.05, sehingga Kelembapan juga tidak secara signifikan mempengaruhi Produksi.
+
+4. **Luas_panen (Crop Area)**:
+Koefisien untuk Luas_panen adalah sekitar 4.564. Ini menunjukkan bahwa ketika Luas_panen naik satu satuan, Produksi diperkirakan akan meningkat sekitar 4.564 unit. P-value untuk Luas_panen adalah sangat rendah (<2e-16), menunjukkan bahwa Luas_panen secara signifikan mempengaruhi Produksi.
+
+5. **Suhu_rata_rata (Average Temperature)**:
+Koefisien untuk Suhu_rata_rata adalah sekitar -66720. Ini menunjukkan bahwa ketika Suhu_rata_rata naik satu satuan, Produksi diperkirakan akan menurun sekitar 66720 unit. P-value untuk Suhu_rata_rata adalah 0.0318, yang berada di bawah tingkat signifikansi 0.05, sehingga Suhu_rata_rata secara signifikan mempengaruhi Produksi.
+
+**Statistik Tambahan:**
+R-squared (Multiple R-squared) adalah sekitar 0.8257, yang menunjukkan bahwa sekitar 82.57% variabilitas dalam Produksi dapat dijelaskan oleh model ini. F-statistic adalah sekitar 259.3 dengan p-value yang sangat rendah (< 2.2e-16). Ini menunjukkan bahwa model secara keseluruhan adalah model yang baik, dan setidaknya satu variabel prediktor dalam model ini secara signifikan mempengaruhi Produksi.
+
+## Interpretasi
+Berdasarkan hasil analisis dengan model VAR, analisis kausalitas, dan regresi linear ini, kita dapat menyimpulkan bahwa:
+
+1. Dalam model VAR, bahwa variabel yang sangat berdampak pada produksi padi adalah variabel Luas_panen, karena nilai P-Value dari 3 lag yaitu Lag1, Lag2 dan Lag4 lebih rendah dari 0,05. Sementara untuk variabel curah_hujan, kelembapan, suhu_rata_rata pada lag yang diuji tidak tampak signifikan karena nilai P-Value lebih besar dari 0,05  
+
+2. Berdasarkan hasil uji Granger Causality dan Instantaneous Causality, tidak ada bukti statistik yang kuat untuk mendukung adanya hubungan sebab-akibat antara "avg_rainfall" dan "Produksi" dalam model VAR, baik dalam jangka waktu lag maupun dalam jangka waktu instan.
+
+3. Berdasarkan hasil analisis regresi didapatkan bahwa variabel "Luas_panen" dan "Suhu_rata_rata" memiliki pengaruh yang signifikan terhadap variabel "Produksi," sementara "Curah_hujan" dan "Kelembapan" tidak memiliki pengaruh yang signifikan terhadap Produksi dalam konteks model ini. Tetapi perlu diperhatikan bahwa hasil analisis ini mengasumsikan bahwa model regresi adalah relevan dan sesuai dengan data yang digunakan.
+
+
+# Model Machine Learning
+
+## Partisi Dataset
+```{r}
+set.seed(123)  # Untuk hasil yang dapat direproduksi
+splitIndex <- createDataPartition(padi$Produksi, p = 0.7, list = FALSE)
+data_train <- padi[splitIndex, ]  # Data pelatihan (70%)
+data_test <- padi[-splitIndex, ]  # Data pengujian (30%)
+dim(data_train)
+dim(data_test)
+```
+
+## Model RF 
+```{r}
+# Membuat model RF
+rf_model <- randomForest(Produksi ~ Curah_hujan + Kelembapan + Luas_panen + Suhu_rata_rata, data = data_train, ntree = 1000)
+```
+
+```{r}
+# Melakukan Prediksi terhadap Data Pengujian
+predictions_rf <- predict(rf_model, data_test)
+```
+
+
+```{r}
+# Visualisasi Hasil
+result_data_rf <- data.frame(Produksi = data_test$Produksi, Predictions = predictions_rf)
+
+# Visualisasi Perbandingan Produksi Aktual dengan Hasil Prediksi
+ggplot(data = result_data_rf, aes(x = Produksi, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
+  theme_minimal()
+```
+
+```{r}
+# Visualisasi Produksi Aktual dengan Hasil Prediksi
+ggplot(data = result_data_rf, aes(x = 1:length(Produksi))) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
+  labs(x = "Observasi", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
+  theme_minimal()
+```
+
+```{r}
+# Visualisasi hasil prediksi dengan sumbu x adalah tahun
+result_data_rf2 <- data.frame(Tahun = data_test$Tahun, Produksi = data_test$Produksi, Predictions = predictions_rf)
+
+ggplot(data = result_data_rf2, aes(x = Tahun)) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
+  labs(x = "Tahun", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal()
+```
+
+```{r}
+# Evaluasi RF Model
+
+# Hitung MAE
+mae_value_rf <- mae(data_test$Produksi, predictions_rf)
+
+# Hitung MSE
+mse_value_rf <- mse(data_test$Produksi, predictions_rf)
+
+# Hitung RMSE
+rmse_value_rf <- rmse(data_test$Produksi, predictions_rf)
+
+# Hitung MAPE
+mape_value_rf <- mape(data_test$Produksi, predictions_rf)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_value_rf, "\n"))
+cat(paste("MSE: ", mse_value_rf, "\n"))
+cat(paste("RMSE: ", rmse_value_rf, "\n"))
+cat(paste("MAPE: ", mape_value_rf, "%\n"))
+```
+
+## Model SVR
+
+```{r}
+# Membuat model SVR
+svr_model <- svm(Produksi ~ ., data = data_train, kernel = "radial", cost = 1)
+```
+
+```{r}
+# Melakukan prediksi dengan Data Testing
+predictions_svr <- predict(svr_model, data_test)
+```
+
+```{r}
+# Visualisasi hasil prediksi
+result_data_svr <- data.frame(Produksi = data_test$Produksi, Predictions = predictions_svr)
+
+ggplot(data = result_data_svr, aes(x = Produksi, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
+  theme_minimal()
+```
+
+```{r}
+# Buat grafik garis dengan ggplot2
+ggplot(data = result_data_svr, aes(x = 1:length(Produksi))) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
+  labs(x = "Observasi", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal()
+```
+
+```{r}
+# Visualisasi hasil prediksi dengan sumbu x adalah tahun
+result_data_svr2 <- data.frame(Tahun = data_test$Tahun, Produksi = data_test$Produksi, Predictions = predictions_svr)
+
+ggplot(data = result_data_svr2, aes(x = Tahun)) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
+  labs(x = "Tahun", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal()
+```
+
+```{r}
+# Evaluasi SVR Model
+
+# Hitung MAE
+mae_value_svr <- mae(data_test$Produksi, predictions_svr)
+
+# Hitung MSE
+mse_value_svr <- mse(data_test$Produksi, predictions_svr)
+
+# Hitung RMSE
+rmse_value_svr <- rmse(data_test$Produksi, predictions_svr)
+
+# Hitung MAPE
+mape_value_svr <- mape(data_test$Produksi, predictions_svr)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_value_svr, "\n"))
+cat(paste("MSE: ", mse_value_svr, "\n"))
+cat(paste("RMSE: ", rmse_value_svr, "\n"))
+cat(paste("MAPE: ", mape_value_svr, "%\n"))
+```
+
+## Model XGBoost
+```{r}
+# Mengonversi data frame ke matriks
+X_train <- data.matrix(data_train[, c("Curah_hujan", "Kelembapan", "Luas_panen", "Suhu_rata_rata")])
+y_train <- data_train$Produksi
+X_test <- data.matrix(data_test[, c("Curah_hujan", "Kelembapan", "Luas_panen", "Suhu_rata_rata")])
+
+```
+
+```{r}
+# Membuat model XGBoost
+xgb_data_train <- xgb.DMatrix(data = X_train, label = y_train)
+xgb_model <- xgboost(data = xgb_data_train, nrounds = 100)
+```
+
+```{r}
+# Melakukan prediksi pada data pengujian
+xgb_data_test <- xgb.DMatrix(data = X_test)
+predictions_xgb <- predict(xgb_model, newdata = xgb_data_test)
+```
+
+```{r}
+# Visualisasi hasil prediksi
+result_data_xgb <- data.frame(Produksi = data_test$Produksi, Predictions = predictions_xgb)
+
+# Buat grafik garis
+ggplot(data = result_data_xgb, aes(x = 1:length(data_test$Produksi))) +
+  geom_line(aes(y = data_test$Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = predictions_xgb, color = "Prediksi"), size = 1) +
+  labs(x = "Observasi", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model XGBoost") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal()
+```
+
+```{r}
+ggplot(data = result_data_xgb, aes(x = Produksi, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model XGBoost") +
+  theme_minimal()
+```
+
+```{r}
+# Evaluasi XGBoost Model
+
+# Hitung MAE
+mae_value_xgb <- mae(data_test$Produksi, predictions_xgb)
+
+# Hitung MSE
+mse_value_xgb <- mse(data_test$Produksi, predictions_xgb)
+
+# Hitung RMSE
+rmse_value_xgb <- rmse(data_test$Produksi, predictions_xgb)
+
+# Hitung MAPE
+mape_value_xgb <- mape(data_test$Produksi, predictions_xgb)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_value_xgb, "\n"))
+cat(paste("MSE: ", mse_value_xgb, "\n"))
+cat(paste("RMSE: ", rmse_value_xgb, "\n"))
+cat(paste("MAPE: ", mape_value_xgb, "%\n"))
+```
+
+```{r}
+# Visualisasi Model Prediksi
+# Gabungkan hasil prediksi dari ketiga model ke dalam satu data frame
+result_data_combined <- data.frame(
+  Produksi = data_test$Produksi,
+  Predictions_RF = predictions_rf,
+  Predictions_SVR = predictions_svr,
+  Predictions_XGB = predictions_xgb
+)
+
+ggplot(data = result_data_combined, aes(x = 1:length(Produksi))) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions_RF, color = "RF"), size = 0.5, linetype = "solid") +
+  geom_line(aes(y = Predictions_SVR, color = "SVR"), size = 0.5, linetype = "solid") +
+  geom_line(aes(y = Predictions_XGB, color = "XGB"), size = 0.5, linetype = "solid") +
+  labs(x = "Observasi", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "green", "RF" = "blue", "SVR" = "red", "XGB" = "brown")) +
+  ggtitle("Perbandingan Produksi Aktual dan Hasil Prediksi dari RF, SVR, dan XGB") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal()
+
+```
+
+## iNterpret
+```{r}
+model_performance <- data.frame(
+  No = c(1:3),
+  Model = c("Random Forest", "SVR", "XGBoost"),
+  MSE = c(mse_value_rf, mse_value_svr, mse_value_xgb),
+  RSME = c(rmse_value_rf, rmse_value_svr, mse_value_xgb),
+  MAE = c(mae_value_rf, mae_value_svr, mae_value_xgb),
+  MAPE = c(mape_value_rf, mape_value_svr, mape_value_xgb),
+  stringsAsFactors = FALSE
+  
+)
+model_performance
+```
+
+Berdasarkan hasil diatas, kalau dilihat dari performance matrik tingkat kesalahan yang paling rendah yaitu MAE, maka model **SVR** yang dianggap sebagai model terbaik dalam hal akurasi produksi padi.
+
+
+# Prediksi Curah Hujan, Luas Panen, Kelembapan, Suhu Rata-Rata
+Prediksi ini untuk melihat tren jumlah varibel tersebut dimasa depan, prediksi akan dilakukan untuk 5 tahun kedepan. Model yang digunakan adalah model Prophet
+
+
