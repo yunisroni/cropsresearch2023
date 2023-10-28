@@ -19,11 +19,14 @@ library(summarytools)
 library (ggplot2)
 # library untuk membaca data dari file Excel (.xlsx)
 library(readxl)
-# library untuk mengakses fungsi dari model Random Forest
+# library untuk model Random Forest
 library(randomForest)
-# library untuk mengaktifkan paket e1071, khususnya model SVR
+# library untuk model SVR
 library(e1071)
-
+# library Untuk partisi dataset
+library(caret)
+# library untuk evaluasi model
+library(Metrics)
 ```
 
 
@@ -1018,731 +1021,501 @@ plot_ubikayu_6 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 # 5. Prediksi Produksi Palawija dengan ML
 
-## 1. Jagung
+## Partisi Dataset
 ```{r}
-# Menghitung total produksi untuk setiap tahun
-summary_data_jagung <- Jagung %>%
-  group_by(Tahun) %>%
-  summarise(TotalProduksi = sum(Produksi))
-summary_data_jagung
+# Jagung
+set.seed(123)  # Untuk hasil yang dapat direproduksi
+jagung_splitIndex <- createDataPartition(Jagung$Produksi, p = 0.7, list = FALSE)
+datajagung_train <- Jagung[jagung_splitIndex, ]  # Data pelatihan (70%)
+datajagung_test <- Jagung[-jagung_splitIndex, ]  # Data pengujian (30%)
+dim(datajagung_train)
+dim(datajagung_test)
 ```
 ```{r}
-# Membuat bar chart atau line chart
-ggplot(summary_data_jagung, aes(x = Tahun, y = TotalProduksi)) +
-  geom_line() +
+# Kacang Hijau
+set.seed(123)  # Untuk hasil yang dapat direproduksi
+kacanghijau_splitIndex <- createDataPartition(KacangHijau$Produksi, p = 0.7, list = FALSE)
+datakacanghijau_train <- KacangHijau[kacanghijau_splitIndex, ]  # Data pelatihan (70%)
+datakacanghijau_test <- KacangHijau[-kacanghijau_splitIndex, ]  # Data pengujian (30%)
+dim(datakacanghijau_train)
+dim(datakacanghijau_test)
+```
+```{r}
+# Kacang Kedelai
+set.seed(123)  # Untuk hasil yang dapat direproduksi
+kacangkedelai_splitIndex <- createDataPartition(KacangKedelai$Produksi, p = 0.7, list = FALSE)
+datakacangkedelai_train <- KacangKedelai[kacangkedelai_splitIndex, ]  # Data pelatihan (70%)
+datakacangkedelai_test <- KacangKedelai[-kacangkedelai_splitIndex, ]  # Data pengujian (30%)
+dim(datakacangkedelai_train)
+dim(datakacangkedelai_test)
+```
+```{r}
+# Kacang Tanah
+set.seed(123)  # Untuk hasil yang dapat direproduksi
+kacangtanah_splitIndex <- createDataPartition(KacangTanah$Produksi, p = 0.7, list = FALSE)
+datakacangtanah_train <- KacangTanah[kacangtanah_splitIndex, ]  # Data pelatihan (70%)
+datakacangtanah_test <- KacangTanah[-kacangtanah_splitIndex, ]  # Data pengujian (30%)
+dim(datakacangtanah_train)
+dim(datakacangtanah_test)
+```
+```{r}
+# Ubi Jalar
+set.seed(123)  # Untuk hasil yang dapat direproduksi
+ubijalar_splitIndex <- createDataPartition(UbiJalar$Produksi, p = 0.7, list = FALSE)
+dataubijalar_train <- UbiJalar[ubijalar_splitIndex, ]  # Data pelatihan (70%)
+dataubijalar_test <- UbiJalar[-ubijalar_splitIndex, ]  # Data pengujian (30%)
+dim(dataubijalar_train)
+dim(dataubijalar_test)
+```
+```{r}
+# Ubi Kayu
+set.seed(123)  # Untuk hasil yang dapat direproduksi
+ubikayu_splitIndex <- createDataPartition(UbiKayu$Produksi, p = 0.7, list = FALSE)
+dataubikayu_train <- UbiKayu[ubikayu_splitIndex, ]  # Data pelatihan (70%)
+dataubikayu_test <- UbiKayu[-ubikayu_splitIndex, ]  # Data pengujian (30%)
+dim(dataubikayu_train)
+dim(dataubikayu_test)
+```
+
+
+## Model Random Forest
+
+### 1. Membuat Model Random Forest - Jagung
+```{r}
+# Membuat model RF
+jagung_rf_model <- randomForest(Produksi ~ Produktivitas + Luas_Panen, data = datajagung_train, ntree = 1000)
+```
+```{r}
+# Melakukan Prediksi terhadap Data Pengujian
+predictions_rf_jagung <- predict(jagung_rf_model, datajagung_test)
+```
+```{r}
+# Visualisasi Hasil
+result_datajagung_rf <- data.frame(Produksi = datajagung_test$Produksi, Predictions = predictions_rf_jagung)
+
+# Visualisasi Perbandingan Produksi Aktual dengan Hasil Prediksi
+ggplot(data = result_datajagung_rf, aes(x = Produksi, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  scale_x_continuous(labels = scales::comma) +
   scale_y_continuous(labels = scales::comma) +
-  theme_minimal() +
-  labs(title = "Perubahan Jumlah Produksi Jagung dari 1993 - 2015",
-       x = "Tahun",
-       y = "Total Produksi")
+  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
+  theme_minimal()
 ```
 ```{r}
-data_jagung <- summary_data_jagung %>% 
-  rename(
-    Tahun = "Tahun",
-    Produksi_Jagung = "TotalProduksi"
-  )
-data_jagung
-
+# Visualisasi Produksi Aktual dengan Hasil Prediksi
+ggplot(data = result_datajagung_rf, aes(x = 1:length(Produksi))) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
+  labs(x = "Observasi", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
+  theme_minimal()
 ```
+
 ```{r}
-# Membagi data menjadi data pelatihan dan pengujian - Jagung
-set.seed(123) #menentukan nilai acak dari data
-jagung_sample_indices <- sample(nrow(data_jagung), nrow(data_jagung) * 0.7)
-jagung_training_data <- data_jagung[jagung_sample_indices, ]
-jagung_testing_data <- data_jagung[-jagung_sample_indices, ]
-jagung_training_data
-jagung_testing_data
-```
-### a. Model Random Forest
-#### - Membangun model
-```{r}
-# Membangun model Random Forest
-rf_model_jagung <- randomForest(Produksi_Jagung ~., data = jagung_training_data, ntree = 500)
-rf_model_jagung
-```
-Dalam model ini, terdapat 500 pohon keputusan yang digunakan untuk membuat prediksi.
+# Visualisasi hasil prediksi dengan sumbu x adalah tahun
+result_datajagung_rf2 <- data.frame(Tahun = datajagung_test$Tahun, Produksi = datajagung_test$Produksi, Predictions = predictions_rf_jagung)
 
-#### - Melakukan prediksi
-```{r}
-# Melakukan prediksi jangka pendek
-jagung_predictions <- predict(rf_model_jagung, newdata = jagung_testing_data)
-jagung_predictions
-plot(jagung_predictions)
-
-```
-```{r}
-# Melakukan prediksi jangka panjang (10 tahun)
-jagung_future_years <- seq(max(data_jagung$Tahun) + 1, max(data_jagung$Tahun) + 10, by = "years")
-future_data_jagung <- data.frame(Tahun = jagung_future_years) 
-
-future_predictions_jagung <- predict(rf_model_jagung, future_data_jagung)
-future_predictions_jagung
-```
-#### - Evaluasi Model
-```{r}
-# 1. Evaluasi model dalam  melakukan prediksi jangka pendek
-# Hitung MAE (Mean Absolute Error)
-mae_jagung_jangkapendek <- mean(abs(jagung_testing_data$Produksi_Jagung - jagung_predictions))
-
-# Hitung MAPE (Mean Absolute Percentage Error)
-mape_jagung_jangkapendek <- mean(abs((jagung_testing_data$Produksi_Jagung - jagung_predictions) / jagung_testing_data$Produksi_Jagung) * 100)
-
-# Hitung MSE (Mean Squared Error)
-mse_jagung_jangkapendek <- mean((jagung_testing_data$Produksi_Jagung - jagung_predictions)^2)
-
-# Hitung RMSE (Root Mean Squared Error)
-rmse_jagung_jangkapendek <- sqrt(mse_jagung_jangkapendek)
-
-# Tampilkan hasil metrik evaluasi
-cat("MAE:", mae_jagung_jangkapendek, "\n")
-cat("MAPE:", mape_jagung_jangkapendek, "%\n")
-cat("MSE:", mse_jagung_jangkapendek, "\n")
-cat("RMSE:", rmse_jagung_jangkapendek, "\n")
-
-```
-```{r}
-# 2. Evaluasi model dalam  melakukan prediksi jangka panjang
-# Hitung MAE (Mean Absolute Error)
-mae_jagung_jangkapanjang <- mean(abs(jagung_testing_data$Produksi_Jagung - future_predictions_jagung))
-
-# Hitung MAPE (Mean Absolute Percentage Error)
-mape_jagung_jangkapanjang <- mean(abs((jagung_testing_data$Produksi_Jagung - future_predictions_jagung) / jagung_testing_data$Produksi_Jagung) * 100)
-
-# Hitung MSE (Mean Squared Error)
-mse_jagung_jangkapanjang <- mean((jagung_testing_data$Produksi_Jagung - future_predictions_jagung)^2)
-
-# Hitung RMSE (Root Mean Squared Error)
-rmse_jagung_jangkapanjang <- sqrt(mse_jagung_jangkapanjang)
-
-# Tampilkan hasil metrik evaluasi
-cat("MAE:", mae_jagung_jangkapanjang, "\n")
-cat("MAPE:", mape_jagung_jangkapanjang, "%\n")
-cat("MSE:", mse_jagung_jangkapanjang, "\n")
-cat("RMSE:", rmse_jagung_jangkapanjang, "\n")
-
-```
-Hasil evaluasi model Random Forest menunjukkan perbedaan yang signifikan antara prediksi produksi jagung dalam jangka pendek dan jangka panjang. Dalam prediksi jangka pendek, model memiliki tingkat kesalahan yang relatif rendah, dengan MAE sekitar 1.04 juta dan MAPE sekitar 12.74%. Hal ini menunjukkan bahwa rata-rata kesalahan prediksi model ini dalam jangka pendek adalah sekitar 1.04 juta ton, dan sekitar 12.74% dari nilai aktual. Selain itu, MSE dan RMSE juga relatif rendah, masing-masing sekitar 1.84 triliun dan 1.36 juta, menunjukkan bahwa sebagian besar prediksi berada dalam kisaran yang cukup dekat dengan nilai aktual. Namun, dalam prediksi jangka panjang, hasil evaluasi menunjukkan performa yang kurang baik. MAE mencapai sekitar 7.2 juta dan MAPE mencapai 88.68%, mengindikasikan tingkat kesalahan yang jauh lebih tinggi dibandingkan dengan prediksi jangka pendek. MSE dan RMSE juga signifikan, masing-masing sekitar 70.81 triliun dan 8.41 juta, menunjukkan bahwa model cenderung memberikan prediksi yang jauh dari nilai aktual dalam jangka panjang. Dari hasil ini, dapat disimpulkan bahwa model Random Forest lebih cocok untuk digunakan dalam prediksi jagung jangka pendek daripada jangka panjang. 
-
-
-### b. Model SVR
-#### - Membangun model
-#### - Melakukan prediksi
-#### - Evaluasi Model
-
-### c. Model KNN
-#### - Membangun model
-#### - Melakukan prediksi
-#### - Evaluasi Model
-
-### d. Intepretasikan dan Membandingkan Model Random Forest, SVR, dan KNN
-
-
-
-
-
-
-## 2. Kacang Hijau
-```{r}
-# Menghitung total produksi untuk setiap tahun
-summary_data_kacanghijau <- KacangHijau %>%
-  group_by(Tahun) %>%
-  summarise(TotalProduksi = sum(Produksi))
-summary_data_kacanghijau
-```
-```{r}
-# Membuat bar chart atau line chart
-ggplot(summary_data_kacanghijau, aes(x = Tahun, y = TotalProduksi)) +
-  geom_line() +
+ggplot(data = result_datajagung_rf2, aes(x = Tahun)) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
+  labs(x = "Tahun", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
   scale_y_continuous(labels = scales::comma) +
-  theme_minimal() +
-  labs(title = "Perubahan Jumlah Produksi Kacang Hijau dari 1993 - 2015",
-       x = "Tahun",
-       y = "Total Produksi")
+  theme_minimal()
 ```
 ```{r}
-data_kacanghijau <- summary_data_kacanghijau %>% 
-  rename(
-    Tahun = "Tahun",
-    Produksi_Kacanghijau = "TotalProduksi"
-  )
-data_kacanghijau
+# Evaluasi RF Model
 
+# Hitung MAE
+mae_value_rf_jagung <- mae(datajagung_test$Produksi, predictions_rf_jagung)
+
+# Hitung MSE
+mse_value_rf_jagung <- mse(datajagung_test$Produksi, predictions_rf_jagung)
+
+# Hitung RMSE
+rmse_value_rf_jagung <- rmse(datajagung_test$Produksi, predictions_rf_jagung)
+
+# Hitung MAPE
+mape_value_rf_jagung <- mape(datajagung_test$Produksi, predictions_rf_jagung)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_value_rf_jagung, "\n"))
+cat(paste("MSE: ", mse_value_rf_jagung, "\n"))
+cat(paste("RMSE: ", rmse_value_rf_jagung, "\n"))
+cat(paste("MAPE: ", mape_value_rf_jagung, "%\n"))
+```
+
+### 2. Membuat Model Random Forest - Kacang Hijau
+```{r}
+# Membuat model RF
+kacanghijau_rf_model <- randomForest(Produksi ~ Produktivitas + Luas_Panen, data = datakacanghijau_train, ntree = 1000)
 ```
 ```{r}
-# Membagi data menjadi data pelatihan dan pengujian - kacang hijau
-set.seed(123) #menentukan nilai acak dari data
-kacanghijau_sample_indices <- sample(nrow(data_kacanghijau), nrow(data_kacanghijau) * 0.7)
-kacanghijau_training_data <- data_kacanghijau[kacanghijau_sample_indices, ]
-kacanghijau_testing_data <- data_kacanghijau[-kacanghijau_sample_indices, ]
-kacanghijau_training_data
-kacanghijau_testing_data
-```
-### a. Model Random Forest
-#### - Membangun model
-```{r}
-# Membangun model Random Forest
-rf_model_kacanghijau <- randomForest(Produksi_Kacanghijau ~., data = kacanghijau_training_data, ntree = 500)
-rf_model_kacanghijau
-```
-Dalam model ini, terdapat 500 pohon keputusan yang digunakan untuk membuat prediksi.
-
-#### - Melakukan prediksi
-```{r}
-# Melakukan prediksi jangka pendek
-kacanghijau_predictions <- predict(rf_model_kacanghijau, newdata = kacanghijau_testing_data)
-kacanghijau_predictions
-plot(kacanghijau_predictions)
-
+# Melakukan Prediksi terhadap Data Pengujian
+predictions_rf_kacanghijau <- predict(kacanghijau_rf_model, datakacanghijau_test)
 ```
 ```{r}
-# Melakukan prediksi jangka panjang (10 tahun)
-kacanghijau_future_years <- seq(max(data_kacanghijau$Tahun) + 1, max(data_kacanghijau$Tahun) + 10, by = "years")
-future_data_kacanghijau <- data.frame(Tahun = kacanghijau_future_years) 
+# Visualisasi Hasil
+result_datakacanghijau_rf <- data.frame(Produksi = datakacanghijau_test$Produksi, Predictions = predictions_rf_kacanghijau)
 
-future_predictions_kacanghijau <- predict(rf_model_kacanghijau, future_data_kacanghijau)
-future_predictions_kacanghijau
-```
-#### - Evaluasi Model
-```{r}
-# 1. Evaluasi model dalam  melakukan prediksi jangka pendek
-# Hitung MAE (Mean Absolute Error)
-mae_kacanghijau_jangkapendek <- mean(abs(kacanghijau_testing_data$Produksi_Kacanghijau - kacanghijau_predictions))
-
-# Hitung MAPE (Mean Absolute Percentage Error)
-mape_kacanghijau_jangkapendek <- mean(abs((kacanghijau_testing_data$Produksi_Kacanghijau - kacanghijau_predictions) / kacanghijau_testing_data$Produksi_Kacanghijau) * 100)
-
-# Hitung MSE (Mean Squared Error)
-mse_kacanghijau_jangkapendek <- mean((kacanghijau_testing_data$Produksi_Kacanghijau - kacanghijau_predictions)^2)
-
-# Hitung RMSE (Root Mean Squared Error)
-rmse_kacanghijau_jangkapendek <- sqrt(mse_kacanghijau_jangkapendek)
-
-# Tampilkan hasil metrik evaluasi
-cat("MAE:", mae_kacanghijau_jangkapendek, "\n")
-cat("MAPE:", mape_kacanghijau_jangkapendek, "%\n")
-cat("MSE:", mse_kacanghijau_jangkapendek, "\n")
-cat("RMSE:", rmse_kacanghijau_jangkapendek, "\n")
-
-```
-```{r}
-# 2. Evaluasi model dalam  melakukan prediksi jangka panjang
-# Hitung MAE (Mean Absolute Error)
-mae_kacanghijau_jangkapanjang <- mean(abs(kacanghijau_testing_data$Produksi_Kacanghijau - future_predictions_kacanghijau))
-
-# Hitung MAPE (Mean Absolute Percentage Error)
-mape_kacanghijau_jangkapanjang <- mean(abs((kacanghijau_testing_data$Produksi_Kacanghijau - future_predictions_kacanghijau) / kacanghijau_testing_data$Produksi_Kacanghijau) * 100)
-
-# Hitung MSE (Mean Squared Error)
-mse_kacanghijau_jangkapanjang <- mean((kacanghijau_testing_data$Produksi_Kacanghijau - future_predictions_kacanghijau)^2)
-
-# Hitung RMSE (Root Mean Squared Error)
-rmse_kacanghijau_jangkapanjang <- sqrt(mse_kacanghijau_jangkapanjang)
-
-# Tampilkan hasil metrik evaluasi
-cat("MAE:", mae_kacanghijau_jangkapanjang, "\n")
-cat("MAPE:", mape_kacanghijau_jangkapanjang, "%\n")
-cat("MSE:", mse_kacanghijau_jangkapanjang, "\n")
-cat("RMSE:", rmse_kacanghijau_jangkapanjang, "\n")
-
-```
-Hasil evaluasi model Random Forest untuk prediksi produksi kacang hijau menunjukkan perbedaan yang signifikan antara prediksi jangka pendek dan jangka panjang. Dalam prediksi jangka pendek, model memiliki tingkat kesalahan yang relatif rendah, dengan MAE sekitar 23.47 ribu dan MAPE sekitar 7.77%. Ini mengindikasikan bahwa rata-rata kesalahan prediksi model ini dalam jangka pendek adalah sekitar 23.47 ribu ton, dan sekitar 7.77% dari nilai aktual. Selain itu, MSE dan RMSE juga relatif rendah, masing-masing sekitar 694.79 juta dan 26.36 ribu, menunjukkan bahwa sebagian besar prediksi berada dalam kisaran yang cukup dekat dengan nilai aktual. Namun, dalam prediksi jangka panjang, hasil evaluasi menunjukkan performa yang kurang baik. MAE mencapai sekitar 58.98 ribu dan MAPE mencapai 18.67%, mengindikasikan tingkat kesalahan yang jauh lebih tinggi dibandingkan dengan prediksi jangka pendek. MSE dan RMSE juga signifikan, masing-masing sekitar 4.25 miliar dan 65.19 ribu, menunjukkan bahwa model cenderung memberikan prediksi yang jauh dari nilai aktual dalam jangka panjang. Dari hasil ini, dapat disimpulkan bahwa model Random Forest lebih cocok digunakan untuk prediksi kacang hijau dalam jangka pendek daripada jangka panjang.
-
-### b. Model SVR
-#### - Membangun model
-#### - Melakukan prediksi
-#### - Evaluasi Model
-
-### c. Model KNN
-#### - Membangun model
-#### - Melakukan prediksi
-#### - Evaluasi Model
-
-### d. Intepretasikan dan Membandingkan Model Random Forest, SVR, dan KNN
-
-
-
-## 3. Kacang Kedelai
-```{r}
-# Menghitung total produksi untuk setiap tahun
-summary_data_kacangkedelai <- KacangKedelai %>%
-  group_by(Tahun) %>%
-  summarise(TotalProduksi = sum(Produksi))
-summary_data_kacangkedelai
-```
-```{r}
-# Membuat bar chart atau line chart
-ggplot(summary_data_kacangkedelai, aes(x = Tahun, y = TotalProduksi)) +
-  geom_line() +
+# Visualisasi Perbandingan Produksi Aktual dengan Hasil Prediksi
+ggplot(data = result_datakacanghijau_rf, aes(x = Produksi, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  scale_x_continuous(labels = scales::comma) +
   scale_y_continuous(labels = scales::comma) +
-  theme_minimal() +
-  labs(title = "Perubahan Jumlah Produksi Kacang Kedelai dari 1993 - 2015",
-       x = "Tahun",
-       y = "Total Produksi")
+  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
+  theme_minimal()
 ```
 ```{r}
-data_kacangkedelai <- summary_data_kacangkedelai %>% 
-  rename(
-    Tahun = "Tahun",
-    Produksi_Kacangkedelai = "TotalProduksi"
-  )
-data_kacangkedelai
-
-```
-```{r}
-# Membagi data menjadi data pelatihan dan pengujian - Kacang Kedelai
-set.seed(123) #menentukan nilai acak dari data
-kacangkedelai_sample_indices <- sample(nrow(data_kacangkedelai), nrow(data_kacangkedelai) * 0.7)
-kacangkedelai_training_data <- data_kacangkedelai[kacangkedelai_sample_indices, ]
-kacangkedelai_testing_data <- data_kacangkedelai[-kacangkedelai_sample_indices, ]
-kacangkedelai_training_data
-kacangkedelai_testing_data
-```
-### a. Model Random Forest
-#### - Membangun model
-```{r}
-# Membangun model Random Forest
-rf_model_kacangkedelai <- randomForest(Produksi_Kacangkedelai ~., data = kacangkedelai_training_data, ntree = 500)
-rf_model_kacangkedelai
-```
-Dalam model ini, terdapat 500 pohon keputusan yang digunakan untuk membuat prediksi.
-
-#### - Melakukan prediksi
-```{r}
-# Melakukan prediksi jangka pendek
-kacangkedelai_predictions <- predict(rf_model_kacangkedelai, newdata = kacangkedelai_testing_data)
-kacangkedelai_predictions
-plot(kacangkedelai_predictions)
-
-```
-```{r}
-# Melakukan prediksi jangka panjang (10 tahun)
-kacangkedelai_future_years <- seq(max(data_kacangkedelai$Tahun) + 1, max(data_kacangkedelai$Tahun) + 10, by = "years")
-future_data_kacangkedelai <- data.frame(Tahun = kacangkedelai_future_years) 
-
-future_predictions_kacangkedelai <- predict(rf_model_kacangkedelai, future_data_kacangkedelai)
-future_predictions_kacangkedelai
-```
-#### - Evaluasi Model
-```{r}
-# 1. Evaluasi model dalam  melakukan prediksi jangka pendek
-# Hitung MAE (Mean Absolute Error)
-mae_kacangkedelai_jangkapendek <- mean(abs(kacangkedelai_testing_data$Produksi_Kacangkedelai - kacangkedelai_predictions))
-
-# Hitung MAPE (Mean Absolute Percentage Error)
-mape_kacangkedelai_jangkapendek <- mean(abs((kacangkedelai_testing_data$Produksi_Kacangkedelai - kacangkedelai_predictions) / kacangkedelai_testing_data$Produksi_Kacangkedelai) * 100)
-
-# Hitung MSE (Mean Squared Error)
-mse_kacangkedelai_jangkapendek <- mean((kacangkedelai_testing_data$Produksi_Kacangkedelai - kacangkedelai_predictions)^2)
-
-# Hitung RMSE (Root Mean Squared Error)
-rmse_kacangkedelai_jangkapendek <- sqrt(mse_kacangkedelai_jangkapendek)
-
-# Tampilkan hasil metrik evaluasi
-cat("MAE:", mae_kacangkedelai_jangkapendek, "\n")
-cat("MAPE:", mape_kacangkedelai_jangkapendek, "%\n")
-cat("MSE:", mse_kacangkedelai_jangkapendek, "\n")
-cat("RMSE:", rmse_kacangkedelai_jangkapendek, "\n")
-
-```
-```{r}
-# 2. Evaluasi model dalam  melakukan prediksi jangka panjang
-# Hitung MAE (Mean Absolute Error)
-mae_kacangkedelai_jangkapanjang <- mean(abs(kacangkedelai_testing_data$Produksi_Kacangkedelai - future_predictions_kacangkedelai))
-
-# Hitung MAPE (Mean Absolute Percentage Error)
-mape_kacangkedelai_jangkapanjang <- mean(abs((kacangkedelai_testing_data$Produksi_Kacangkedelai - future_predictions_kacangkedelai) / kacangkedelai_testing_data$Produksi_Kacangkedelai) * 100)
-
-# Hitung MSE (Mean Squared Error)
-mse_kacangkedelai_jangkapanjang <- mean((kacangkedelai_testing_data$Produksi_Kacangkedelai - future_predictions_kacangkedelai)^2)
-
-# Hitung RMSE (Root Mean Squared Error)
-rmse_kacangkedelai_jangkapanjang <- sqrt(mse_kacangkedelai_jangkapanjang)
-
-# Tampilkan hasil metrik evaluasi
-cat("MAE:", mae_kacangkedelai_jangkapanjang, "\n")
-cat("MAPE:", mape_kacangkedelai_jangkapanjang, "%\n")
-cat("MSE:", mse_kacangkedelai_jangkapanjang, "\n")
-cat("RMSE:", rmse_kacangkedelai_jangkapanjang, "\n")
-
-```
-Hasil evaluasi model Random Forest untuk prediksi produksi kacang kedelai menunjukkan perbedaan yang signifikan antara prediksi jangka pendek dan jangka panjang. Dalam prediksi jangka pendek, model memiliki tingkat kesalahan yang relatif rendah, dengan MAE sekitar 104.49 ribu dan MAPE sekitar 9.18%. Ini mengindikasikan bahwa rata-rata kesalahan prediksi model ini dalam jangka pendek adalah sekitar 104.49 ribu ton, dan sekitar 9.18% dari nilai aktual. Selain itu, MSE dan RMSE juga relatif rendah, masing-masing sekitar 15.07 miliar dan 122.76 ribu, menunjukkan bahwa sebagian besar prediksi berada dalam kisaran yang cukup dekat dengan nilai aktual. Namun, dalam prediksi jangka panjang, hasil evaluasi menunjukkan performa yang kurang baik. MAE mencapai sekitar 335.13 ribu dan MAPE mencapai 23.59%, mengindikasikan tingkat kesalahan yang jauh lebih tinggi dibandingkan dengan prediksi jangka pendek. MSE dan RMSE juga signifikan, masing-masing sekitar 199.43 miliar dan 446.57 ribu, menunjukkan bahwa model cenderung memberikan prediksi yang jauh dari nilai aktual dalam jangka panjang. Dari hasil ini, dapat disimpulkan bahwa model Random Forest lebih cocok digunakan untuk prediksi kacang kedelai dalam jangka pendek daripada jangka panjang. 
-
-### b. Model SVR
-#### - Membangun model
-#### - Melakukan prediksi
-#### - Evaluasi Model
-
-### c. Model KNN
-#### - Membangun model
-#### - Melakukan prediksi
-#### - Evaluasi Model
-
-### d. Intepretasikan dan Membandingkan Model Random Forest, SVR, dan KNN
-
-
-## 4. Kacang Tanah
-```{r}
-# Menghitung total produksi untuk setiap tahun
-summary_data_kacangtanah <- KacangTanah %>%
-  group_by(Tahun) %>%
-  summarise(TotalProduksi = sum(Produksi))
-summary_data_kacangtanah
+# Visualisasi Produksi Aktual dengan Hasil Prediksi
+ggplot(data = result_datakacanghijau_rf, aes(x = 1:length(Produksi))) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
+  labs(x = "Observasi", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
+  theme_minimal()
 ```
 
 ```{r}
-# Membuat bar chart atau line chart
-ggplot(summary_data_kacangtanah, aes(x = Tahun, y = TotalProduksi)) +
-  geom_line() +
+# Visualisasi hasil prediksi dengan sumbu x adalah tahun
+result_datakacanghijau_rf2 <- data.frame(Tahun = datakacanghijau_test$Tahun, Produksi = datakacanghijau_test$Produksi, Predictions = predictions_rf_kacanghijau)
+
+ggplot(data = result_datakacanghijau_rf2, aes(x = Tahun)) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
+  labs(x = "Tahun", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
   scale_y_continuous(labels = scales::comma) +
-  theme_minimal() +
-  labs(title = "Perubahan Jumlah Produksi Kacang Tanah dari 1993 - 2015",
-       x = "Tahun",
-       y = "Total Produksi")
-```
-
-```{r}
-data_kacangtanah <- summary_data_kacangtanah %>% 
-  rename(
-    Tahun = "Tahun",
-    Produksi_Kacangtanah = "TotalProduksi"
-  )
-data_kacangtanah
-
-```
-
-```{r}
-# Membagi data menjadi data pelatihan dan pengujian - Kacang Tanah
-set.seed(123) #menentukan nilai acak dari data
-kacangtanah_sample_indices <- sample(nrow(data_kacangtanah), nrow(data_kacangtanah) * 0.7)
-kacangtanah_training_data <- data_kacangtanah[kacangtanah_sample_indices, ]
-kacangtanah_testing_data <- data_kacangtanah[-kacangtanah_sample_indices, ]
-kacangtanah_training_data
-kacangtanah_testing_data
-```
-### a. Model Random Forest
-#### - Membangun model
-```{r}
-# Membangun model Random Forest
-rf_model_kacangtanah <- randomForest(Produksi_Kacangtanah ~., data = kacangtanah_training_data, ntree = 500)
-rf_model_kacangtanah
-```
-Dalam model ini, terdapat 500 pohon keputusan yang digunakan untuk membuat prediksi.
-
-#### - Melakukan prediksi
-```{r}
-# Melakukan prediksi jangka pendek
-kacangtanah_predictions <- predict(rf_model_kacangtanah, newdata = kacangtanah_testing_data)
-kacangtanah_predictions
-plot(kacangtanah_predictions)
-
+  theme_minimal()
 ```
 ```{r}
-# Melakukan prediksi jangka panjang (10 tahun)
-kacangtanah_future_years <- seq(max(data_kacangtanah$Tahun) + 1, max(data_kacangtanah$Tahun) + 10, by = "years")
-future_data_kacangtanah <- data.frame(Tahun = kacangtanah_future_years) 
+# Evaluasi RF Model
 
-future_predictions_kacangtanah <- predict(rf_model_kacangtanah, future_data_kacangtanah)
-future_predictions_kacangtanah
+# Hitung MAE
+mae_value_rf_kacanghijau <- mae(datakacanghijau_test$Produksi, predictions_rf_kacanghijau)
+
+# Hitung MSE
+mse_value_rf_kacanghijau <- mse(datakacanghijau_test$Produksi, predictions_rf_kacanghijau)
+
+# Hitung RMSE
+rmse_value_rf_kacanghijau <- rmse(datakacanghijau_test$Produksi, predictions_rf_kacanghijau)
+
+# Hitung MAPE
+mape_value_rf_kacanghijau <- mape(datakacanghijau_test$Produksi, predictions_rf_kacanghijau)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_value_rf_kacanghijau, "\n"))
+cat(paste("MSE: ", mse_value_rf_kacanghijau, "\n"))
+cat(paste("RMSE: ", rmse_value_rf_kacanghijau, "\n"))
+cat(paste("MAPE: ", mape_value_rf_kacanghijau, "%\n"))
 ```
-#### - Evaluasi Model
+
+### 3. Membuat Model Random Forest - Kacang Kedelai
 ```{r}
-# 1. Evaluasi model dalam  melakukan prediksi jangka pendek
-# Hitung MAE (Mean Absolute Error)
-mae_kacangtanah_jangkapendek <- mean(abs(kacangtanah_testing_data$Produksi_Kacangtanah - kacangtanah_predictions))
-
-# Hitung MAPE (Mean Absolute Percentage Error)
-mape_kacangtanah_jangkapendek <- mean(abs((kacangtanah_testing_data$Produksi_Kacangtanah - kacangtanah_predictions) / kacangtanah_testing_data$Produksi_Kacangtanah) * 100)
-
-# Hitung MSE (Mean Squared Error)
-mse_kacangtanah_jangkapendek <- mean((kacangtanah_testing_data$Produksi_Kacangtanah - kacangtanah_predictions)^2)
-
-# Hitung RMSE (Root Mean Squared Error)
-rmse_kacangtanah_jangkapendek <- sqrt(mse_kacangtanah_jangkapendek)
-
-# Tampilkan hasil metrik evaluasi
-cat("MAE:", mae_kacangtanah_jangkapendek, "\n")
-cat("MAPE:", mape_kacangtanah_jangkapendek, "%\n")
-cat("MSE:", mse_kacangtanah_jangkapendek, "\n")
-cat("RMSE:", rmse_kacangtanah_jangkapendek, "\n")
-
+# Membuat model RF
+kacangkedelai_rf_model <- randomForest(Produksi ~ Produktivitas + Luas_Panen, data = datakacangkedelai_train, ntree = 1000)
 ```
 ```{r}
-# 2. Evaluasi model dalam  melakukan prediksi jangka panjang
-# Hitung MAE (Mean Absolute Error)
-mae_kacangtanah_jangkapanjang <- mean(abs(kacangtanah_testing_data$Produksi_Kacangtanah - future_predictions_kacangtanah))
-
-# Hitung MAPE (Mean Absolute Percentage Error)
-mape_kacangtanah_jangkapanjang <- mean(abs((kacangtanah_testing_data$Produksi_Kacangtanah - future_predictions_kacangtanah) / kacangtanah_testing_data$Produksi_Kacangtanah) * 100)
-
-# Hitung MSE (Mean Squared Error)
-mse_kacangtanah_jangkapanjang <- mean((kacangtanah_testing_data$Produksi_Kacangtanah - future_predictions_kacangtanah)^2)
-
-# Hitung RMSE (Root Mean Squared Error)
-rmse_kacangtanah_jangkapanjang <- sqrt(mse_kacangtanah_jangkapanjang)
-
-# Tampilkan hasil metrik evaluasi
-cat("MAE:", mae_kacangtanah_jangkapanjang, "\n")
-cat("MAPE:", mape_kacangtanah_jangkapanjang, "%\n")
-cat("MSE:", mse_kacangtanah_jangkapanjang, "\n")
-cat("RMSE:", rmse_kacangtanah_jangkapanjang, "\n")
-
-```
-Hasil evaluasi model Random Forest untuk prediksi produksi kacang tanah menunjukkan kinerja yang baik dalam kedua jangka waktu, baik jangka pendek maupun jangka panjang. Dalam prediksi jangka pendek, model memiliki MAE sekitar 52.23 ribu dan MAPE sekitar 8.08%, menunjukkan tingkat kesalahan yang relatif rendah. Hal ini mengindikasikan bahwa rata-rata kesalahan prediksi model ini dalam jangka pendek adalah sekitar 52.23 ribu ton, dan sekitar 8.08% dari nilai aktual. MSE dan RMSE juga cukup rendah, masing-masing sekitar 3.99 miliar dan 63.16 ribu, menunjukkan bahwa sebagian besar prediksi berada dalam kisaran yang dekat dengan nilai aktual. Dalam prediksi jangka panjang, model tetap mempertahankan kinerja yang baik dengan MAE sekitar 71.33 ribu dan MAPE sekitar 9.89%. Meskipun tingkat kesalahan sedikit meningkat dibandingkan dengan jangka pendek, model masih memberikan prediksi yang akurat. MSE dan RMSE juga tetap relatif rendah, masing-masing sekitar 6.83 miliar dan 82.66 ribu, menunjukkan bahwa model ini dapat diandalkan dalam jangka panjang. Secara keseluruhan, hasil evaluasi menunjukkan bahwa model Random Forest dapat digunakan efektif untuk prediksi produksi kacang tanah, baik dalam jangka pendek maupun jangka panjang.
-
-### b. Model SVR
-#### - Membangun model
-#### - Melakukan prediksi
-#### - Evaluasi Model
-
-### c. Model KNN
-#### - Membangun model
-#### - Melakukan prediksi
-#### - Evaluasi Model
-
-### d. Intepretasikan dan Membandingkan Model Random Forest, SVR, dan KNN
-
-
-
-## 5. Ubi Jalar
-```{r}
-# Menghitung total produksi untuk setiap tahun
-summary_data_ubijalar <- UbiJalar %>%
-  group_by(Tahun) %>%
-  summarise(TotalProduksi = sum(Produksi))
-summary_data_ubijalar
+# Melakukan Prediksi terhadap Data Pengujian
+predictions_rf_kacangkedelai <- predict(kacangkedelai_rf_model, datakacangkedelai_test)
 ```
 ```{r}
-# Membuat bar chart atau line chart
-ggplot(summary_data_ubijalar, aes(x = Tahun, y = TotalProduksi)) +
-  geom_line() +
+# Visualisasi Hasil
+result_datakacangkedelai_rf <- data.frame(Produksi = datakacangkedelai_test$Produksi, Predictions = predictions_rf_kacangkedelai)
+
+# Visualisasi Perbandingan Produksi Aktual dengan Hasil Prediksi
+ggplot(data = result_datakacangkedelai_rf, aes(x = Produksi, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  scale_x_continuous(labels = scales::comma) +
   scale_y_continuous(labels = scales::comma) +
-  theme_minimal() +
-  labs(title = "Perubahan Jumlah Produksi Ubi Jalar dari 1993 - 2015",
-       x = "Tahun",
-       y = "Total Produksi")
+  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
+  theme_minimal()
 ```
 ```{r}
-data_ubijalar <- summary_data_ubijalar %>% 
-  rename(
-    Tahun = "Tahun",
-    Produksi_Ubijalar = "TotalProduksi"
-  )
-data_ubijalar
-
+# Visualisasi Produksi Aktual dengan Hasil Prediksi
+ggplot(data = result_datakacangkedelai_rf, aes(x = 1:length(Produksi))) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
+  labs(x = "Observasi", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
+  theme_minimal()
 ```
+
 ```{r}
-# Membagi data menjadi data pelatihan dan pengujian - Ubi Jalar
-set.seed(123) #menentukan nilai acak dari data
-ubijalar_sample_indices <- sample(nrow(data_ubijalar), nrow(data_ubijalar) * 0.7)
-ubijalar_training_data <- data_ubijalar[ubijalar_sample_indices, ]
-ubijalar_testing_data <- data_ubijalar[-ubijalar_sample_indices, ]
-ubijalar_training_data
-ubijalar_testing_data
-```
-### a. Model Random Forest
-#### - Membangun model
-```{r}
-# Membangun model Random Forest
-rf_model_ubijalar <- randomForest(Produksi_Ubijalar ~., data = ubijalar_training_data, ntree = 500)
-rf_model_ubijalar
-```
-Dalam model ini, terdapat 500 pohon keputusan yang digunakan untuk membuat prediksi.
+# Visualisasi hasil prediksi dengan sumbu x adalah tahun
+result_datakacangkedelai_rf2 <- data.frame(Tahun = datakacangkedelai_test$Tahun, Produksi = datakacangkedelai_test$Produksi, Predictions = predictions_rf_kacangkedelai)
 
-#### - Melakukan prediksi
-```{r}
-# Melakukan prediksi jangka pendek
-ubijalar_predictions <- predict(rf_model_ubijalar, newdata = ubijalar_testing_data)
-ubijalar_predictions
-plot(ubijalar_predictions)
-
-```
-```{r}
-# Melakukan prediksi jangka panjang (10 tahun)
-ubijalar_future_years <- seq(max(data_ubijalar$Tahun) + 1, max(data_ubijalar$Tahun) + 10, by = "years")
-future_data_ubijalar <- data.frame(Tahun = ubijalar_future_years) 
-
-future_predictions_ubijalar <- predict(rf_model_ubijalar, future_data_ubijalar)
-future_predictions_ubijalar
-```
-#### - Evaluasi Model
-```{r}
-# 1. Evaluasi model dalam  melakukan prediksi jangka pendek
-# Hitung MAE (Mean Absolute Error)
-mae_ubijalar_jangkapendek <- mean(abs(ubijalar_testing_data$Produksi_Ubijalar - ubijalar_predictions))
-
-# Hitung MAPE (Mean Absolute Percentage Error)
-mape_ubijalar_jangkapendek <- mean(abs((ubijalar_testing_data$Produksi_Ubijalar - ubijalar_predictions) / ubijalar_testing_data$Produksi_Ubijalar) * 100)
-
-# Hitung MSE (Mean Squared Error)
-mse_ubijalar_jangkapendek <- mean((ubijalar_testing_data$Produksi_Ubijalar - ubijalar_predictions)^2)
-
-# Hitung RMSE (Root Mean Squared Error)
-rmse_ubijalar_jangkapendek <- sqrt(mse_ubijalar_jangkapendek)
-
-# Tampilkan hasil metrik evaluasi
-cat("MAE:", mae_ubijalar_jangkapendek, "\n")
-cat("MAPE:", mape_ubijalar_jangkapendek, "%\n")
-cat("MSE:", mse_ubijalar_jangkapendek, "\n")
-cat("RMSE:", rmse_ubijalar_jangkapendek, "\n")
-
-```
-```{r}
-# 2. Evaluasi model dalam  melakukan prediksi jangka panjang
-# Hitung MAE (Mean Absolute Error)
-mae_ubijalar_jangkapanjang <- mean(abs(ubijalar_testing_data$Produksi_Ubijalar - future_predictions_ubijalar))
-
-# Hitung MAPE (Mean Absolute Percentage Error)
-mape_ubijalar_jangkapanjang <- mean(abs((ubijalar_testing_data$Produksi_Ubijalar - future_predictions_ubijalar) / ubijalar_testing_data$Produksi_Ubijalar) * 100)
-
-# Hitung MSE (Mean Squared Error)
-mse_ubijalar_jangkapanjang <- mean((ubijalar_testing_data$Produksi_Ubijalar - future_predictions_ubijalar)^2)
-
-# Hitung RMSE (Root Mean Squared Error)
-rmse_ubijalar_jangkapanjang <- sqrt(mse_ubijalar_jangkapanjang)
-
-# Tampilkan hasil metrik evaluasi
-cat("MAE:", mae_ubijalar_jangkapanjang, "\n")
-cat("MAPE:", mape_ubijalar_jangkapanjang, "%\n")
-cat("MSE:", mse_ubijalar_jangkapanjang, "\n")
-cat("RMSE:", rmse_ubijalar_jangkapanjang, "\n")
-
-```
-Hasil evaluasi model Random Forest untuk prediksi produksi ubi jalar menunjukkan perbedaan kinerja yang signifikan antara jangka pendek dan jangka panjang. Dalam prediksi jangka pendek, model memiliki Mean Absolute Error (MAE) sekitar 82.20 ribu ton. MAE ini mencerminkan kesalahan rata-rata model dalam memprediksi produksi ubi jalar dalam jangka pendek. Lebih impresif lagi, Mean Absolute Percentage Error (MAPE) hanya sekitar 4.47%, yang mengindikasikan bahwa kesalahan relatif rendah dalam persentase terhadap nilai aktual. Ini menunjukkan bahwa model mampu memberikan perkiraan yang cukup akurat untuk produksi ubi jalar dalam jangka pendek. Namun, ketika beralih ke prediksi jangka panjang, performa model menurun secara signifikan. MAE untuk jangka panjang sekitar 425.65 ribu ton, dengan MAPE sekitar 23.10%. Ini mengindikasikan bahwa model memiliki kesalahan yang lebih besar dalam memprediksi produksi ubi jalar dalam jangka panjang. Selain itu, Mean Squared Error (MSE) dan Root Mean Squared Error (RMSE) juga menunjukkan peningkatan yang signifikan dalam jangka panjang, menunjukkan bahwa sebagian besar prediksi memiliki deviasi yang lebih besar dari nilai aktual. Secara keseluruhan, model Random Forest dapat memberikan perkiraan yang baik untuk produksi ubi jalar dalam jangka pendek, tetapi performa model menurun secara signifikan dalam jangka panjang.
-
-### b. Model SVR
-#### - Membangun model
-#### - Melakukan prediksi
-#### - Evaluasi Model
-
-### c. Model KNN
-#### - Membangun model
-#### - Melakukan prediksi
-#### - Evaluasi Model
-
-### d. Intepretasikan dan Membandingkan Model Random Forest, SVR, dan KNN
-
-
-
-
-## 6. Ubi Kayu
-```{r}
-# Menghitung total produksi untuk setiap tahun
-summary_data_ubikayu <- UbiKayu %>%
-  group_by(Tahun) %>%
-  summarise(TotalProduksi = sum(Produksi))
-summary_data_ubikayu
-```
-```{r}
-# Membuat bar chart atau line chart
-ggplot(summary_data_ubikayu, aes(x = Tahun, y = TotalProduksi)) +
-  geom_line() +
+ggplot(data = result_datakacangkedelai_rf2, aes(x = Tahun)) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
+  labs(x = "Tahun", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
   scale_y_continuous(labels = scales::comma) +
-  theme_minimal() +
-  labs(title = "Perubahan Jumlah Produksi Ubi Kayu dari 1993 - 2015",
-       x = "Tahun",
-       y = "Total Produksi")
+  theme_minimal()
 ```
 ```{r}
-data_ubikayu <- summary_data_ubikayu %>% 
-  rename(
-    Tahun = "Tahun",
-    Produksi_Ubikayu = "TotalProduksi"
-  )
-data_ubikayu
+# Evaluasi RF Model
 
+# Hitung MAE
+mae_value_rf_kacangkedelai <- mae(datakacangkedelai_test$Produksi, predictions_rf_kacangkedelai)
+
+# Hitung MSE
+mse_value_rf_kacangkedelai <- mse(datakacangkedelai_test$Produksi, predictions_rf_kacangkedelai)
+
+# Hitung RMSE
+rmse_value_rf_kacangkedelai <- rmse(datakacangkedelai_test$Produksi, predictions_rf_kacangkedelai)
+
+# Hitung MAPE
+mape_value_rf_kacangkedelai <- mape(datakacangkedelai_test$Produksi, predictions_rf_kacangkedelai)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_value_rf_kacangkedelai, "\n"))
+cat(paste("MSE: ", mse_value_rf_kacangkedelai, "\n"))
+cat(paste("RMSE: ", rmse_value_rf_kacangkedelai, "\n"))
+cat(paste("MAPE: ", mape_value_rf_kacangkedelai, "%\n"))
+```
+
+### 4. Membuat Model Random Forest - Kacang Tanah
+```{r}
+# Membuat model RF
+kacangtanah_rf_model <- randomForest(Produksi ~ Produktivitas + Luas_Panen, data = datakacangtanah_train, ntree = 1000)
 ```
 ```{r}
-# Membagi data menjadi data pelatihan dan pengujian - Ubi Kayu
-set.seed(123) #menentukan nilai acak dari data
-ubikayu_sample_indices <- sample(nrow(data_ubikayu), nrow(data_ubikayu) * 0.7)
-ubikayu_training_data <- data_ubikayu[ubikayu_sample_indices, ]
-ubikayu_testing_data <- data_ubikayu[-ubikayu_sample_indices, ]
-ubikayu_training_data
-ubikayu_testing_data
-```
-### a. Model Random Forest
-#### - Membangun model
-```{r}
-# Membangun model Random Forest
-rf_model_ubikayu <- randomForest(Produksi_Ubikayu ~., data = ubikayu_training_data, ntree = 500)
-rf_model_ubikayu
-```
-Dalam model ini, terdapat 500 pohon keputusan yang digunakan untuk membuat prediksi.
-
-#### - Melakukan prediksi
-```{r}
-# Melakukan prediksi jangka pendek
-ubikayu_predictions <- predict(rf_model_ubikayu, newdata = ubikayu_testing_data)
-ubikayu_predictions
-plot(ubikayu_predictions)
-
+# Melakukan Prediksi terhadap Data Pengujian
+predictions_rf_kacangtanah <- predict(kacangtanah_rf_model, datakacangtanah_test)
 ```
 ```{r}
-# Melakukan prediksi jangka panjang (10 tahun)
-ubikayu_future_years <- seq(max(data_ubikayu$Tahun) + 1, max(data_ubikayu$Tahun) + 10, by = "years")
-future_data_ubikayu <- data.frame(Tahun = ubikayu_future_years) 
+# Visualisasi Hasil
+result_datakacangtanah_rf <- data.frame(Produksi = datakacangtanah_test$Produksi, Predictions = predictions_rf_kacangtanah)
 
-future_predictions_ubikayu <- predict(rf_model_ubikayu, future_data_ubikayu)
-future_predictions_ubikayu
-```
-#### - Evaluasi Model
-```{r}
-# 1. Evaluasi model dalam  melakukan prediksi jangka pendek
-# Hitung MAE (Mean Absolute Error)
-mae_ubikayu_jangkapendek <- mean(abs(ubikayu_testing_data$Produksi_Ubikayu - ubikayu_predictions))
-
-# Hitung MAPE (Mean Absolute Percentage Error)
-mape_ubikayu_jangkapendek <- mean(abs((ubikayu_testing_data$Produksi_Ubikayu - ubikayu_predictions) / ubikayu_testing_data$Produksi_Ubikayu) * 100)
-
-# Hitung MSE (Mean Squared Error)
-mse_ubikayu_jangkapendek <- mean((ubikayu_testing_data$Produksi_Ubikayu - ubikayu_predictions)^2)
-
-# Hitung RMSE (Root Mean Squared Error)
-rmse_ubikayu_jangkapendek <- sqrt(mse_ubikayu_jangkapendek)
-
-# Tampilkan hasil metrik evaluasi
-cat("MAE:", mae_ubikayu_jangkapendek, "\n")
-cat("MAPE:", mape_ubikayu_jangkapendek, "%\n")
-cat("MSE:", mse_ubikayu_jangkapendek, "\n")
-cat("RMSE:", rmse_ubikayu_jangkapendek, "\n")
-
+# Visualisasi Perbandingan Produksi Aktual dengan Hasil Prediksi
+ggplot(data = result_datakacangtanah_rf, aes(x = Produksi, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
+  theme_minimal()
 ```
 ```{r}
-# 2. Evaluasi model dalam  melakukan prediksi jangka panjang
-# Hitung MAE (Mean Absolute Error)
-mae_ubikayu_jangkapanjang <- mean(abs(ubikayu_testing_data$Produksi_Ubikayu - future_predictions_ubikayu))
-
-# Hitung MAPE (Mean Absolute Percentage Error)
-mape_ubikayu_jangkapanjang <- mean(abs((ubikayu_testing_data$Produksi_Ubikayu - future_predictions_ubikayu) / ubikayu_testing_data$Produksi_Ubikayu) * 100)
-
-# Hitung MSE (Mean Squared Error)
-mse_ubikayu_jangkapanjang <- mean((ubikayu_testing_data$Produksi_Ubikayu - future_predictions_ubikayu)^2)
-
-# Hitung RMSE (Root Mean Squared Error)
-rmse_ubikayu_jangkapanjang <- sqrt(mse_ubikayu_jangkapanjang)
-
-# Tampilkan hasil metrik evaluasi
-cat("MAE:", mae_ubikayu_jangkapanjang, "\n")
-cat("MAPE:", mape_ubikayu_jangkapanjang, "%\n")
-cat("MSE:", mse_ubikayu_jangkapanjang, "\n")
-cat("RMSE:", rmse_ubikayu_jangkapanjang, "\n")
-
+# Visualisasi Produksi Aktual dengan Hasil Prediksi
+ggplot(data = result_datakacangtanah_rf, aes(x = 1:length(Produksi))) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
+  labs(x = "Observasi", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
+  theme_minimal()
 ```
-Model Random Forest yang digunakan untuk memprediksi produksi ubi kayu dalam jangka pendek menunjukkan hasil yang cukup baik. Mean Absolute Error (MAE) sebesar 880,976.5 mengindikasikan rata-rata perbedaan antara nilai prediksi dan nilai sebenarnya sekitar 880,976.5. Mean Absolute Percentage Error (MAPE) sebesar 4.611725% juga menunjukkan tingkat kesalahan yang relatif rendah. Selain itu, Mean Squared Error (MSE) dan Root Mean Squared Error (RMSE) memiliki nilai yang tergolong rendah, yaitu 1.119281e+12 dan 1,057,961, menunjukkan ketepatan prediksi model. Namun, saat memproyeksikan produksi ubi kayu dalam jangka panjang, model Random Forest memiliki tingkat kesalahan yang lebih besar. MAE sebesar 5,273,572 dan MAPE sebesar 31.00322% menunjukkan perbedaan yang signifikan antara nilai prediksi dan nilai sebenarnya. MSE dan RMSE yang tinggi (3.405387e+13 dan 5,835,569) juga mengindikasikan tingkat ketidakpastian yang lebih besar dalam prediksi jangka panjang. 
+
+```{r}
+# Visualisasi hasil prediksi dengan sumbu x adalah tahun
+result_datakacangtanah_rf2 <- data.frame(Tahun = datakacangtanah_test$Tahun, Produksi = datakacangtanah_test$Produksi, Predictions = predictions_rf_kacangtanah)
+
+ggplot(data = result_datakacangtanah_rf2, aes(x = Tahun)) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
+  labs(x = "Tahun", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal()
+```
+```{r}
+# Evaluasi RF Model
+
+# Hitung MAE
+mae_value_rf_kacangtanah <- mae(datakacangtanah_test$Produksi, predictions_rf_kacangtanah)
+
+# Hitung MSE
+mse_value_rf_kacangtanah <- mse(datakacangtanah_test$Produksi, predictions_rf_kacangtanah)
+
+# Hitung RMSE
+rmse_value_rf_kacangtanah <- rmse(datakacangtanah_test$Produksi, predictions_rf_kacangtanah)
+
+# Hitung MAPE
+mape_value_rf_kacangtanah <- mape(datakacangtanah_test$Produksi, predictions_rf_kacangtanah)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_value_rf_kacangtanah, "\n"))
+cat(paste("MSE: ", mse_value_rf_kacangtanah, "\n"))
+cat(paste("RMSE: ", rmse_value_rf_kacangtanah, "\n"))
+cat(paste("MAPE: ", mape_value_rf_kacangtanah, "%\n"))
+```
+
+### 5. Membuat Model Random Forest - Ubi Jalar
+```{r}
+# Membuat model RF
+ubijalar_rf_model <- randomForest(Produksi ~ Produktivitas + Luas_Panen, data = dataubijalar_train, ntree = 1000)
+```
+```{r}
+# Melakukan Prediksi terhadap Data Pengujian
+predictions_rf_ubijalar <- predict(ubijalar_rf_model, dataubijalar_test)
+```
+```{r}
+# Visualisasi Hasil
+result_dataubijalar_rf <- data.frame(Produksi = dataubijalar_test$Produksi, Predictions = predictions_rf_ubijalar)
+
+# Visualisasi Perbandingan Produksi Aktual dengan Hasil Prediksi
+ggplot(data = result_dataubijalar_rf, aes(x = Produksi, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
+  theme_minimal()
+```
+```{r}
+# Visualisasi Produksi Aktual dengan Hasil Prediksi
+ggplot(data = result_dataubijalar_rf, aes(x = 1:length(Produksi))) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
+  labs(x = "Observasi", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
+  theme_minimal()
+```
+
+```{r}
+# Visualisasi hasil prediksi dengan sumbu x adalah tahun
+result_dataubijalar_rf2 <- data.frame(Tahun = dataubijalar_test$Tahun, Produksi = dataubijalar_test$Produksi, Predictions = predictions_rf_ubijalar)
+
+ggplot(data = result_dataubijalar_rf2, aes(x = Tahun)) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
+  labs(x = "Tahun", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal()
+```
+```{r}
+# Evaluasi RF Model
+
+# Hitung MAE
+mae_value_rf_ubijalar <- mae(dataubijalar_test$Produksi, predictions_rf_ubijalar)
+
+# Hitung MSE
+mse_value_rf_ubijalar <- mse(dataubijalar_test$Produksi, predictions_rf_ubijalar)
+
+# Hitung RMSE
+rmse_value_rf_ubijalar <- rmse(dataubijalar_test$Produksi, predictions_rf_ubijalar)
+
+# Hitung MAPE
+mape_value_rf_ubijalar <- mape(dataubijalar_test$Produksi, predictions_rf_ubijalar)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_value_rf_ubijalar, "\n"))
+cat(paste("MSE: ", mse_value_rf_ubijalar, "\n"))
+cat(paste("RMSE: ", rmse_value_rf_ubijalar, "\n"))
+cat(paste("MAPE: ", mape_value_rf_ubijalar, "%\n"))
+```
+
+### 6. Membuat Model Random Forest - Ubi Kayu
+```{r}
+# Membuat model RF
+ubikayu_rf_model <- randomForest(Produksi ~ Produktivitas + Luas_Panen, data = dataubikayu_train, ntree = 1000)
+```
+```{r}
+# Melakukan Prediksi terhadap Data Pengujian
+predictions_rf_ubikayu <- predict(ubikayu_rf_model, dataubikayu_test)
+```
+```{r}
+# Visualisasi Hasil
+result_dataubikayu_rf <- data.frame(Produksi = dataubikayu_test$Produksi, Predictions = predictions_rf_ubikayu)
+
+# Visualisasi Perbandingan Produksi Aktual dengan Hasil Prediksi
+ggplot(data = result_dataubikayu_rf, aes(x = Produksi, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
+  theme_minimal()
+```
+```{r}
+# Visualisasi Produksi Aktual dengan Hasil Prediksi
+ggplot(data = result_dataubikayu_rf, aes(x = 1:length(Produksi))) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
+  labs(x = "Observasi", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
+  theme_minimal()
+```
+
+```{r}
+# Visualisasi hasil prediksi dengan sumbu x adalah tahun
+result_dataubikayu_rf2 <- data.frame(Tahun = dataubikayu_test$Tahun, Produksi = dataubikayu_test$Produksi, Predictions = predictions_rf_ubikayu)
+
+ggplot(data = result_dataubikayu_rf2, aes(x = Tahun)) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
+  labs(x = "Tahun", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal()
+```
+```{r}
+# Evaluasi RF Model
+
+# Hitung MAE
+mae_value_rf_ubikayu <- mae(dataubikayu_test$Produksi, predictions_rf_ubikayu)
+
+# Hitung MSE
+mse_value_rf_ubikayu <- mse(dataubikayu_test$Produksi, predictions_rf_ubikayu)
+
+# Hitung RMSE
+rmse_value_rf_ubikayu <- rmse(dataubikayu_test$Produksi, predictions_rf_ubikayu)
+
+# Hitung MAPE
+mape_value_rf_ubikayu <- mape(dataubikayu_test$Produksi, predictions_rf_ubikayu)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_value_rf_ubikayu, "\n"))
+cat(paste("MSE: ", mse_value_rf_ubikayu, "\n"))
+cat(paste("RMSE: ", rmse_value_rf_ubikayu, "\n"))
+cat(paste("MAPE: ", mape_value_rf_ubikayu, "%\n"))
+```
 
 
-### b. Model SVR
-#### - Membangun model
-#### - Melakukan prediksi
-#### - Evaluasi Model
 
-### c. Model KNN
-#### - Membangun model
-#### - Melakukan prediksi
-#### - Evaluasi Model
+## Model SVR
+### 1. Membuat Model SVR - Kacang Hijau
 
-### d. Intepretasikan dan Membandingkan Model Random Forest, SVR, dan KNN
+### 2. Membuat Model SVR - Kacang Hijau
+
+### 3. Membuat Model SVR - Kacang Kedelai
+
+### 4. Membuat Model SVR - Kacang Tanah
+
+### 5. Membuat Model SVR - Ubi Jalar
+
+### 6. Membuat Model SVR - Ubi Kayu
+
+
+
+## Intepretasikan dan Membandingkan Model Random Forest dan SVR
+
+
+
+
 
 
 
