@@ -688,11 +688,16 @@ average_yhat_2023 <- mean(forecast_subset$yhat[forecast_subset$ds == as.Date("20
 average_yhat_2024 <- mean(forecast_subset$yhat[forecast_subset$ds == as.Date("2024-01-01")])
 
 # Buat data frame
-average_ch_df <- data.frame(Tahun = c(2021, 2022, 2023, 2024), Rata_Rata_CH = c(average_yhat_2021, average_yhat_2022, average_yhat_2023, average_yhat_2024))
+average_ch_df <- data.frame(Tahun = c(2021, 2022, 2023, 2024), Curah_hujan = c(average_yhat_2021, average_yhat_2022, average_yhat_2023, average_yhat_2024))
 
 # Tampilkan hasilnya
 average_ch_df
 
+```
+
+```{r}
+average_ch_df$Tahun <- make_date(average_ch_df$Tahun)
+average_ch_df
 ```
 
 
