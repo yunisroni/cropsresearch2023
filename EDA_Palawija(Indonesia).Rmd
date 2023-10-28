@@ -1286,6 +1286,7 @@ cat(paste("MSE: ", mse_value_rf_kacangkedelai, "\n"))
 cat(paste("RMSE: ", rmse_value_rf_kacangkedelai, "\n"))
 cat(paste("MAPE: ", mape_value_rf_kacangkedelai, "%\n"))
 ```
+
 ### 4. Membuat Model Random Forest - Kacang Tanah
 ```{r}
 # Membuat model RF
