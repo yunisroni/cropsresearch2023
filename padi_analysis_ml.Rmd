@@ -574,7 +574,7 @@ prophet_ts_ch <- prophet(yearly.seasonality = TRUE, seasonality.prior.scale = 0.
 ```
 ```{r}
 # Melakukan Prediksi untuk Curah hujan 3 tahun ke depan
-future_prophet_ts_ch <- make_future_dataframe(prophet_ts_ch, periods = 365*5)
+future_prophet_ts_ch <- make_future_dataframe(prophet_ts_ch, periods = 365*10)
 tail(future_prophet_ts_ch)
 ```
 ```{r}
@@ -598,17 +598,22 @@ plot(prophet_ts_ch, forecast_ts_ch) +
 ```
 ```{r}
 # Membuat subset data untuk tahun 2021-2024
-forecast_subset <- forecast_ts_ch[forecast_ts_ch$ds >= as.Date("2021-01-01") & forecast_ts_ch$ds <= as.Date("2024-12-31"), ]
+forecast_subset <- forecast_ts_ch[forecast_ts_ch$ds >= as.Date("2021-01-01") & forecast_ts_ch$ds <= as.Date("2029-12-31"), ]
 
 # Hanya ambil kolom Tahun dan yhat
-forecast_yhat_2021_2024 <- forecast_subset[, c("ds", "yhat")]
+forecast_yhat_2021_2029 <- forecast_subset[, c("ds", "yhat")]
 
 # Print hasilnya
-print(forecast_yhat_2021_2024)
+print(forecast_yhat_2021_2029)
+```
+```{r}
+tail(forecast_yhat_2021_2029,10)
 ```
 
+
+
 ```{r}
-yearly_ch_predict <- forecast_yhat_2021_2024 %>% 
+yearly_ch_predict <- forecast_yhat_2021_2029 %>% 
   group_by(ds) %>% 
   summarise(
     jum_ch = sum(yhat)
