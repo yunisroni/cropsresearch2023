@@ -1150,15 +1150,348 @@ cat(paste("MAPE: ", mape_value_rf_jagung, "%\n"))
 ```
 
 ### 2. Membuat Model Random Forest - Kacang Hijau
+```{r}
+# Membuat model RF
+kacanghijau_rf_model <- randomForest(Produksi ~ Produktivitas + Luas_Panen, data = datakacanghijau_train, ntree = 1000)
+```
+```{r}
+# Melakukan Prediksi terhadap Data Pengujian
+predictions_rf_kacanghijau <- predict(kacanghijau_rf_model, datakacanghijau_test)
+```
+```{r}
+# Visualisasi Hasil
+result_datakacanghijau_rf <- data.frame(Produksi = datakacanghijau_test$Produksi, Predictions = predictions_rf_kacanghijau)
+
+# Visualisasi Perbandingan Produksi Aktual dengan Hasil Prediksi
+ggplot(data = result_datakacanghijau_rf, aes(x = Produksi, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
+  theme_minimal()
+```
+```{r}
+# Visualisasi Produksi Aktual dengan Hasil Prediksi
+ggplot(data = result_datakacanghijau_rf, aes(x = 1:length(Produksi))) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
+  labs(x = "Observasi", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
+  theme_minimal()
+```
+
+```{r}
+# Visualisasi hasil prediksi dengan sumbu x adalah tahun
+result_datakacanghijau_rf2 <- data.frame(Tahun = datakacanghijau_test$Tahun, Produksi = datakacanghijau_test$Produksi, Predictions = predictions_rf_kacanghijau)
+
+ggplot(data = result_datakacanghijau_rf2, aes(x = Tahun)) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
+  labs(x = "Tahun", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal()
+```
+```{r}
+# Evaluasi RF Model
+
+# Hitung MAE
+mae_value_rf_kacanghijau <- mae(datakacanghijau_test$Produksi, predictions_rf_kacanghijau)
+
+# Hitung MSE
+mse_value_rf_kacanghijau <- mse(datakacanghijau_test$Produksi, predictions_rf_kacanghijau)
+
+# Hitung RMSE
+rmse_value_rf_kacanghijau <- rmse(datakacanghijau_test$Produksi, predictions_rf_kacanghijau)
+
+# Hitung MAPE
+mape_value_rf_kacanghijau <- mape(datakacanghijau_test$Produksi, predictions_rf_kacanghijau)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_value_rf_kacanghijau, "\n"))
+cat(paste("MSE: ", mse_value_rf_kacanghijau, "\n"))
+cat(paste("RMSE: ", rmse_value_rf_kacanghijau, "\n"))
+cat(paste("MAPE: ", mape_value_rf_kacanghijau, "%\n"))
+```
 
 ### 3. Membuat Model Random Forest - Kacang Kedelai
+```{r}
+# Membuat model RF
+kacangkedelai_rf_model <- randomForest(Produksi ~ Produktivitas + Luas_Panen, data = datakacangkedelai_train, ntree = 1000)
+```
+```{r}
+# Melakukan Prediksi terhadap Data Pengujian
+predictions_rf_kacangkedelai <- predict(kacangkedelai_rf_model, datakacangkedelai_test)
+```
+```{r}
+# Visualisasi Hasil
+result_datakacangkedelai_rf <- data.frame(Produksi = datakacangkedelai_test$Produksi, Predictions = predictions_rf_kacangkedelai)
 
+# Visualisasi Perbandingan Produksi Aktual dengan Hasil Prediksi
+ggplot(data = result_datakacangkedelai_rf, aes(x = Produksi, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
+  theme_minimal()
+```
+```{r}
+# Visualisasi Produksi Aktual dengan Hasil Prediksi
+ggplot(data = result_datakacangkedelai_rf, aes(x = 1:length(Produksi))) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
+  labs(x = "Observasi", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
+  theme_minimal()
+```
+
+```{r}
+# Visualisasi hasil prediksi dengan sumbu x adalah tahun
+result_datakacangkedelai_rf2 <- data.frame(Tahun = datakacangkedelai_test$Tahun, Produksi = datakacangkedelai_test$Produksi, Predictions = predictions_rf_kacangkedelai)
+
+ggplot(data = result_datakacangkedelai_rf2, aes(x = Tahun)) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
+  labs(x = "Tahun", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal()
+```
+```{r}
+# Evaluasi RF Model
+
+# Hitung MAE
+mae_value_rf_kacangkedelai <- mae(datakacangkedelai_test$Produksi, predictions_rf_kacangkedelai)
+
+# Hitung MSE
+mse_value_rf_kacangkedelai <- mse(datakacangkedelai_test$Produksi, predictions_rf_kacangkedelai)
+
+# Hitung RMSE
+rmse_value_rf_kacangkedelai <- rmse(datakacangkedelai_test$Produksi, predictions_rf_kacangkedelai)
+
+# Hitung MAPE
+mape_value_rf_kacangkedelai <- mape(datakacangkedelai_test$Produksi, predictions_rf_kacangkedelai)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_value_rf_kacangkedelai, "\n"))
+cat(paste("MSE: ", mse_value_rf_kacangkedelai, "\n"))
+cat(paste("RMSE: ", rmse_value_rf_kacangkedelai, "\n"))
+cat(paste("MAPE: ", mape_value_rf_kacangkedelai, "%\n"))
+```
 ### 4. Membuat Model Random Forest - Kacang Tanah
+```{r}
+# Membuat model RF
+kacangtanah_rf_model <- randomForest(Produksi ~ Produktivitas + Luas_Panen, data = datakacangtanah_train, ntree = 1000)
+```
+```{r}
+# Melakukan Prediksi terhadap Data Pengujian
+predictions_rf_kacangtanah <- predict(kacangtanah_rf_model, datakacangtanah_test)
+```
+```{r}
+# Visualisasi Hasil
+result_datakacangtanah_rf <- data.frame(Produksi = datakacangtanah_test$Produksi, Predictions = predictions_rf_kacangtanah)
+
+# Visualisasi Perbandingan Produksi Aktual dengan Hasil Prediksi
+ggplot(data = result_datakacangtanah_rf, aes(x = Produksi, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
+  theme_minimal()
+```
+```{r}
+# Visualisasi Produksi Aktual dengan Hasil Prediksi
+ggplot(data = result_datakacangtanah_rf, aes(x = 1:length(Produksi))) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
+  labs(x = "Observasi", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
+  theme_minimal()
+```
+
+```{r}
+# Visualisasi hasil prediksi dengan sumbu x adalah tahun
+result_datakacangtanah_rf2 <- data.frame(Tahun = datakacangtanah_test$Tahun, Produksi = datakacangtanah_test$Produksi, Predictions = predictions_rf_kacangtanah)
+
+ggplot(data = result_datakacangtanah_rf2, aes(x = Tahun)) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
+  labs(x = "Tahun", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal()
+```
+```{r}
+# Evaluasi RF Model
+
+# Hitung MAE
+mae_value_rf_kacangtanah <- mae(datakacangtanah_test$Produksi, predictions_rf_kacangtanah)
+
+# Hitung MSE
+mse_value_rf_kacangtanah <- mse(datakacangtanah_test$Produksi, predictions_rf_kacangtanah)
+
+# Hitung RMSE
+rmse_value_rf_kacangtanah <- rmse(datakacangtanah_test$Produksi, predictions_rf_kacangtanah)
+
+# Hitung MAPE
+mape_value_rf_kacangtanah <- mape(datakacangtanah_test$Produksi, predictions_rf_kacangtanah)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_value_rf_kacangtanah, "\n"))
+cat(paste("MSE: ", mse_value_rf_kacangtanah, "\n"))
+cat(paste("RMSE: ", rmse_value_rf_kacangtanah, "\n"))
+cat(paste("MAPE: ", mape_value_rf_kacangtanah, "%\n"))
+```
 
 ### 5. Membuat Model Random Forest - Ubi Jalar
+```{r}
+# Membuat model RF
+ubijalar_rf_model <- randomForest(Produksi ~ Produktivitas + Luas_Panen, data = dataubijalar_train, ntree = 1000)
+```
+```{r}
+# Melakukan Prediksi terhadap Data Pengujian
+predictions_rf_ubijalar <- predict(ubijalar_rf_model, dataubijalar_test)
+```
+```{r}
+# Visualisasi Hasil
+result_dataubijalar_rf <- data.frame(Produksi = dataubijalar_test$Produksi, Predictions = predictions_rf_ubijalar)
+
+# Visualisasi Perbandingan Produksi Aktual dengan Hasil Prediksi
+ggplot(data = result_dataubijalar_rf, aes(x = Produksi, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
+  theme_minimal()
+```
+```{r}
+# Visualisasi Produksi Aktual dengan Hasil Prediksi
+ggplot(data = result_dataubijalar_rf, aes(x = 1:length(Produksi))) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
+  labs(x = "Observasi", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
+  theme_minimal()
+```
+
+```{r}
+# Visualisasi hasil prediksi dengan sumbu x adalah tahun
+result_dataubijalar_rf2 <- data.frame(Tahun = dataubijalar_test$Tahun, Produksi = dataubijalar_test$Produksi, Predictions = predictions_rf_ubijalar)
+
+ggplot(data = result_dataubijalar_rf2, aes(x = Tahun)) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
+  labs(x = "Tahun", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal()
+```
+```{r}
+# Evaluasi RF Model
+
+# Hitung MAE
+mae_value_rf_ubijalar <- mae(dataubijalar_test$Produksi, predictions_rf_ubijalar)
+
+# Hitung MSE
+mse_value_rf_ubijalar <- mse(dataubijalar_test$Produksi, predictions_rf_ubijalar)
+
+# Hitung RMSE
+rmse_value_rf_ubijalar <- rmse(dataubijalar_test$Produksi, predictions_rf_ubijalar)
+
+# Hitung MAPE
+mape_value_rf_ubijalar <- mape(dataubijalar_test$Produksi, predictions_rf_ubijalar)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_value_rf_ubijalar, "\n"))
+cat(paste("MSE: ", mse_value_rf_ubijalar, "\n"))
+cat(paste("RMSE: ", rmse_value_rf_ubijalar, "\n"))
+cat(paste("MAPE: ", mape_value_rf_ubijalar, "%\n"))
+```
 
 ### 6. Membuat Model Random Forest - Ubi Kayu
+```{r}
+# Membuat model RF
+ubikayu_rf_model <- randomForest(Produksi ~ Produktivitas + Luas_Panen, data = dataubikayu_train, ntree = 1000)
+```
+```{r}
+# Melakukan Prediksi terhadap Data Pengujian
+predictions_rf_ubikayu <- predict(ubikayu_rf_model, dataubikayu_test)
+```
+```{r}
+# Visualisasi Hasil
+result_dataubikayu_rf <- data.frame(Produksi = dataubikayu_test$Produksi, Predictions = predictions_rf_ubikayu)
 
+# Visualisasi Perbandingan Produksi Aktual dengan Hasil Prediksi
+ggplot(data = result_dataubikayu_rf, aes(x = Produksi, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
+  theme_minimal()
+```
+```{r}
+# Visualisasi Produksi Aktual dengan Hasil Prediksi
+ggplot(data = result_dataubikayu_rf, aes(x = 1:length(Produksi))) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
+  labs(x = "Observasi", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
+  theme_minimal()
+```
+
+```{r}
+# Visualisasi hasil prediksi dengan sumbu x adalah tahun
+result_dataubikayu_rf2 <- data.frame(Tahun = dataubikayu_test$Tahun, Produksi = dataubikayu_test$Produksi, Predictions = predictions_rf_ubikayu)
+
+ggplot(data = result_dataubikayu_rf2, aes(x = Tahun)) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
+  labs(x = "Tahun", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal()
+```
+```{r}
+# Evaluasi RF Model
+
+# Hitung MAE
+mae_value_rf_ubikayu <- mae(dataubikayu_test$Produksi, predictions_rf_ubikayu)
+
+# Hitung MSE
+mse_value_rf_ubikayu <- mse(dataubikayu_test$Produksi, predictions_rf_ubikayu)
+
+# Hitung RMSE
+rmse_value_rf_ubikayu <- rmse(dataubikayu_test$Produksi, predictions_rf_ubikayu)
+
+# Hitung MAPE
+mape_value_rf_ubikayu <- mape(dataubikayu_test$Produksi, predictions_rf_ubikayu)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_value_rf_ubikayu, "\n"))
+cat(paste("MSE: ", mse_value_rf_ubikayu, "\n"))
+cat(paste("RMSE: ", rmse_value_rf_ubikayu, "\n"))
+cat(paste("MAPE: ", mape_value_rf_ubikayu, "%\n"))
+```
 
 
 
