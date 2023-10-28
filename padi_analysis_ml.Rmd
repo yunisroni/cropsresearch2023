@@ -538,7 +538,7 @@ Berdasarkan hasil diatas, kalau dilihat dari performance matrik tingkat kesalaha
 # Prediksi Curah Hujan, Luas Panen, Kelembapan, Suhu Rata-Rata
 Prediksi ini untuk melihat tren dan jumlah varibel-variabel tersebut di masa depan. Prediksi akan dilakukan untuk 5 tahun kedepan. Model yang digunakan adalah model **Prophet**
 
-## Curah Hujan
+## Prophet - Curah Hujan
 
 ```{r}
 # membagi data berdasarkan variabel Curah Hujan
@@ -591,7 +591,6 @@ prophet_plot_components(prophet_ts_ch, forecast_ts_ch)
 forecast_ts_ch %>% 
   dplyr::select(ds, trend, yearly, yhat)
 ```
-
 ```{r}
 # Melihat trend produksi
 plot(prophet_ts_ch, forecast_ts_ch) +
@@ -695,4 +694,6 @@ average_ch_df <- data.frame(Tahun = c(2021, 2022, 2023, 2024), Rata_Rata_CH = c(
 average_ch_df
 
 ```
+
+
 
