@@ -534,146 +534,194 @@ model_performance
 
 Berdasarkan hasil diatas, kalau dilihat dari performance matrik tingkat kesalahan yang paling rendah (MAE), maka model **SVR** yang dianggap sebagai model terbaik dalam hal akurasi prediksi produksi padi.
 
-
-# Prediksi Curah Hujan, Luas Panen, Kelembapan, Suhu Rata-Rata
-Prediksi ini untuk melihat tren dan jumlah varibel-variabel tersebut di masa depan. Prediksi akan dilakukan untuk 5 tahun kedepan. Model yang digunakan adalah model **Prophet**
-
-## Prophet - Curah Hujan
+## Hybrid Model SVR dan RF
+```{r}
+#Hybrid Model SVR dan rf
+predictions_hybrid_svr_rf <- (predictions_svr + predictions_rf) / 2
+```
 
 ```{r}
-# membagi data berdasarkan variabel Curah Hujan
-train_data_index_ch <- createDataPartition(padi$Curah_hujan, p=0.7, list = FALSE)
-train_data_ch <- padi[train_data_index_ch,]
-test_data_ch <- padi[-train_data_index_ch,]
+# Hitung MAE
+mae_value_hybrid_svr_rf <- mae(data_test$Produksi, predictions_hybrid_svr_rf)
+
+# Hitung MSE
+mse_value_hybrid_svr_rf <- mse(data_test$Produksi, predictions_hybrid_svr_rf)
+
+# Hitung RMSE
+rmse_value_hybrid_svr_rf <- rmse(data_test$Produksi, predictions_hybrid_svr_rf)
+
+# Hitung MAPE
+mape_value_hybrid_svr_rf <- mape(data_test$Produksi, predictions_hybrid_svr_rf)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_value_hybrid_svr_rf, "\n"))
+cat(paste("MSE: ", mse_value_hybrid_svr_rf, "\n"))
+cat(paste("RMSE: ", rmse_value_hybrid_svr_rf, "\n"))
+cat(paste("MAPE: ", mape_value_hybrid_svr_rf, "%\n"))
+```
+
+```{r}
+# Data hasil prediksi dan nilai aktual
+result_data <- data.frame(
+  Produksi = data_test$Produksi,
+  Pred_Hybrid = predictions_hybrid_svr_rf
+)
+
+ggplot(data = result_data, aes(x = Produksi, y = Pred_Hybrid)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model Hybrid") +
+  theme_minimal()
+
+```
+
+## Hybrid Model SVR dan XGB
+```{r}
+
+```
+
+
+
+
+## Prophet Model
+
+```{r}
+# membagi data berdasarkan variabel Produksi
+train_data_index_pd <- createDataPartition(padi$Produksi, p=0.7, list = FALSE)
+train_data_pd <- padi[train_data_index_pd,]
+test_data_pd <- padi[-train_data_index_pd,]
 ```
 
 ```{r}
 # Mengelompokkan dan Menyiapkan data training berdasarkan variabel curah hujan
-yearly_ch_train <- train_data_ch %>% 
+yearly_pd_train <- train_data_pd %>% 
   group_by(Tahun) %>% 
   summarise(
-    jum_ch = sum(Curah_hujan)
+    jum_pd = sum(Produksi)
   )
-yearly_ch_train
+yearly_pd_train
 ```
 
 ```{r}
 # Merubah format data kedalam ds dan y
-train_yearly_ch <- yearly_ch_train %>% 
+train_yearly_pd <- yearly_pd_train %>% 
   rename(
     ds = "Tahun",
-    y = "jum_ch"
+    y = "jum_pd"
   )
-glimpse(train_yearly_ch)
+glimpse(train_yearly_pd)
 ```
 ```{r}
 # Membuat model Prophet dengan data training
-prophet_ts_ch <- prophet(yearly.seasonality = TRUE, seasonality.prior.scale = 0.1) %>% 
-  fit.prophet(train_yearly_ch)
+prophet_ts_pd <- prophet(yearly.seasonality = TRUE, seasonality.prior.scale = 0.1) %>% 
+  fit.prophet(train_yearly_pd)
 
 ```
 ```{r}
-# Melakukan Prediksi untuk Curah hujan 3 tahun ke depan
-future_prophet_ts_ch <- make_future_dataframe(prophet_ts_ch, periods = 365*10)
-tail(future_prophet_ts_ch)
+# Melakukan Prediksi untuk produksi 3 tahun ke depan
+future_prophet_ts_pd <- make_future_dataframe(prophet_ts_ch, periods = 365*5)
+tail(future_prophet_ts_pd)
 ```
 ```{r}
 # Menampilkan Hasil Prediksi
-forecast_ts_ch <- predict(prophet_ts_ch, future_prophet_ts_ch)
-plot(prophet_ts_ch, forecast_ts_ch)
+forecast_ts_pd <- predict(prophet_ts_pd, future_prophet_ts_pd)
+plot(prophet_ts_pd, forecast_ts_pd)
 ```
 ```{r}
 # Visualisasi komponen dari model forecast
-prophet_plot_components(prophet_ts_ch, forecast_ts_ch)
+prophet_plot_components(prophet_ts_pd, forecast_ts_pd)
 ```
 ```{r}
 # Melihat komponen forecast
-forecast_ts_ch %>% 
+forecast_ts_pd %>% 
   dplyr::select(ds, trend, yearly, yhat)
 ```
 ```{r}
 # Melihat trend produksi
-plot(prophet_ts_ch, forecast_ts_ch) +
-  add_changepoints_to_plot(prophet_ts_ch, threshold = 0)
+plot(prophet_ts_pd, forecast_ts_pd) +
+  add_changepoints_to_plot(prophet_ts_pd, threshold = 0)
 ```
 ```{r}
 # Membuat subset data untuk tahun 2021-2024
-forecast_subset <- forecast_ts_ch[forecast_ts_ch$ds >= as.Date("2021-01-01") & forecast_ts_ch$ds <= as.Date("2029-12-31"), ]
+forecast_subset <- forecast_ts_pd[forecast_ts_pd$ds >= as.Date("2021-01-01") & forecast_ts_pd$ds <= as.Date("2024-12-31"), ]
 
 # Hanya ambil kolom Tahun dan yhat
-forecast_yhat_2021_2029 <- forecast_subset[, c("ds", "yhat")]
+forecast_yhat_2021_2024 <- forecast_subset[, c("ds", "yhat")]
 
 # Print hasilnya
-print(forecast_yhat_2021_2029)
+print(forecast_yhat_2021_2024)
 ```
 ```{r}
-tail(forecast_yhat_2021_2029,10)
+tail(forecast_yhat_2021_2024,10)
 ```
 
 
 
 ```{r}
-yearly_ch_predict <- forecast_yhat_2021_2029 %>% 
+yearly_pd_predict <- forecast_yhat_2021_2024 %>% 
   group_by(ds) %>% 
   summarise(
-    jum_ch = sum(yhat)
+    jum_pd = sum(yhat)
   )
-yearly_ch_predict
+yearly_pd_predict
 ```
 
 ```{r}
-# Mengelompokkan dan Menyiapkan data testing berdasarkan variabel curah hujan
-yearly_ch_test <- test_data_ch %>% 
+# Mengelompokkan dan Menyiapkan data testing berdasarkan variabel Produksi
+yearly_pd_test <- test_data_pd %>% 
   group_by(Tahun) %>% 
   summarise(
-    jum_ch = sum(Curah_hujan)
+    jum_pd = sum(Produksi)
   )
-yearly_ch_test
+yearly_pd_test
 ```
 ```{r}
 # Merubah format data kedalam ds dan y
-test_yearly_ch <- yearly_ch_test %>% 
+test_yearly_pd <- yearly_pd_test %>% 
   rename(
     ds = "Tahun",
-    y = "jum_ch"
+    y = "jum_pd"
     )
-glimpse(test_yearly_ch)
+glimpse(test_yearly_pd)
 ```
 
 ```{r}
 # Model Final
-model_final_ch <- prophet(changepoint.prior.scale = 0.05,
+model_final_pd <- prophet(changepoint.prior.scale = 0.05,
                           yearly.seasonality = TRUE) %>% 
   add_seasonality(name = "yearly", period = 365, fourier.order = 5) %>% 
-  fit.prophet(train_yearly_ch)
-future_final_ch <- make_future_dataframe(model_final_ch, periods = nrow(test_yearly_ch) + 1)
-forecast_final_ch <- predict(model_final_ch, future_final_ch)
-plot(model_final_ch, forecast_final_ch)
+  fit.prophet(train_yearly_pd)
+future_final_pd <- make_future_dataframe(model_final_pd, periods = nrow(test_yearly_pd) + 1)
+forecast_final_pd <- predict(model_final_pd, future_final_pd)
+plot(model_final_pd, forecast_final_pd)
 ```
 
 ```{r}
 # Melakukan prediksi dengan data pengujian
-prediction_test_ch <- predict(model_final_ch, test_yearly_ch)
+prediction_test_pd <- predict(model_final_pd, test_yearly_pd)
 ```
 
 ```{r}
 # Visualisasi Komponen dari model forecasting
-prophet_plot_components(model_final_ch, prediction_test_ch)
+prophet_plot_components(model_final_pd, prediction_test_pd)
 ```
 ```{r}
 # Evaluasi Model
 
 # Hitung MAE
-mae_value_prophet <- mae(test_yearly_ch$y, prediction_test_ch$yhat)
+mae_value_prophet <- mae(test_yearly_pd$y, prediction_test_pd$yhat)
 
 # Hitung MSE
-mse_value_prophet <- mse(test_yearly_ch$y, prediction_test_ch$yhat)
+mse_value_prophet <- mse(test_yearly_pd$y, prediction_test_pd$yhat)
 
 # Hitung RMSE
-rmse_value_prophet <- rmse(test_yearly_ch$y, prediction_test_ch$yhat)
+rmse_value_prophet <- rmse(test_yearly_pd$y, prediction_test_pd$yhat)
 
 # Hitung MAPE
-mape_value_prophet <- mape(test_yearly_ch$y, prediction_test_ch$yhat)
+mape_value_prophet <- mape(test_yearly_pd$y, prediction_test_pd$yhat)
 
 # Tampilkan hasil evaluasi
 cat(paste("MAE: ", mae_value_prophet, "\n"))
@@ -684,7 +732,7 @@ cat(paste("MAPE: ", mape_value_prophet, "%\n"))
 Mengambil data Curah Hujan dari hasil prediksi 2021-2024
 ```{r}
 # Filter data untuk tahun 2021-2024
-forecast_subset <- forecast_ts_ch[forecast_ts_ch$ds >= as.Date("2021-01-01") & forecast_ts_ch$ds <= as.Date("2024-12-31"), ]
+forecast_subset <- forecast_ts_pd[forecast_ts_pd$ds >= as.Date("2021-01-01") & forecast_ts_pd$ds <= as.Date("2024-12-31"), ]
 
 # Hitung rata-rata yhat per tahun
 average_yhat_2021 <- mean(forecast_subset$yhat[forecast_subset$ds == as.Date("2021-01-01")])
@@ -693,17 +741,58 @@ average_yhat_2023 <- mean(forecast_subset$yhat[forecast_subset$ds == as.Date("20
 average_yhat_2024 <- mean(forecast_subset$yhat[forecast_subset$ds == as.Date("2024-01-01")])
 
 # Buat data frame
-average_ch_df <- data.frame(Tahun = c(2021, 2022, 2023, 2024), Curah_hujan = c(average_yhat_2021, average_yhat_2022, average_yhat_2023, average_yhat_2024))
+average_pd_df <- data.frame(Tahun = c(2021, 2022, 2023, 2024), Produksi = c(average_yhat_2021, average_yhat_2022, average_yhat_2023, average_yhat_2024))
 
 # Tampilkan hasilnya
-average_ch_df
+average_pd_df
 
 ```
 
 ```{r}
-average_ch_df$Tahun <- make_date(average_ch_df$Tahun)
-average_ch_df
+average_pd_df$Tahun <- make_date(average_pd_df$Tahun)
+average_pd_df
 ```
 
+```{r}
+#Hybrid Model SVR dan rf
+predictions_hybrid_svr_rf <- (predictions_svr + predictions_rf) / 2
+```
 
+```{r}
+# Hitung MAE
+mae_value_hybrid_svr_rf <- mae(data_test$Produksi, predictions_hybrid_svr_rf)
+
+# Hitung MSE
+mse_value_hybrid_svr_rf <- mse(data_test$Produksi, predictions_hybrid_svr_rf)
+
+# Hitung RMSE
+rmse_value_hybrid_svr_rf <- rmse(data_test$Produksi, predictions_hybrid_svr_rf)
+
+# Hitung MAPE
+mape_value_hybrid_svr_rf <- mape(data_test$Produksi, predictions_hybrid_svr_rf)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_value_hybrid_svr_rf, "\n"))
+cat(paste("MSE: ", mse_value_hybrid_svr_rf, "\n"))
+cat(paste("RMSE: ", rmse_value_hybrid_svr_rf, "\n"))
+cat(paste("MAPE: ", mape_value_hybrid_svr_rf, "%\n"))
+```
+
+```{r}
+# Data hasil prediksi dan nilai aktual
+result_data <- data.frame(
+  Produksi = data_test$Produksi,
+  Pred_Hybrid = predictions_hybrid_svr_rf
+)
+
+ggplot(data = result_data, aes(x = Produksi, y = Pred_Hybrid)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model Hybrid") +
+  theme_minimal()
+
+```
 
