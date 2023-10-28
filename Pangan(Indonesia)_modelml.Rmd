@@ -34,20 +34,20 @@ library(Metrics)
 
 ## a.Import Data
 ```{r}
-palawija <- read_excel("dataset/pangan_Indonesia.xlsx")
+pangan <- read_excel("dataset/pangan_Indonesia.xlsx")
 ```
 
 ## b.Menampilkan Contoh Data
 ```{r}
 # Menampilkan 6 data teratas
-head(palawija)
+head(pangan)
 ```
 ```{r}
 # Menampilkan 6 data terbawah
-tail(palawija)
+tail(pangan)
 ```
 ```{r}
-glimpse(palawija)
+glimpse(pangan)
 ```
 
 # 3. Scrub Data
@@ -55,41 +55,41 @@ glimpse(palawija)
 ## a. Merubah type data
 ```{r}
 # Merubah type data karakter menjadi numeric
-palawija$Produksi <- as.numeric(palawija$Produksi)
-palawija$Produktivitas <- as.numeric(palawija$Produktivitas)
-palawija$Luas_Panen <- as.numeric(palawija$Luas_Panen)
-glimpse(palawija)
+pangan$Produksi <- as.numeric(pangan$Produksi)
+pangan$Produktivitas <- as.numeric(pangan$Produktivitas)
+pangan$Luas_Panen <- as.numeric(pangan$Luas_Panen)
+glimpse(pangan)
 ```
 ```{r}
 # Merubah type Tahun menjadi Date
-palawija$Tahun <- make_date(palawija$Tahun)
-glimpse(palawija)
+pangan$Tahun <- make_date(pangan$Tahun)
+glimpse(pangan)
 ```
 ```{r}
-tail(palawija)
+tail(pangan)
 ```
 ```{r}
-head(palawija)
+head(pangan)
 ```
 
 ## b. Menghapus Data Kosong
 ```{r}
 # Menampilkan variabel dengan baris kosong
-glimpse(palawija)
-colSums(is.na(palawija))
+glimpse(pangan)
+colSums(is.na(pangan))
 ```
 Jumlah data : 5,474 Record. Dari 6 variabel terhadap 3 buah variabel dengan data NA'S
 
 ```{r}
 # Menghapus data NA'S
-palawija_clean <- na.omit(palawija)
-colSums(is.na(palawija_clean))
-summary(palawija_clean)
+pangan_clean <- na.omit(pangan)
+colSums(is.na(pangan_clean))
+summary(pangan_clean)
 ```
 Berdasarkan hasil diatas bisa dilihat semua variabel tidak ada lagi data
 yang kosong atau NA'
 ```{r}
-glimpse(palawija_clean)
+glimpse(pangan_clean)
 ```
 Jumlah data setelah dihapus data NA' menjadi 4,647 baris observasi dengan
 6 variabel.
@@ -98,48 +98,54 @@ Jumlah data setelah dihapus data NA' menjadi 4,647 baris observasi dengan
 # 4. Explore Data Analysis (EDA)
 ## a.Tampilkan Dataset
 ```{r}
-glimpse(palawija_clean)
+glimpse(pangan_clean)
 ```
 ## b.Menampilkan hasil statistik deskriptif
 ```{r}
-descr(palawija_clean)
+descr(pangan_clean)
 ```
 
-## c. Filter data jagung, kacang hijau, kacang kedelai, kacang tanah, ubi jalar, dan ubi kayu
+## c. Filter data jagung, kacang hijau, kacang kedelai, kacang tanah, ubi jalar, ubi kayu, dan padi
 ### - Filter data jagung
 ```{r}
-Jagung <- filter(palawija_clean, Jenis_Komoditi == "Jagung")
+Jagung <- filter(pangan_clean, Jenis_Komoditi == "Jagung")
 Jagung
 
 ```
 ### - Filter data kacang hijau
 ```{r}
-KacangHijau <- filter(palawija_clean, Jenis_Komoditi == "Kacang Hijau")
+KacangHijau <- filter(pangan_clean, Jenis_Komoditi == "Kacang Hijau")
 KacangHijau
 ```
 ### - Filter data kacang kedelai
 ```{r}
-KacangKedelai <- filter(palawija_clean, Jenis_Komoditi == "Kedelai")
+KacangKedelai <- filter(pangan_clean, Jenis_Komoditi == "Kedelai")
 KacangKedelai
 ```
 ### - Filter data kacang tanah
 ```{r}
-KacangTanah <- filter(palawija_clean, Jenis_Komoditi == "Kacang Tanah")
+KacangTanah <- filter(pangan_clean, Jenis_Komoditi == "Kacang Tanah")
 KacangTanah
 ```
 ### - Filter data ubi jalar
 ```{r}
-UbiJalar <- filter(palawija_clean, Jenis_Komoditi == "Ubi Jalar")
+UbiJalar <- filter(pangan_clean, Jenis_Komoditi == "Ubi Jalar")
 UbiJalar
 
 ```
 ### - Filter data ubi kayu
 ```{r}
-UbiKayu <- filter(palawija_clean, Jenis_Komoditi == "Ubi Kayu")
+UbiKayu <- filter(pangan_clean, Jenis_Komoditi == "Ubi Kayu")
 UbiKayu
 ```
+### - Filter data padi
+```{r}
+Padi <- filter(pangan_clean, Jenis_Komoditi == "Padi")
+Padi
+```
 
-## d. Jumlah Produksi Palawija Per Provinsi
+
+## d. Jumlah Produksi Tanaman Pangan Per Provinsi
 ### - Jumlah Produksi Jagung Per Provinsi
 ```{r}
 plot_jagung_1 <- ggplot(Jagung, aes(x = Tahun, y = Produksi, group = Provinsi, color = Provinsi)) +
@@ -374,9 +380,46 @@ totproduksi_ubikayu
 summary(totproduksi_ubikayu)
 ```
 
+### - Jumlah Produksi Padi Per Provinsi
+```{r}
+plot_padi_1 <- ggplot(Padi, aes(x = Tahun, y = Produksi, group = Provinsi, color = Provinsi)) +
+  geom_line() +
+  labs(title = "Jumlah Produksi Padi", x = "Tahun", y = "Produksi Padi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "right")
+plot_padi_1
+
+```
+
+```{r}
+# Hitung total produksi per provinsi
+totproduksi_padi <- Padi %>% 
+  #mutate(first_date_month = floor_date(Tahun, unit = "year")) %>% 
+  group_by(Provinsi) %>% 
+  summarise(JumlahProduksi = sum(Produksi)) %>% 
+  arrange(JumlahProduksi)
+totproduksi_padi
+```
+
+```{r}
+# Turn off dplyr summarise() warning
+options(dplyr.summarise.inform = FALSE)
+
+# Hitung total produksi per provinsi/tahun
+totproduksi_padi <- Padi %>% 
+  group_by(Tahun, Provinsi, .drop = FALSE) %>%  # Add .drop argument
+  summarise(TotalProduksi = sum(Produksi))
+
+totproduksi_padi
+```
+
+```{r}
+summary(totproduksi_padi)
+```
 
 
-## e. Tren Produksi Palawija Per Provinsi
+## e. Tren Produksi Tanaman Pangan Per Provinsi
 ### - Tren Produksi Jagung Per Provinsi
 ```{r}
 # Visualisasi Tren Produksi Jagung
@@ -453,10 +496,21 @@ plot_ubikayu_2 <- ggplot(totproduksi_ubikayu, aes(x = Tahun, y = TotalProduksi, 
   theme(legend.position = "right")
 plot_ubikayu_2
 ```
+### - Tren Produksi Padi Per Provinsi
+```{r}
+# Visualisasi Tren Produksi Padi
+plot_padi_2 <- ggplot(totproduksi_padi, aes(x = Tahun, y = TotalProduksi, color = Provinsi)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Tren Produksi Padi", x = "Tahun", y = "Total Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "right")
+plot_padi_2
+```
 
 
-
-## f. Perbandingan Produksi Palawija Per Provinsi
+## f. Perbandingan Produksi Tanaman Pangan Per Provinsi
 ### - Perbandingan Produksi Jagung Per Provinsi
 ```{r}
 # Hitung total produksi Jagung per Provinsi
@@ -589,8 +643,30 @@ plot_ubikayu_3 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
 Perbandingan produksi Ubi Kayu dalam kurun waktu 1993 - 2015 adalah dari provinsi Lampung yang terbanyak dengan Jumlah Produksi Ubi Kayu sebesar 118343702 Ton.
 
 
+### - Perbandingan Produksi Padi Per Provinsi
+```{r}
+# Hitung total produksi Padi per Provinsi
+totproduksi_padi_provinsi <- Padi %>% 
+  group_by(Provinsi) %>% 
+  summarise(TotalProduksi = sum(Produksi))
+totproduksi_padi_provinsi
 
-## g. Perbandingan Produktivitas Palawija Per Provinsi
+# Visualisasi dengan barplot
+plot_padi_3 <- ggplot(totproduksi_padi_provinsi, aes(x = Provinsi, y = TotalProduksi, fill = Provinsi)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Perbandingan Produksi Padi antara Provinsi", x = "Provinsi", y = "Total Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "none")  # hilangkan legend
+
+# Rotasi sumbu x agar mudah dibaca
+plot_padi_3 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+Perbandingan produksi Padi dalam kurun waktu 1993 - 2015 adalah dari provinsi Jawa Barat yang terbanyak dengan Jumlah Produksi Padi sebesar 240124024 Ton.
+
+
+
+## g. Perbandingan Produktivitas Tanaman Pangan Per Provinsi
 ### - Perbandingan Produktivitas Jagung Per Provinsi
 ```{r}
 # Turn off dplyr summarise() warning
@@ -794,9 +870,41 @@ plot_ubikayu_4 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 ```
 
+### - Perbandingan Produktivitas Padi Per Provinsi
+```{r}
+# Turn off dplyr summarise() warning
+options(dplyr.summarise.inform = FALSE)
+
+# Melihat tren produktivitas Padi
+produktivitas_padi <- Padi %>% 
+  group_by(Tahun, Provinsi, .drop = FALSE) %>%  # Add .drop argument
+  summarise(Produktivitas = sum(Produktivitas))
+produktivitas_padi
+```
+
+```{r}
+
+# Hitung total produkstivitas Padi per provinsi
+totproduktivitas_padi_provinsi <- Padi %>% 
+  group_by(Provinsi) %>% 
+  summarise(Total_Produktivitas = sum(Produktivitas))
+
+# Visualisasi dengan barplot
+plot_padi_4 <- ggplot(totproduktivitas_padi_provinsi, aes(x = Provinsi, y = Total_Produktivitas, fill = Provinsi)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Perbandingan Produktivitas Padi antar Provinsi", x = "Provinsi", y = "Produktivitas (Kuintal/Hektar)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "none")  # hilangkan legend
+
+# Rotasi sumbu x agar mudah dibaca
+plot_padi_4 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 
-## h. Korelasi Luas Panen dan Produksi Palawija
+```
+
+
+## h. Korelasi Luas Panen dan Produksi Tanaman Pangan
 ### - Korelasi Luas Panen dan Produksi Jagung
 ```{r}
 # Visualisasi korelasi luas panen dan produksi Jagung
@@ -924,16 +1032,38 @@ plot_ubikayu_5
 
 ```{r}
 # Hitung Pearson correlation coefficient
-correlation_kacangubikayu <- cor(UbiKayu$Luas_Panen, UbiKayu$Produksi)
+correlation_ubikayu <- cor(UbiKayu$Luas_Panen, UbiKayu$Produksi)
 
 # Nilai correlation coefficient
-cat("Koefisien Korelasi Pearson Luas Panen dan Produksi:", correlation_kacangubikayu)
+cat("Koefisien Korelasi Pearson Luas Panen dan Produksi:", correlation_ubikayu)
 ```
 Berdasarkan grafik diatas bisa lihat bahwa ada korelasi antara luas panen dan produksi. Hubungan korelasi adalah positif dengan nilai korelasi sebesar 0,94; sehingga bisa disimpulkan bahwa jika semakin banyak luas panen maka akan meningkat jumlah produksi ubi kayu.
 
+### - Korelasi Luas Panen dan Produksi Padi
+```{r}
+# Visualisasi korelasi luas panen dan produksi Padi
+plot_padi_5 <- ggplot(Padi, aes(x = Luas_Panen, y = Produksi, color = Provinsi)) +
+  geom_point() +
+  labs(title = "Korelasi Produksi dan Luas Panen", x = "Luas Panen (Ha)", y = "Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "right")
+plot_padi_5
+```
+
+```{r}
+# Hitung Pearson correlation coefficient
+correlation_padi <- cor(Padi$Luas_Panen, Padi$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson Luas Panen dan Produksi:", correlation_padi)
+```
+Berdasarkan grafik diatas bisa lihat bahwa ada korelasi antara luas panen dan produksi. Hubungan korelasi adalah positif dengan nilai korelasi sebesar 0,99; sehingga bisa disimpulkan bahwa jika semakin banyak luas panen maka akan meningkat jumlah produksi padi.
 
 
-## i. Perbandingan Produktivitas dengan Produksi Palawija 
+
+
+## i. Perbandingan Produktivitas dengan Produksi Tanaman Pangan 
 ### - Perbandingan Produktivitas dengan Produksi Jagung 
 ```{r}
 # Create a boxplot using ggplot2
@@ -1018,10 +1148,24 @@ plot_ubikayu_6 <- ggplot(UbiKayu, aes(x = Provinsi, y = Produksi - Produktivitas
 plot_ubikayu_6 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
+### - Perbandingan Produktivitas dengan Produksi Padi
+```{r}
+# Create a boxplot using ggplot2
+plot_padi_6 <- ggplot(Padi, aes(x = Provinsi, y = Produksi - Produktivitas, fill = Provinsi)) +
+  geom_boxplot() +
+  labs(title = "Perbandingan Produksi dan Produktivitas Padi per Provinsi", x = "Provinsi", y = "Selisih Produksi") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "none")
 
-# 5. Prediksi Produksi Palawija dengan ML
+# Rotasi sumbu x agar mudah dibaca
+plot_padi_6 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
 
-## Partisi Dataset
+
+# 5. Prediksi Produksi Tanaman Pangan dengan ML
+
+##a. Partisi Dataset
 ```{r}
 # Jagung
 set.seed(123)  # Untuk hasil yang dapat direproduksi
@@ -1076,9 +1220,18 @@ dataubikayu_test <- UbiKayu[-ubikayu_splitIndex, ]  # Data pengujian (30%)
 dim(dataubikayu_train)
 dim(dataubikayu_test)
 ```
+```{r}
+# Padi
+set.seed(123)  # Untuk hasil yang dapat direproduksi
+padi_splitIndex <- createDataPartition(Padi$Produksi, p = 0.7, list = FALSE)
+datapadi_train <- Padi[padi_splitIndex, ]  # Data pelatihan (70%)
+datapadi_test <- Padi[-padi_splitIndex, ]  # Data pengujian (30%)
+dim(datapadi_train)
+dim(datapadi_test)
+```
 
 
-## Model Random Forest
+##b. Model Random Forest
 
 ### 1. Membuat Model Random Forest - Jagung
 ```{r}
@@ -1495,8 +1648,77 @@ cat(paste("MAPE: ", mape_value_rf_ubikayu, "%\n"))
 ```
 
 
+### 7. Membuat Model Random Forest - Padi
+```{r}
+# Membuat model RF
+padi_rf_model <- randomForest(Produksi ~ Produktivitas + Luas_Panen, data = datapadi_train, ntree = 1000)
+```
+```{r}
+# Melakukan Prediksi terhadap Data Pengujian
+predictions_rf_padi <- predict(padi_rf_model, datapadi_test)
+```
+```{r}
+# Visualisasi Hasil
+result_datapadi_rf <- data.frame(Produksi = datapadi_test$Produksi, Predictions = predictions_rf_padi)
 
-## Model SVR
+# Visualisasi Perbandingan Produksi Aktual dengan Hasil Prediksi
+ggplot(data = result_datapadi_rf, aes(x = Produksi, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
+  theme_minimal()
+```
+```{r}
+# Visualisasi Produksi Aktual dengan Hasil Prediksi
+ggplot(data = result_datapadi_rf, aes(x = 1:length(Produksi))) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
+  labs(x = "Observasi", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
+  theme_minimal()
+```
+
+```{r}
+# Visualisasi hasil prediksi dengan sumbu x adalah tahun
+result_datapadi_rf2 <- data.frame(Tahun = datapadi_test$Tahun, Produksi = datapadi_test$Produksi, Predictions = predictions_rf_padi)
+
+ggplot(data = result_datapadi_rf2, aes(x = Tahun)) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
+  labs(x = "Tahun", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal()
+```
+```{r}
+# Evaluasi RF Model
+
+# Hitung MAE
+mae_value_rf_padi <- mae(datapadi_test$Produksi, predictions_rf_padi)
+
+# Hitung MSE
+mse_value_rf_padi <- mse(datapadi_test$Produksi, predictions_rf_padi)
+
+# Hitung RMSE
+rmse_value_rf_padi <- rmse(datapadi_test$Produksi, predictions_rf_padi)
+
+# Hitung MAPE
+mape_value_rf_padi <- mape(datapadi_test$Produksi, predictions_rf_padi)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_value_rf_padi, "\n"))
+cat(paste("MSE: ", mse_value_rf_padi, "\n"))
+cat(paste("RMSE: ", rmse_value_rf_padi, "\n"))
+cat(paste("MAPE: ", mape_value_rf_padi, "%\n"))
+```
+
+
+##c. Model SVR
 ### 1. Membuat Model SVR - Kacang Hijau
 
 ### 2. Membuat Model SVR - Kacang Hijau
@@ -1509,9 +1731,11 @@ cat(paste("MAPE: ", mape_value_rf_ubikayu, "%\n"))
 
 ### 6. Membuat Model SVR - Ubi Kayu
 
+### 7. Membuat Model SVR - Padi
 
 
-## Intepretasikan dan Membandingkan Model Random Forest dan SVR
+
+##d. Intepretasikan dan Membandingkan Model Random Forest dan SVR
 
 
 
