@@ -1,0 +1,8 @@
+---
+title: "Analisis Prediksi Produksi Padi (Sumut) dengan Model Machine Learning"
+author: "Nurul Aina Tasya"
+date: "2023-10-29"
+output: html_document
+---
+
+
