@@ -1719,19 +1719,530 @@ cat(paste("MAPE: ", mape_value_rf_padi, "%\n"))
 
 
 ##c. Model SVR
-### 1. Membuat Model SVR - Kacang Hijau
+### 1. Membuat Model SVR - Jagung
+```{r}
+# Membuat model SVR
+jagung_svr_model <- svm(Produksi ~ ., data = datajagung_train, kernel = "radial", cost = 1)
+```
+
+```{r}
+# Melakukan prediksi dengan Data Testing
+predictions_svr <- predict(svr_model, data_test)
+```
+
+```{r}
+# Visualisasi hasil prediksi
+result_data_svr <- data.frame(Produksi = data_test$Produksi, Predictions = predictions_svr)
+
+ggplot(data = result_data_svr, aes(x = Produksi, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
+  theme_minimal()
+```
+
+```{r}
+# Buat grafik garis dengan ggplot2
+ggplot(data = result_data_svr, aes(x = 1:length(Produksi))) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
+  labs(x = "Observasi", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal()
+```
+
+```{r}
+# Visualisasi hasil prediksi dengan sumbu x adalah tahun
+result_data_svr2 <- data.frame(Tahun = data_test$Tahun, Produksi = data_test$Produksi, Predictions = predictions_svr)
+
+ggplot(data = result_data_svr2, aes(x = Tahun)) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
+  labs(x = "Tahun", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal()
+```
+
+```{r}
+# Evaluasi SVR Model
+
+# Hitung MAE
+mae_value_svr <- mae(data_test$Produksi, predictions_svr)
+
+# Hitung MSE
+mse_value_svr <- mse(data_test$Produksi, predictions_svr)
+
+# Hitung RMSE
+rmse_value_svr <- rmse(data_test$Produksi, predictions_svr)
+
+# Hitung MAPE
+mape_value_svr <- mape(data_test$Produksi, predictions_svr)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_value_svr, "\n"))
+cat(paste("MSE: ", mse_value_svr, "\n"))
+cat(paste("RMSE: ", rmse_value_svr, "\n"))
+cat(paste("MAPE: ", mape_value_svr, "%\n"))
+```
+
+
 
 ### 2. Membuat Model SVR - Kacang Hijau
+```{r}
+# Membuat model SVR
+svr_model <- svm(Produksi ~ ., data = data_train, kernel = "radial", cost = 1)
+```
+
+```{r}
+# Melakukan prediksi dengan Data Testing
+predictions_svr <- predict(svr_model, data_test)
+```
+
+```{r}
+# Visualisasi hasil prediksi
+result_data_svr <- data.frame(Produksi = data_test$Produksi, Predictions = predictions_svr)
+
+ggplot(data = result_data_svr, aes(x = Produksi, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
+  theme_minimal()
+```
+
+```{r}
+# Buat grafik garis dengan ggplot2
+ggplot(data = result_data_svr, aes(x = 1:length(Produksi))) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
+  labs(x = "Observasi", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal()
+```
+
+```{r}
+# Visualisasi hasil prediksi dengan sumbu x adalah tahun
+result_data_svr2 <- data.frame(Tahun = data_test$Tahun, Produksi = data_test$Produksi, Predictions = predictions_svr)
+
+ggplot(data = result_data_svr2, aes(x = Tahun)) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
+  labs(x = "Tahun", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal()
+```
+
+```{r}
+# Evaluasi SVR Model
+
+# Hitung MAE
+mae_value_svr <- mae(data_test$Produksi, predictions_svr)
+
+# Hitung MSE
+mse_value_svr <- mse(data_test$Produksi, predictions_svr)
+
+# Hitung RMSE
+rmse_value_svr <- rmse(data_test$Produksi, predictions_svr)
+
+# Hitung MAPE
+mape_value_svr <- mape(data_test$Produksi, predictions_svr)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_value_svr, "\n"))
+cat(paste("MSE: ", mse_value_svr, "\n"))
+cat(paste("RMSE: ", rmse_value_svr, "\n"))
+cat(paste("MAPE: ", mape_value_svr, "%\n"))
+```
+
+
 
 ### 3. Membuat Model SVR - Kacang Kedelai
+```{r}
+# Membuat model SVR
+svr_model <- svm(Produksi ~ ., data = data_train, kernel = "radial", cost = 1)
+```
+
+```{r}
+# Melakukan prediksi dengan Data Testing
+predictions_svr <- predict(svr_model, data_test)
+```
+
+```{r}
+# Visualisasi hasil prediksi
+result_data_svr <- data.frame(Produksi = data_test$Produksi, Predictions = predictions_svr)
+
+ggplot(data = result_data_svr, aes(x = Produksi, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
+  theme_minimal()
+```
+
+```{r}
+# Buat grafik garis dengan ggplot2
+ggplot(data = result_data_svr, aes(x = 1:length(Produksi))) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
+  labs(x = "Observasi", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal()
+```
+
+```{r}
+# Visualisasi hasil prediksi dengan sumbu x adalah tahun
+result_data_svr2 <- data.frame(Tahun = data_test$Tahun, Produksi = data_test$Produksi, Predictions = predictions_svr)
+
+ggplot(data = result_data_svr2, aes(x = Tahun)) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
+  labs(x = "Tahun", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal()
+```
+
+```{r}
+# Evaluasi SVR Model
+
+# Hitung MAE
+mae_value_svr <- mae(data_test$Produksi, predictions_svr)
+
+# Hitung MSE
+mse_value_svr <- mse(data_test$Produksi, predictions_svr)
+
+# Hitung RMSE
+rmse_value_svr <- rmse(data_test$Produksi, predictions_svr)
+
+# Hitung MAPE
+mape_value_svr <- mape(data_test$Produksi, predictions_svr)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_value_svr, "\n"))
+cat(paste("MSE: ", mse_value_svr, "\n"))
+cat(paste("RMSE: ", rmse_value_svr, "\n"))
+cat(paste("MAPE: ", mape_value_svr, "%\n"))
+```
+
+
 
 ### 4. Membuat Model SVR - Kacang Tanah
+```{r}
+# Membuat model SVR
+svr_model <- svm(Produksi ~ ., data = data_train, kernel = "radial", cost = 1)
+```
+
+```{r}
+# Melakukan prediksi dengan Data Testing
+predictions_svr <- predict(svr_model, data_test)
+```
+
+```{r}
+# Visualisasi hasil prediksi
+result_data_svr <- data.frame(Produksi = data_test$Produksi, Predictions = predictions_svr)
+
+ggplot(data = result_data_svr, aes(x = Produksi, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
+  theme_minimal()
+```
+
+```{r}
+# Buat grafik garis dengan ggplot2
+ggplot(data = result_data_svr, aes(x = 1:length(Produksi))) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
+  labs(x = "Observasi", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal()
+```
+
+```{r}
+# Visualisasi hasil prediksi dengan sumbu x adalah tahun
+result_data_svr2 <- data.frame(Tahun = data_test$Tahun, Produksi = data_test$Produksi, Predictions = predictions_svr)
+
+ggplot(data = result_data_svr2, aes(x = Tahun)) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
+  labs(x = "Tahun", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal()
+```
+
+```{r}
+# Evaluasi SVR Model
+
+# Hitung MAE
+mae_value_svr <- mae(data_test$Produksi, predictions_svr)
+
+# Hitung MSE
+mse_value_svr <- mse(data_test$Produksi, predictions_svr)
+
+# Hitung RMSE
+rmse_value_svr <- rmse(data_test$Produksi, predictions_svr)
+
+# Hitung MAPE
+mape_value_svr <- mape(data_test$Produksi, predictions_svr)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_value_svr, "\n"))
+cat(paste("MSE: ", mse_value_svr, "\n"))
+cat(paste("RMSE: ", rmse_value_svr, "\n"))
+cat(paste("MAPE: ", mape_value_svr, "%\n"))
+```
+
+
+
 
 ### 5. Membuat Model SVR - Ubi Jalar
+```{r}
+# Membuat model SVR
+svr_model <- svm(Produksi ~ ., data = data_train, kernel = "radial", cost = 1)
+```
+
+```{r}
+# Melakukan prediksi dengan Data Testing
+predictions_svr <- predict(svr_model, data_test)
+```
+
+```{r}
+# Visualisasi hasil prediksi
+result_data_svr <- data.frame(Produksi = data_test$Produksi, Predictions = predictions_svr)
+
+ggplot(data = result_data_svr, aes(x = Produksi, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
+  theme_minimal()
+```
+
+```{r}
+# Buat grafik garis dengan ggplot2
+ggplot(data = result_data_svr, aes(x = 1:length(Produksi))) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
+  labs(x = "Observasi", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal()
+```
+
+```{r}
+# Visualisasi hasil prediksi dengan sumbu x adalah tahun
+result_data_svr2 <- data.frame(Tahun = data_test$Tahun, Produksi = data_test$Produksi, Predictions = predictions_svr)
+
+ggplot(data = result_data_svr2, aes(x = Tahun)) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
+  labs(x = "Tahun", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal()
+```
+
+```{r}
+# Evaluasi SVR Model
+
+# Hitung MAE
+mae_value_svr <- mae(data_test$Produksi, predictions_svr)
+
+# Hitung MSE
+mse_value_svr <- mse(data_test$Produksi, predictions_svr)
+
+# Hitung RMSE
+rmse_value_svr <- rmse(data_test$Produksi, predictions_svr)
+
+# Hitung MAPE
+mape_value_svr <- mape(data_test$Produksi, predictions_svr)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_value_svr, "\n"))
+cat(paste("MSE: ", mse_value_svr, "\n"))
+cat(paste("RMSE: ", rmse_value_svr, "\n"))
+cat(paste("MAPE: ", mape_value_svr, "%\n"))
+```
+
+
 
 ### 6. Membuat Model SVR - Ubi Kayu
+```{r}
+# Membuat model SVR
+svr_model <- svm(Produksi ~ ., data = data_train, kernel = "radial", cost = 1)
+```
+
+```{r}
+# Melakukan prediksi dengan Data Testing
+predictions_svr <- predict(svr_model, data_test)
+```
+
+```{r}
+# Visualisasi hasil prediksi
+result_data_svr <- data.frame(Produksi = data_test$Produksi, Predictions = predictions_svr)
+
+ggplot(data = result_data_svr, aes(x = Produksi, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
+  theme_minimal()
+```
+
+```{r}
+# Buat grafik garis dengan ggplot2
+ggplot(data = result_data_svr, aes(x = 1:length(Produksi))) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
+  labs(x = "Observasi", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal()
+```
+
+```{r}
+# Visualisasi hasil prediksi dengan sumbu x adalah tahun
+result_data_svr2 <- data.frame(Tahun = data_test$Tahun, Produksi = data_test$Produksi, Predictions = predictions_svr)
+
+ggplot(data = result_data_svr2, aes(x = Tahun)) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
+  labs(x = "Tahun", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal()
+```
+
+```{r}
+# Evaluasi SVR Model
+
+# Hitung MAE
+mae_value_svr <- mae(data_test$Produksi, predictions_svr)
+
+# Hitung MSE
+mse_value_svr <- mse(data_test$Produksi, predictions_svr)
+
+# Hitung RMSE
+rmse_value_svr <- rmse(data_test$Produksi, predictions_svr)
+
+# Hitung MAPE
+mape_value_svr <- mape(data_test$Produksi, predictions_svr)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_value_svr, "\n"))
+cat(paste("MSE: ", mse_value_svr, "\n"))
+cat(paste("RMSE: ", rmse_value_svr, "\n"))
+cat(paste("MAPE: ", mape_value_svr, "%\n"))
+```
+
+
 
 ### 7. Membuat Model SVR - Padi
+```{r}
+# Membuat model SVR
+svr_model <- svm(Produksi ~ ., data = data_train, kernel = "radial", cost = 1)
+```
+
+```{r}
+# Melakukan prediksi dengan Data Testing
+predictions_svr <- predict(svr_model, data_test)
+```
+
+```{r}
+# Visualisasi hasil prediksi
+result_data_svr <- data.frame(Produksi = data_test$Produksi, Predictions = predictions_svr)
+
+ggplot(data = result_data_svr, aes(x = Produksi, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
+  theme_minimal()
+```
+
+```{r}
+# Buat grafik garis dengan ggplot2
+ggplot(data = result_data_svr, aes(x = 1:length(Produksi))) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
+  labs(x = "Observasi", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal()
+```
+
+```{r}
+# Visualisasi hasil prediksi dengan sumbu x adalah tahun
+result_data_svr2 <- data.frame(Tahun = data_test$Tahun, Produksi = data_test$Produksi, Predictions = predictions_svr)
+
+ggplot(data = result_data_svr2, aes(x = Tahun)) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
+  labs(x = "Tahun", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal()
+```
+
+```{r}
+# Evaluasi SVR Model
+
+# Hitung MAE
+mae_value_svr <- mae(data_test$Produksi, predictions_svr)
+
+# Hitung MSE
+mse_value_svr <- mse(data_test$Produksi, predictions_svr)
+
+# Hitung RMSE
+rmse_value_svr <- rmse(data_test$Produksi, predictions_svr)
+
+# Hitung MAPE
+mape_value_svr <- mape(data_test$Produksi, predictions_svr)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_value_svr, "\n"))
+cat(paste("MSE: ", mse_value_svr, "\n"))
+cat(paste("RMSE: ", rmse_value_svr, "\n"))
+cat(paste("MAPE: ", mape_value_svr, "%\n"))
+```
+
 
 
 
