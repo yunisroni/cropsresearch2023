@@ -101,7 +101,7 @@ yang kosong atau NA'
 ```{r}
 glimpse(padisumut_clean)
 ```
-Jumlah data setelah dihapus data NA' menjadi 435 baris observasi dengan 5 variabel.
+Jumlah data setelah dihapus data NA' menjadi 428 baris observasi dengan 5 variabel.
 
 ```{r}
 padisumutfilter <- padisumut_clean[padisumut_clean$Kabupaten_kota != "Sumatera Utara",]
@@ -243,8 +243,7 @@ correlation_padi <- cor(padisumutfilter$Luas_panen, padisumutfilter$Produksi)
 cat("Koefisien Korelasi Pearson Luas Panen dan Produksi:", correlation_padi)
 ```
 
-Berdasarkan grafik diatas bisa lihat bahwa ada korelasi antara luas panen dan produksi. Hubungan korelasi adalah positif dengan nilai korelasi sebesar 0,99, sehingga bisa disimpulkan bahwa jika semakin
-banyak luas panen maka akan meningkat jumlah produksi padi.
+Berdasarkan grafik diatas bisa lihat bahwa ada korelasi antara luas panen dan produksi. Hubungan korelasi adalah positif dengan nilai korelasi sebesar 0,99, sehingga bisa disimpulkan bahwa jika semakin banyak luas panen maka akan meningkat jumlah produksi padi.
 
 ## f. Perbandingan Rata-rata produksi dengan Produksi Padi
 
@@ -431,4 +430,4 @@ model_performance_padisumut <- data.frame(
 )
 model_performance_padisumut
 ```
-Berdasarkan hasil diatas, kalau dilihat dari performance matrik tingkat kesalahan yang paling rendah (MAE), maka model **Random Forest** yang dianggap sebagai model terbaik dalam hal akurasi prediksi produksi padi sumut.
+Berdasarkan hasil diatas, kalau dilihat dari performance matrik tingkat kesalahan yang paling rendah (MAE), maka model **SVR** yang dianggap sebagai model terbaik dalam hal akurasi prediksi produksi padi sumut.
