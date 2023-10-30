@@ -2358,6 +2358,7 @@ model_performance_padi
 Berdasarkan hasil diatas, kalau dilihat dari performance matrik tingkat kesalahan yang paling rendah (MAE), maka model **Random Forest** yang dianggap sebagai model terbaik dalam hal akurasi prediksi produksi padi
 
 
+
 # 6. Analisis dampak curah hujan terhadap produksi padi (Indonesia)
 
 
