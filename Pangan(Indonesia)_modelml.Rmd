@@ -2360,6 +2360,34 @@ Berdasarkan hasil diatas, kalau dilihat dari performance matrik tingkat kesalaha
 
 
 # 6. Analisis dampak curah hujan terhadap produksi padi (Indonesia)
+```{r}
+# Load data curah hujan
+rainfall <- read_excel("dataset/climateserv Indonesia (1993-2015).xlsx")
+head(rainfall)
+```
+
+```{r}
+# Merubah type variabel DateTime menjadi Date
+rainfall$Date <- as.Date(rainfall$Date)
+glimpse(rainfall)
+```
+
+```{r}
+# Merubah nama variabel
+names(rainfall)[names(rainfall) == "UCSB CHIRPS Rainfall: avg"] <- "Rainfallavg"
+glimpse(rainfall)
+```
+
+```{r}
+# Merubah type data karakter menjadi numeric
+rainfall$Rainfallavg  <- as.numeric(rainfall$Rainfallavg)
+glimpse(rainfall)
+```
+
+```{r}
+head(rainfall)
+tail(rainfall)
+```
 
 
 
