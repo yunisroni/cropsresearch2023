@@ -94,7 +94,7 @@ yang kosong atau NA'
 ```{r}
 glimpse(pangan_clean)
 ```
-Jumlah data setelah dihapus data NA' menjadi 4,647 baris observasi dengan
+Jumlah data setelah dihapus data NA' menjadi 4,643 baris observasi dengan
 6 variabel.
 
 
