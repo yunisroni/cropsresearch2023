@@ -2389,6 +2389,62 @@ head(rainfall)
 tail(rainfall)
 ```
 
+```{r}
+# Mengambil rata-rata curah hujan per tahun
+rainfall_yearly <- rainfall %>%
+  mutate(year = lubridate::year(Date)) %>%
+  group_by(year) %>%
+  summarise(Avg_rainfall = mean(Rainfallavg))
+rainfall_yearly  
+```
+
+```{r}
+# Merubah type tahun menjadi date
+rainfall_yearly$year <- make_date(rainfall_yearly$year)
+rainfall_yearly
+```
+
+```{r}
+# Mengabungkan kedua dataset
+merged_data <- merge(Padi, rainfall_yearly, by.x = "Tahun", by.y = "year")
+merged_data
+```
+
+## a. Random Forest
+```{r}
+# Pilih variabel yang akan diprediksi
+# dalam pengujian ini akan dilihat apakah ada pengaruh curah hujan terhadap peningkatan produksi
+data_for_rf <- merged_data[, c("Produksi", "Avg_rainfall")]
+data_for_rf
+```
+
+Untuk mendukung prediksi dengan Model Random Forest, data harus dirubah kedalam format time series (ts)
+```{r}
+ts_padi_rf <- ts(data_for_rf, start = c(1993,1), frequency = 1)
+head(ts_padi_rf)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
