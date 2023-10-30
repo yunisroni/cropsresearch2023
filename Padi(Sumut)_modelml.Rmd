@@ -261,7 +261,7 @@ plot_6 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
 
-# 5. Prediksi Produksi Padi dengan ML
+# 5. Prediksi Produksi Padi (Sumut) dengan ML
 
 ## a. Partisi Dataset
 ```{r}
@@ -431,3 +431,6 @@ model_performance_padisumut <- data.frame(
 model_performance_padisumut
 ```
 Berdasarkan hasil diatas, kalau dilihat dari performance matrik tingkat kesalahan yang paling rendah (MAE), maka model **SVR** yang dianggap sebagai model terbaik dalam hal akurasi prediksi produksi padi sumut.
+
+
+# 6. Analisis dampak curah hujan terhadap produksi padi (Sumut)
