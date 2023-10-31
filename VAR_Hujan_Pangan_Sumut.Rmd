@@ -5,19 +5,7 @@ date: "2023-10-12"
 output: pdf_document
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
-
-```{r}
-"vars" %in% installed.packages()[,"Package"]
-```
-```{r}
-library(lubridate)
-lubridate::date()
-```
-
-# 1. Panggil Library
+# Panggil Library
 ```{r}
 library(dplyr)
 library(ggplot2)
@@ -29,7 +17,7 @@ library(scales)
 library(vars)
 ```
 
-#2. Tanaman Pangan Sumut 2010-2022
+#1. Tanaman Pangan Sumut 2010-2022
 ## Obstain - Load Dataset
 
 ```{r}
@@ -68,7 +56,7 @@ head(tanaman_pangan)
 # Menampikan variabel dengan baris kosong
 colSums(is.na(tanaman_pangan))
 ```
-### b. Menghapus Data Kosong
+### Menghapus Data Kosong
 
 ```{r}
 # Menampikan variabel dengan baris kosong
@@ -110,7 +98,8 @@ options(dplyr.summarise.inform = FALSE) # untuk menonaktifkan pesan peringatan y
 # Hitung total produksi semua tanaman pangan per kabupaten di setiap tahun
 totproduksi_pangan <- tanaman_pangan_filter %>% 
   group_by(Tahun, Kabupaten_Kota, .drop = FALSE) %>%  # Add .drop argument
-  summarise(total_produksi = sum(Produksi))
+  summarise(total_produksi = sum(Produksi)) %>%
+  arrange(desc(total_produksi))
 
 totproduksi_pangan
 ```
@@ -153,13 +142,13 @@ plot_2 <- ggplot(totproduksi_kabkota, aes(x = Kabupaten_Kota, y = total_produksi
 # Rotasi sumbu x agar mudah dibaca
 plot_2 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
-Perbandingan produksi tanaman pangan dalam kurun waktu 2010 - 2022 adalah dari Kabupaten Simalungun yang terbanyak dengan Jumlah Produksi 13.271.196.14 Ton
+Perbandingan produksi tanaman pangan dalam kurun waktu 2010 - 2022 adalah dari Kabupaten Simalungun yang terbanyak dengan Jumlah Produksi 13.271.196,14 Ton
 
 
-# 3. Curah hujan
+# 2. Curah hujan
 
 ```{r}
-rainfall <-read_excel("C:/Users/Lenovo/Documents/File R skripsi/Rainfall Sumut_2010-2022.xlsx")
+rainfall <-read_excel("D:/OneDrive - mikroskil.ac.id/Documents/File R skripsi/Rainfall Sumut_2010-2022.xlsx")
 rainfall
 ```
 
@@ -205,7 +194,7 @@ rainfall_yearly
 ```
 
 
-# 4. Padi
+# 3. Padi
 
 ```{r}
 # Ambil data padi di dataset tanaman pangan 
@@ -216,7 +205,6 @@ Padi <- tanaman_pangan_filter[tanaman_pangan_filter$Nama_Tanaman_Pangan == "Padi
 glimpse(Padi)
 ```
 
-
 ## EDA Padi
 
 ### Jumlah Produksi Padi per Kabupaten/Kota
@@ -224,8 +212,8 @@ glimpse(Padi)
 # Hitung total produksi padi per kabupaten/kota di setiap tahun
 totproduksi_padi <- Padi %>% 
   group_by(Tahun, Kabupaten_Kota, .drop = FALSE) %>%  # Add .drop argument
-  summarise(total_produksi = sum(Produksi))
-
+  summarise(total_produksi = sum(Produksi))%>%
+  arrange(desc(total_produksi))
 totproduksi_padi
 ```
 
@@ -259,7 +247,7 @@ plot_padi_1
 # Visualisasi dengan barplot total produksi padi di setiap kabupaten/kota
 plot_padi_2<- ggplot(totproduksi_kabkota_padi, aes(x = Kabupaten_Kota, y = total_produksi, fill = Kabupaten_Kota)) +
   geom_bar(stat = "identity") +
-  labs(title = "Perbandingan Produksi Tanaman pangan antara Kabupaten/Kota", x = "Kabupaten/Kota", y = "Total Produksi (Ton)") +
+  labs(title = "Perbandingan Produksi Padi antara Kabupaten/Kota", x = "Kabupaten/Kota", y = "Total Produksi (Ton)") +
   scale_y_continuous(labels = scales::comma) +
   theme_minimal() +
   theme(legend.position = "none")  # hilangkan legend
@@ -371,7 +359,7 @@ best_lag_padi
 ```
 
 ```{r}
-# VAR Model
+# VAR Model Rata-rata curah hujan terhadap rata-rata produksi padi
 var_model_Padi <- VAR(ts_data_padi, p = best_lag_padi$selection[1], type = "both") # jumlah order dari model VAR
 summary(var_model_Padi)
 ```
@@ -403,7 +391,7 @@ regression_model_padi <- lm(Rata_rata_produksi ~ avg_rainfall, data = data_for_v
 summary(regression_model_padi)
 ```
 
-hasil regresi linier ini menunjukkan bahwa curah hujan rata-rata ("avg_rainfall") memiliki pengaruh negatif yang tidak signifikan terhadap produksi padi rata-rata. Meskipun koefisien negatif menunjukkan bahwa ada hubungan negatif antara kedua variabel tersebut, P-value yang tinggi (0.059) mengindikasikan bahwa pengaruh ini tidak signifikan secara statistik. Dengan kata lain, Anda *tidak* dapat dengan yakin menyatakan bahwa curah hujan rata-rata secara signifikan memengaruhi produksi padi rata-rata berdasarkan hasil regresi ini.
+hasil regresi linier ini menunjukkan bahwa avg_rainfall p-valuenya 0,059 dan nilai estimate nya -1.3753 yang memiliki pengaruh negatif yang tidak signifikan terhadap produksi padi rata-rata. Meskipun koefisien negatif menunjukkan bahwa ada hubungan negatif antara kedua variabel tersebut, P-value yang tinggi pada F-statistik (0.05901) mengindikasikan bahwa pengaruh ini tidak signifikan secara statistik. Dengan kata lain, *tidak* dapat menyatakan bahwa curah hujan rata-rata secara signifikan memengaruhi produksi padi rata-rata berdasarkan hasil regresi ini.
 
 ```{r}
 # Menghitung koefisien korelasi Pearson
@@ -414,7 +402,7 @@ correlation_Padi
 
 
 
-#3. Ubi Jalar
+#4. Ubi Jalar
 
 ```{r}
 # Ambil data Ubi Jalar dari dataset tanaman pangan 
@@ -528,7 +516,7 @@ plot_UbiJalar_4 <- ggplot(Ubi_Jalar, aes(x = Kabupaten_Kota, y = Produksi - Rata
 # Rotasi sumbu x agar mudah dibaca
 plot_UbiJalar_4 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
-## b. Curah hujan terhadap Ubi Jalar
+## Curah hujan terhadap Ubi Jalar
 
 ```{r}
 # Ambil data Ubi Jalar di dataset tanaman pangan yang belum di filter sumatera utara 
@@ -574,8 +562,13 @@ best_lag_UbiJalar
 var_model_UbiJalar <- VAR(ts_data_UbiJalar, p = best_lag_UbiJalar$selection[1], type = "both") # jumlah order dari model VAR
 summary(var_model_UbiJalar)
 ```
+Estimation results for equation Rata_rata_produksi: 
+Rata_rata_produksi.l1 Nilai estimasinya adalah 0.7145 dan P-value 0.405 sedangkan avg_rainfall.l1 estimatenya adalah -4.0116 sedangkan p-valuenya 0.772 dan P-value fstatistiknya adalah 0.1826 lebih besar dari 0,05 menunjukan bahwa tidak ada bukti statistik pengaruh rata-rata curah hujan terhadap rata-rata produksi.
 
-Dalam kesimpulan, berdasarkan hasil analisis VAR dan p-value yang tinggi, tidak ada bukti statistik yang kuat untuk mendukung bahwa peningkatan curah hujan rata-rata menyebabkan penurunan produksi ubi jalar. Hasil ini menunjukkan bahwa dalam kerangka model ini, hubungan antara curah hujan rata-rata dan produksi ubi jalar mungkin tidak signifikan secara statistik.
+Estimation results for equation avg_rainfall: 
+Rata_rata_produksi.l1 nilai estimatenya -0.009615 dan P-value 0.885 sedangkan avg_rainfall.l1 nilai estimatenya -0.031986 dan P-valuenya 0.978 dan p-valuen f-statistiknya adalah 0.9188  yg lebih besar dari 0,05 menunjukan bahwa tidak ada bukti statistik pengaruh rata-rata curah hujan terhadap rata-rata produksi.
+
+Dalam kesimpulan, berdasarkan hasil analisis VAR dan p-value yang tinggi, Hasil ini menunjukkan bahwa dalam kerangka model ini, hubungan antara curah hujan rata-rata dan produksi ubi jalar mungkin tidak signifikan secara statistik.
 
 ```{r}
 # Melakukan uji Granger Causality
@@ -607,7 +600,7 @@ Nilai -0.2818502 menunjukkan adanya hubungan korelasi negatif yang lemah antara 
 
 Dengan kata lain, hasil ini menunjukkan bahwa ada sedikit korelasi negatif antara curah hujan rata-rata dan produksi ubi jalar, tetapi hubungannya sangat lemah dan tidak signifikan secara statistik.
 
-#4. Ubi Kayu
+#5. Ubi Kayu
 
 ```{r}
 # Ambil data Ubi Jalar dari dataset tanaman pangan 
@@ -809,7 +802,7 @@ Meskipun terdapat hubungan negatif antara curah hujan rata-rata dan produksi ubi
 
 
 
-#5. Kacang Hijau
+#6. Kacang Hijau
 
 ```{r}
 # Ambil data Kacang Hijau dari dataset tanaman pangan 
@@ -999,7 +992,7 @@ correlation_KacangHijau
 Dilihat dari hubungan negatif, artinya tingginya curah hujan biasanya berhubungan dengan rata-rata produksi yang rendah.
 
 
-#6. Kacang Tanah
+#7. Kacang Tanah
 
 ```{r}
 # Ambil data Kacang Tanah dari dataset tanaman pangan 
@@ -1200,7 +1193,7 @@ correlation_KacangTanah
 Dilihat dari hubungan negatif, artinya tingginya curah hujan biasanya berhubungan dengan rata-rata produksi yang rendah.
 
 
-#7. Kacang Kedelai
+#8. Kacang Kedelai
 
 ```{r}
 # Ambil data Kacang Kedelai dari dataset tanaman pangan 
@@ -1396,7 +1389,7 @@ correlation_Kedelai
 koefisien korelasi Pearson adalah -0.2732312, yang mendekati -1. Ini mengindikasikan bahwa terdapat hubungan negatif antara curah hujan rata-rata ("avg_rainfall") dan produksi kacang kedelai ("Rata_rata_produksi"). Artinya, ketika curah hujan rata-rata meningkat, produksi kacang kedelai cenderung menurun, dan sebaliknya.
 
 
-#8. Jagung
+#9. Jagung
 
 ```{r}
 # Ambil data Jagung dari dataset tanaman pangan 
@@ -1620,7 +1613,7 @@ oefisien korelasi Pearson adalah -0.5196848, yang mendekati -1. Ini menunjukkan 
 
 
 
-#9. Padi Sumatera tahun 1993-2020
+#10. Padi Sumatera tahun 1993-2020
 
 ## Obstain - Load Dataset Padi Sumatera tahun 1993-2020
 
@@ -1767,7 +1760,7 @@ korelasi sebesar 0,90, sehingga bisa disimpulkan bahwa jika semakin
 banyak luas panen maka akan meningkat jumlah produksi padi.
 
 
-### c. Model VAR Curah hujan pada produksi Padi Sumatera
+### Curah hujan Terhadap produksi Padi Sumatera
 
 
 ```{r}
@@ -1818,9 +1811,9 @@ granger_test_sumatera
 #Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
 ```
 *Kesimpulan*
-- P-value adalah 0.0972.
+-Granger P-value adalah 0.0972.
 Hasil ini menunjukkan bahwa pada tingkat signifikansi 0.05, tidak ada cukup bukti statistik untuk mendukung hipotesis bahwa "Curah_hujan menjadi penyebab Granger dari Produksi
--P-value adalah 0.08623.
+-Instant P-value adalah 0.08623.
 Hasil ini menunjukkan bahwa pada tingkat signifikansi 0.05, tidak ada cukup bukti statistik untuk mendukung adanya hubungan kausal instan (pengaruh yang terjadi secara langsung) antara Curah_hujan dan Produksi. Meskipun p-value (0.08623) mendekati tingkat signifikansi 0.05, hasil ini belum mencapai tingkat signifikansi yang umumnya digunakan.
 
 
@@ -1846,7 +1839,7 @@ correlation_sumatera
 Hasil (-0.0421286) menunjukkan adanya korelasi negatif yang sangat lemah antara kedua variabel tersebut. Korelasi negatif menunjukkan bahwa saat satu variabel naik, variabel lainnya cenderung turun, dan sebaliknya. Meskipun ada korelasi, nilainya sangat rendah, sehingga hubungan antara curah hujan dan produksi tanaman padi tidak terlalu kuat.
 
 
-# 10. Curah hujan dan tanaman padi provinsi Sumatera Utara tahun 1993-2020
+# 11. Curah hujan dan tanaman padi provinsi Sumatera Utara tahun 1993-2020
 
 ## Curah hujan terhadap tanaman padi sumut tahun 1993-2020
 
@@ -2135,6 +2128,36 @@ Dilihat dari model regresi juga kelihatan bahwa tidak ada pengaruh curah hujan t
 # Menghitung koefisien korelasi Pearson
 correlation_2 <- cor(var_luaspanen_2$Luas_panen, var_luaspanen_2$Curah_hujan)
 correlation_2
+```
+
+# 12. Model GARCH
+
+```{r}
+library(rugarch)
+```
+
+
+
+
+```{r}
+# Membuat data frame dengan kolom 'Curah_hujan' dan 'Produksi_padi'
+data_padi <- data.frame(Curah_hujan = sumatera_padi$Curah_hujan, Produksi= sumatera_padi$Produksi)
+data_padi
+```
+
+```{r}
+# Membuat model GARCH
+model_garch_1 <- ugarchspec(variance.model = list(model = "sGARCH", garchOrder = c(1, 1)), 
+                          distribution.model = "std")
+```
+
+```{r}
+
+# Estimasi model GARCH
+fit_garch_1 <- ugarchfit(spec = model_garch_1, data = data_padi$Curah_hujan)
+
+# Tampilkan hasil
+summary(fit_garch_1)
 ```
 
 
