@@ -2418,13 +2418,31 @@ data_for_rf <- merged_data[, c("Produksi", "Avg_rainfall")]
 data_for_rf
 ```
 
-Untuk mendukung prediksi dengan Model Random Forest, data harus dirubah kedalam format time series (ts)
 ```{r}
-ts_padi_rf <- ts(data_for_rf, start = c(1993,1), frequency = 1)
-head(ts_padi_rf)
+# Padi
+set.seed(123)  # Untuk hasil yang dapat direproduksi
+padi_splitIndex2 <- createDataPartition(data_for_rf$Produksi, p = 0.7, list = FALSE)
+datapadi_train2 <- data_for_rf[padi_splitIndex2, ]  # Data pelatihan (70%)
+datapadi_test2 <- data_for_rf[-padi_splitIndex2, ]  # Data pengujian (30%)
+dim(datapadi_train2)
+dim(datapadi_test2)
 ```
 
-
+```{r}
+# RF Model
+padi_rf_model2 <- randomForest(Produksi ~ Avg_rainfall, data = datapadi_train2, ntree = 100)
+padi_rf_model2 
+summary(padi_rf_model2)
+```
+```{r}
+# Visualisasi hasil model random forest
+ggplot(data_for_rf, aes(x = Avg_rainfall, y = Produksi)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE, color = "blue") +
+  labs(x = "Curah Hujan", y = "Produksi") +
+  ggtitle("Hubungan Antara Curah Hujan dan Produksi") +
+  theme_minimal()
+```
 
 
 
