@@ -2359,96 +2359,184 @@ Berdasarkan hasil diatas, kalau dilihat dari performance matrik tingkat kesalaha
 
 
 
-# 6. Analisis dampak curah hujan terhadap produksi padi (Indonesia)
+# 5. Prediksi Produksi Tanaman Pangan di Masa Depan - Model Prophet
+
+## a. Prediksi Jagung di Masa Depan
 ```{r}
-# Load data curah hujan
-rainfall <- read_excel("dataset/climateserv Indonesia (1993-2015).xlsx")
-head(rainfall)
+yearly_jg_train <- datajagung_train %>% 
+  group_by(Tahun) %>% 
+  summarise(
+    jum_pd = sum(Produksi)
+  )
+yearly_jg_train
+```
+```{r}
+# Merubah format data kedalam ds dan y
+train_yearly_jg <- yearly_jg_train %>% 
+  rename(
+    ds = "Tahun",
+    y = "jum_pd"
+  )
+glimpse(train_yearly_jg)
 ```
 
 ```{r}
-# Merubah type variabel DateTime menjadi Date
-rainfall$Date <- as.Date(rainfall$Date)
-glimpse(rainfall)
+# Membuat model Prophet dengan data training
+prophet_ts_jg <- prophet(yearly.seasonality = TRUE, seasonality.prior.scale = 0.1) %>% 
+  fit.prophet(train_yearly_jg)
+
 ```
 
 ```{r}
-# Merubah nama variabel
-names(rainfall)[names(rainfall) == "UCSB CHIRPS Rainfall: avg"] <- "Rainfallavg"
-glimpse(rainfall)
+# Melakukan Prediksi untuk produksi 10 tahun ke depan
+future_prophet_ts_jg <- make_future_dataframe(prophet_ts_jg, periods = 365*11)
+tail(future_prophet_ts_jg)
+```
+```{r}
+# Menampilkan Hasil Prediksi
+forecast_ts_jg <- predict(prophet_ts_jg, future_prophet_ts_jg)
+plot(prophet_ts_jg, forecast_ts_jg)
+```
+```{r}
+# Visualisasi komponen dari model forecast
+prophet_plot_components(prophet_ts_jg, forecast_ts_jg)
+```
+```{r}
+# Melihat komponen forecast
+forecast_ts_jg %>% 
+  dplyr::select(ds, trend, yearly, yhat)
+```
+```{r}
+# Melihat trend produksi
+plot(prophet_ts_jg, forecast_ts_jg) +
+  add_changepoints_to_plot(prophet_ts_jg, threshold = 0)
+```
+```{r}
+# Membuat subset data untuk tahun 2016-2025
+forecast_subset <- forecast_ts_jg[forecast_ts_jg$ds >= as.Date("2016-01-01") & forecast_ts_jg$ds <= as.Date("2025-01-01"), ]
+
+# Hanya ambil kolom Tahun dan yhat
+forecast_yhat_2016_2025_pd <- forecast_subset[, c("ds", "yhat")]
+
+# Print hasilnya
+print(forecast_yhat_2016_2025_pd)
 ```
 
 ```{r}
-# Merubah type data karakter menjadi numeric
-rainfall$Rainfallavg  <- as.numeric(rainfall$Rainfallavg)
-glimpse(rainfall)
+tail(forecast_yhat_2016_2025_pd,10)
+```
+```{r}
+# Mengelompokkan dan Menyiapkan data testing berdasarkan variabel Produksi
+yearly_jg_test <- datajagung_test %>% 
+  group_by(Tahun) %>% 
+  summarise(
+    jum_pd = sum(Produksi)
+  )
+yearly_jg_test
 ```
 
 ```{r}
-head(rainfall)
-tail(rainfall)
+# Merubah format data kedalam ds dan y
+test_yearly_jg <- yearly_jg_test %>% 
+  rename(
+    ds = "Tahun",
+    y = "jum_pd"
+    )
+glimpse(test_yearly_jg)
+```
+```{r}
+# Model Final
+model_final_jg <- prophet(changepoint.prior.scale = 0.05,
+                          yearly.seasonality = TRUE) %>% 
+  add_seasonality(name = "yearly", period = 365, fourier.order = 5) %>% 
+  fit.prophet(train_yearly_jg)
+future_final_jg <- make_future_dataframe(model_final_jg, periods = nrow(test_yearly_jg) + 1)
+forecast_final_jg <- predict(model_final_jg, future_final_jg)
+plot(model_final_jg, forecast_final_jg)
 ```
 
 ```{r}
-# Mengambil rata-rata curah hujan per tahun
-rainfall_yearly <- rainfall %>%
-  mutate(year = lubridate::year(Date)) %>%
-  group_by(year) %>%
-  summarise(Avg_rainfall = mean(Rainfallavg))
-rainfall_yearly  
+# Melakukan prediksi dengan data pengujian
+prediction_test_jg <- predict(model_final_jg, test_yearly_jg)
 ```
 
 ```{r}
-# Merubah type tahun menjadi date
-rainfall_yearly$year <- make_date(rainfall_yearly$year)
-rainfall_yearly
+# Visualisasi Komponen dari model forecasting
+prophet_plot_components(model_final_jg, prediction_test_jg)
+```
+```{r}
+# Evaluasi Model
+
+# Hitung MAE
+mae_value_prophet_jg <- mae(test_yearly_jg$y, prediction_test_jg$yhat)
+
+# Hitung MSE
+mse_value_prophet_jg <- mse(test_yearly_jg$y, prediction_test_jg$yhat)
+
+# Hitung RMSE
+rmse_value_prophet_jg <- rmse(test_yearly_jg$y, prediction_test_jg$yhat)
+
+# Hitung MAPE
+mape_value_prophet_jg <- mape(test_yearly_jg$y, prediction_test_jg$yhat)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_value_prophet_jg, "\n"))
+cat(paste("MSE: ", mse_value_prophet_jg, "\n"))
+cat(paste("RMSE: ", rmse_value_prophet_jg, "\n"))
+cat(paste("MAPE: ", mape_value_prophet_jg, "%\n"))
+```
+Mengambil data Curah Hujan dari hasil prediksi 2021-2024
+```{r}
+# Filter data untuk tahun 2021-2024
+forecast_subset_jg <- forecast_ts_jg[forecast_ts_jg$ds >= as.Date("2016-01-01") & forecast_ts_pd$ds <= as.Date("2025-01-01"), ]
+forecast_subset_jg
+
+# Hitung rata-rata yhat per tahun
+average_yhat_2016_jg <- mean(forecast_subset_jg$yhat[forecast_subset_jg$ds == as.Date("2016-01-01")])
+average_yhat_2017_jg <- mean(forecast_subset_jg$yhat[forecast_subset_jg$ds == as.Date("2017-01-01")])
+average_yhat_2018_jg <- mean(forecast_subset_jg$yhat[forecast_subset_jg$ds == as.Date("2018-01-01")])
+average_yhat_2019_jg <- mean(forecast_subset_jg$yhat[forecast_subset_jg$ds == as.Date("2019-01-01")])
+average_yhat_2020_jg <- mean(forecast_subset_jg$yhat[forecast_subset_jg$ds == as.Date("2020-01-01")])
+average_yhat_2021_jg <- mean(forecast_subset_jg$yhat[forecast_subset_jg$ds == as.Date("2021-01-01")])
+average_yhat_2022_jg <- mean(forecast_subset_jg$yhat[forecast_subset_jg$ds == as.Date("2022-01-01")])
+average_yhat_2023_jg <- mean(forecast_subset_jg$yhat[forecast_subset_jg$ds == as.Date("2023-01-01")])
+average_yhat_2024_jg <- mean(forecast_subset_jg$yhat[forecast_subset_jg$ds == as.Date("2024-01-01")])
+average_yhat_2025_jg <- mean(forecast_subset_jg$yhat[forecast_subset_jg$ds == as.Date("2025-01-01")])
+
+# Buat data frame
+average_jg_df <- data.frame(Tahun = c(2016, 2017, 2018, 2019, 2020,2021,2022,2023, 2024,2025), Produksi = c(average_yhat_2016_jg, average_yhat_2017_jg,average_yhat_2018_jg,average_yhat_2019_jg, average_yhat_2020_jg, average_yhat_2021_jg,average_yhat_2022_jg, average_yhat_2023_jg, average_yhat_2024_jg, average_yhat_2025_jg))
+
+# Tampilkan hasilnya
+average_jg_df
+
 ```
 
 ```{r}
-# Mengabungkan kedua dataset
-merged_data <- merge(Padi, rainfall_yearly, by.x = "Tahun", by.y = "year")
-merged_data
+average_jg_df$Tahun <- make_date(average_jg_df$Tahun)
+average_jg_df
 ```
 
-## a. Random Forest
-```{r}
-# Pilih variabel yang akan diprediksi
-# dalam pengujian ini akan dilihat apakah ada pengaruh curah hujan terhadap peningkatan produksi
-data_for_rf <- merged_data[, c("Produksi", "Avg_rainfall")]
-data_for_rf
-```
 
-```{r}
-# Padi
-set.seed(123)  # Untuk hasil yang dapat direproduksi
-padi_splitIndex2 <- createDataPartition(data_for_rf$Produksi, p = 0.7, list = FALSE)
-datapadi_train2 <- data_for_rf[padi_splitIndex2, ]  # Data pelatihan (70%)
-datapadi_test2 <- data_for_rf[-padi_splitIndex2, ]  # Data pengujian (30%)
-dim(datapadi_train2)
-dim(datapadi_test2)
-```
 
-```{r}
-# RF Model
-padi_rf_model2 <- randomForest(Produksi ~ Avg_rainfall, data = datapadi_train2, ntree = 100)
-padi_rf_model2 
-```
-```{r}
-# Membuat model regresi linier
-regression_model_padi <- lm(Produksi ~ Avg_rainfall, data = data_for_rf)
 
-# Ringkasan hasil model
-summary(regression_model_padi)
-```
-```{r}
-# Visualisasi hasil
-ggplot(data_for_rf, aes(x = Avg_rainfall, y = Produksi)) +
-  geom_point() +
-  geom_smooth(method = "lm", se = FALSE, color = "blue") +
-  labs(x = "Curah Hujan", y = "Produksi") +
-  ggtitle("Hubungan Antara Curah Hujan dan Produksi") +
-  theme_minimal()
-```
+
+## b. Prediksi Kacang Hijau di Masa Depan
+
+
+## c. Prediksi Kacang Kedelai di Masa Depan
+
+
+## d. Prediksi Kacang Tanah di Masa Depan
+
+
+## e. Prediksi Ubi Jalar di Masa Depan
+
+
+## f. Prediksi Ubi Kayu di Masa Depan
+
+
+## g. Prediksi Padi di Masa Depan
+
 
 
 
