@@ -24,6 +24,6 @@ library(csv)
 ```
 ```{r}
 padi <- read.csv("C:/Users/HP/OneDrive - mikroskil.ac.id/Dokumen/Penelitian Pak Roni/data/insurance.csv")
-padi
+tail(padi)
 ```
 
