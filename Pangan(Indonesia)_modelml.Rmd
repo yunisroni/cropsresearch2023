@@ -2432,10 +2432,16 @@ dim(datapadi_test2)
 # RF Model
 padi_rf_model2 <- randomForest(Produksi ~ Avg_rainfall, data = datapadi_train2, ntree = 100)
 padi_rf_model2 
-summary(padi_rf_model2)
 ```
 ```{r}
-# Visualisasi hasil model random forest
+# Membuat model regresi linier
+regression_model_padi <- lm(Produksi ~ Avg_rainfall, data = data_for_rf)
+
+# Ringkasan hasil model
+summary(regression_model_padi)
+```
+```{r}
+# Visualisasi hasil
 ggplot(data_for_rf, aes(x = Avg_rainfall, y = Produksi)) +
   geom_point() +
   geom_smooth(method = "lm", se = FALSE, color = "blue") +
