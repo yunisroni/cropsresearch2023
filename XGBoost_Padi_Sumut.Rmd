@@ -9,21 +9,181 @@ output: pdf_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+# Load Library/Packages
+
 ```{r}
-#library("devtools")
-find_rtools()
+# library manipulasi data
+library(tidyverse)
+# library model VAR
+library(vars)
+# library untuk model Random Forest
+library(randomForest)
+# library untuk model SVR
+library(e1071)
+# library Untuk partisi dataset
+library(caret) 
+# library untuk evaluasi model
+library(Metrics)
+# library untuk model XGBoost
+library(xgboost)
+# library untuk model Prophet
+library (prophet)
+```
+
+
+# Obstain - Load Dataset
+
+```{r}
+padi <- read.csv("dataset/Data_Tanaman_Padi_Sumatera_V1.csv")
+padi
+```
+
+## Partisi Dataset
+```{r}
+set.seed(123)  # Untuk hasil yang dapat direproduksi
+splitIndex <- createDataPartition(padi$Produksi, p = 0.7, list = FALSE)
+data_train <- padi[splitIndex, ]  # Data pelatihan (70%)
+data_test <- padi[-splitIndex, ]  # Data pengujian (30%)
+#dim(data_train)
+#dim(data_test)
+```
+
+## Model XGBoost
+```{r}
+# Mengonversi data frame ke matriks
+X_train <- data.matrix(data_train[, c("Curah_hujan", "Kelembapan", "Luas_Panen", "Suhu_rata_rata")])
+y_train <- data_train$Produksi
+X_test <- data.matrix(data_test[, c("Curah_hujan", "Kelembapan", "Luas_Panen", "Suhu_rata_rata")])
 
 ```
 
 ```{r}
-library(dplyr)
-library(ggplot2)
-#library(xlsx)
-library(csv)
+# Membuat model XGBoost
+xgb_data_train <- xgb.DMatrix(data = X_train, label = y_train)
+xgb_model <- xgboost(data = xgb_data_train, nrounds = 100)
+```
+
+```{r}
+# Melakukan prediksi pada data pengujian
+xgb_data_test <- xgb.DMatrix(data = X_test)
+predictions_xgb <- predict(xgb_model, newdata = xgb_data_test)
+```
+
+```{r}
+# Visualisasi hasil prediksi
+result_data_xgb <- data.frame(Produksi = data_test$Produksi, Predictions = predictions_xgb)
+
+# Buat grafik garis
+ggplot(data = result_data_xgb, aes(x = 1:length(data_test$Produksi))) +
+  geom_line(aes(y = data_test$Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = predictions_xgb, color = "Prediksi"), size = 1) +
+  labs(x = "Observasi", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model XGBoost") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal()
+```
+
+```{r}
+ggplot(data = result_data_xgb, aes(x = Produksi, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model XGBoost") +
+  theme_minimal()
+```
+
+```{r}
+# Evaluasi XGBoost Model
+
+# Hitung MAE
+mae_value_xgb <- mae(data_test$Produksi, predictions_xgb)
+
+# Hitung MSE
+mse_value_xgb <- mse(data_test$Produksi, predictions_xgb)
+
+# Hitung RMSE
+rmse_value_xgb <- rmse(data_test$Produksi, predictions_xgb)
+
+# Hitung MAPE
+mape_value_xgb <- mape(data_test$Produksi, predictions_xgb)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_value_xgb, "\n"))
+cat(paste("MSE: ", mse_value_xgb, "\n"))
+cat(paste("RMSE: ", rmse_value_xgb, "\n"))
+cat(paste("MAPE: ", mape_value_xgb, "%\n"))
+```
+
+```{r}
+# Visualisasi Model Prediksi
+# Gabungkan hasil prediksi dari ketiga model ke dalam satu data frame
+result_data_combined <- data.frame(
+  Produksi = data_test$Produksi,
+  Predictions_RF = predictions_rf,
+  Predictions_SVR = predictions_svr,
+  Predictions_XGB = predictions_xgb
+)
+
+ggplot(data = result_data_combined, aes(x = 1:length(Produksi))) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions_RF, color = "RF"), size = 0.5, linetype = "solid") +
+  geom_line(aes(y = Predictions_SVR, color = "SVR"), size = 0.5, linetype = "solid") +
+  geom_line(aes(y = Predictions_XGB, color = "XGB"), size = 0.5, linetype = "solid") +
+  labs(x = "Observasi", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "green", "RF" = "blue", "SVR" = "red", "XGB" = "brown")) +
+  ggtitle("Perbandingan Produksi Aktual dan Hasil Prediksi dari RF, SVR, dan XGB") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal()
 
 ```
+
+library(xgboost)
+
+# Load dataset (gunakan dataset iris sebagai contoh)
 ```{r}
-padi <- read.csv("C:/Users/HP/OneDrive - mikroskil.ac.id/Dokumen/Penelitian Pak Roni/data/insurance.csv")
-tail(padi)
+data(padi)
 ```
+
+# Split dataset menjadi data pelatihan dan data pengujian
+```{r}
+set.seed(123)
+splitIndex <- createDataPartition(padi$Species, p = 0.7, list = FALSE)
+data_train <- padi[splitIndex, ]  # Data pelatihan (70%)
+data_test <- padi[-splitIndex, ]  # Data pengujian (30%)
+```
+
+```{r}
+table(padi$Species)
+```
+
+
+# Konversi data ke format DMatrix yang digunakan oleh XGBoost
+```{r}
+dtrain <- xgb.DMatrix(data = as.matrix(data_train[, -5]), label = data_train$Species)
+dtest <- xgb.DMatrix(data = as.matrix(data_test[, -5]))
+```
+
+# Parameter XGBoost
+params <- list(
+  objective = "multi:softmax",
+  num_class = 3,
+  eta = 0.3,
+  max_depth = 6,
+  nrounds = 100
+)
+
+# Latih model XGBoost
+xgb_model <- xgboost(params = params, data = dtrain, nrounds = 100, verbose = 0)
+
+# Prediksi dengan model
+predictions <- predict(xgb_model, dtest)
+
+# Evaluasi model (misalnya, akurasi)
+confusion_matrix <- table(data_test$Species, predictions)
+accuracy <- sum(diag(confusion_matrix)) / sum(confusion_matrix)
+cat("Akurasi: ", accuracy, "\n")
+
 
