@@ -227,6 +227,8 @@ totproduksi_kabkota_padi <- Padi %>%
   
 totproduksi_kabkota_padi
 ```
+Produksi padi tertinggi adalah dari kabupaten Deli Serdang sebanyak 5213178,41 Ton	
+
 
 ### Tren Produksi Tanaman Pangan per Kabupaten/Kota
 
@@ -317,7 +319,7 @@ cat("Koefisien Korelasi Pearson Luas Panen dan Produksi:", correlation_padi_1)
 ```
 
 
-## a. Curah hujan terhadap Padi
+## Curah hujan terhadap Padi
 
 ```{r}
 # Ambil data padi di dataset tanaman pangan yang belum di filter sumatera utara 
@@ -357,7 +359,7 @@ ts_data_padi
 best_lag_padi <- VARselect(ts_data_padi, lag.max = 5, type = "both")
 best_lag_padi
 ```
-
+### VAR Model Rata-rata curah hujan terhadap rata-rata produksi padi
 ```{r}
 # VAR Model Rata-rata curah hujan terhadap rata-rata produksi padi
 var_model_Padi <- VAR(ts_data_padi, p = best_lag_padi$selection[1], type = "both") # jumlah order dari model VAR
@@ -1963,8 +1965,7 @@ correlation_sumut_padi <- cor(Var_sumut_padi$Produksi, Var_sumut_padi$Curah_huja
 correlation_sumut_padi
 ```
 *Kesimpulan*
-Nilai korelasi sekitar 0.2187 mengindikasikan bahwa ada korelasi positif antara "Produksi" dan "Curah_hujan," tetapi korelasinya lemah.
-Lebih khusus, hasil ini menunjukkan bahwa ada hubungan positif antara kenaikan curah hujan dan kenaikan produksi tanaman padi, namun hubungan ini tidak kuat.
+Nilai korelasi sekitar 0.2187 mengindikasikan bahwa ada korelasi positif antara "Produksi" dan "Curah_hujan," tetapi korelasinya lemah. hasil ini menunjukkan bahwa ada hubungan positif antara kenaikan curah hujan dan kenaikan produksi tanaman padi, namun hubungan ini tidak kuat.
 
 
 ## Scenario baru 1
@@ -2136,9 +2137,6 @@ correlation_2
 library(rugarch)
 ```
 
-
-
-
 ```{r}
 # Membuat data frame dengan kolom 'Curah_hujan' dan 'Produksi_padi'
 data_padi <- data.frame(Curah_hujan = sumatera_padi$Curah_hujan, Produksi= sumatera_padi$Produksi)
@@ -2160,4 +2158,67 @@ fit_garch_1 <- ugarchfit(spec = model_garch_1, data = data_padi$Curah_hujan)
 summary(fit_garch_1)
 ```
 
+# 13. Padi Kabupaten
 
+##Obstain
+```{r}
+# Load data curah hujan
+Hujan_kab <- read_excel("D:/OneDrive - mikroskil.ac.id/Skripsi/Curah hujan Kab Sumut.xlsx")
+Hujan_kab
+```
+
+
+
+```{r}
+# Merubah nama variabel
+names(Hujan_kab)[names(Hujan_kab) == "Kabupaten/ Kota"] <- "kabupaten_kota"
+names(Hujan_kab)[names(Hujan_kab) == "Curah Hujan (mm)"] <- "Curah_hujan"
+names(Hujan_kab)[names(Hujan_kab) == "Hari Hujan (hari)"] <- "Hari_hujan"
+tail(Hujan_kab)
+```
+### Merubah type data
+```{r}
+# Merubah type variabel Tahun menjadi Date
+Hujan_kab$Tahun <- as.Date(Hujan_kab$Tahun)
+glimpse(Hujan_kab)
+```
+
+
+```{r}
+#Merubah type data charater menjadi numeric
+Hujan_kab$Curah_hujan <-as.numeric(Hujan_kab$Curah_hujan)
+Hujan_kab$Hari_hujan <-as.numeric(Hujan_kab$Hari_hujan)
+glimpse(Hujan_kab)
+```
+
+
+### Menghapus data kosong
+```{r}
+# Menampikan variabel dengan baris kosong
+colSums(is.na(Hujan_kab))
+```
+
+```{r}
+# Menghapus data NA's
+Hujan_kab_clean <- na.omit(Hujan_kab)
+summary(Hujan_kab_clean)
+```
+
+```{r}
+colSums(is.na(Hujan_kab_clean))
+```
+```{r}
+#Filter data Hujan hanya Deli serdang saja
+Hujan_Deli <- Hujan_kab_clean %>%
+  filter(kabupaten_kota == "Deli Serdang")
+Hujan_Deli
+```
+
+
+
+```{r}
+# Filter data for kabupaten hanya deli serdang saja
+Padi_deliserdang <- Padi %>%
+  filter(Kabupaten_Kota == "Deli Serdang")
+Padi_deliserdang
+```
