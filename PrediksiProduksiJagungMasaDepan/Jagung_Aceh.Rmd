@@ -441,7 +441,7 @@ average_lp_df
 
 
 
-# 5. Prediksi Produktivitas di Masa Depan - Model Prophet
+# 6. Prediksi Produktivitas di Masa Depan - Model Prophet
 ```{r}
 # membagi data berdasarkan variabel Produksi
 train_data_index_pr <- createDataPartition(JagungAceh$Produktivitas, p=0.7, list = FALSE)
