@@ -1,5 +1,5 @@
 ---
-title: "Prediksi Produksi Jagung Masa Depan - Aceh"
+title: "Prediksi Variabel Yang Mempengaruhi Produksi Jagung Masa Depan - Aceh"
 author: "Nurul Aina Tasya"
 date: "2023-11-01"
 output: html_document
