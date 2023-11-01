@@ -1,6 +1,6 @@
 ---
 title: "Prediksi Variabel Yang Mempengaruhi Produksi Jagung Masa Depan - Sumatera
-  Utara"
+  Barat"
 author: "Nurul Aina Tasya"
 date: "2023-11-01"
 output: html_document
@@ -258,21 +258,20 @@ Berdasarkan grafik diatas bisa lihat bahwa ada korelasi antara luas panen dan pr
 ## h. Filter data jagung
 
 ```{r}
-JagungSumut <- filter(pangan_clean, Jenis_Komoditi == "Jagung", Provinsi == "SUMATERA UTARA")
-JagungSumut
+JagungSumateraBarat <- filter(pangan_clean, Jenis_Komoditi == "Jagung", Provinsi == "SUMATERA BARAT")
+JagungSumateraBarat
 
 ```
-
 
 
 
 # 5. Prediksi Luas Panen Jagung di Masa Depan - Model Prophet
 ```{r}
 # membagi data berdasarkan variabel Produksi
-train_data_index_lp <- createDataPartition(JagungSumut$Luas_Panen, p=0.7, list = FALSE)
-train_data_lp <- JagungSumut[train_data_index_lp,]
+train_data_index_lp <- createDataPartition(JagungSumateraBarat$Luas_Panen, p=0.7, list = FALSE)
+train_data_lp <- JagungSumateraBarat[train_data_index_lp,]
 train_data_lp
-test_data_lp <- JagungSumut[-train_data_index_lp,]
+test_data_lp <- JagungSumateraBarat[-train_data_index_lp,]
 test_data_lp
 ```
 
@@ -444,15 +443,13 @@ average_lp_df
 
 
 
-
-
 # 6. Prediksi Produktivitas di Masa Depan - Model Prophet
 ```{r}
 # membagi data berdasarkan variabel Produksi
-train_data_index_pr <- createDataPartition(JagungSumut$Produktivitas, p=0.7, list = FALSE)
-train_data_pr <- JagungSumut[train_data_index_pr,]
+train_data_index_pr <- createDataPartition(JagungSumateraBarat$Produktivitas, p=0.7, list = FALSE)
+train_data_pr <- JagungSumateraBarat[train_data_index_pr,]
 train_data_pr
-test_data_pr <- JagungSumut[-train_data_index_pr,]
+test_data_pr <- JagungSumateraBarat[-train_data_index_pr,]
 test_data_pr
 ```
 
@@ -620,3 +617,4 @@ Hasil prediksi luas panen 2016-2025
 average_pr_df$Tahun <- make_date(average_pr_df$Tahun)
 average_pr_df
 ```
+
