@@ -2168,23 +2168,10 @@ Hujan_kab
 ```
 
 
-
 ```{r}
-# Merubah nama variabel
-names(Hujan_kab)[names(Hujan_kab) == "Kabupaten/ Kota"] <- "kabupaten_kota"
-names(Hujan_kab)[names(Hujan_kab) == "Curah Hujan (mm)"] <- "Curah_hujan"
-names(Hujan_kab)[names(Hujan_kab) == "Hari Hujan (hari)"] <- "Hari_hujan"
-tail(Hujan_kab)
-```
-### Merubah type data
-```{r}
-# Merubah type variabel Tahun menjadi Date
-Hujan_kab$Tahun <- as.Date(Hujan_kab$Tahun)
-glimpse(Hujan_kab)
-```
 
-
-```{r}
+# Merubah type data Tahun menjadi Date
+Hujan_kab$Tahun <- make_date(Hujan_kab$Tahun)
 #Merubah type data charater menjadi numeric
 Hujan_kab$Curah_hujan <-as.numeric(Hujan_kab$Curah_hujan)
 Hujan_kab$Hari_hujan <-as.numeric(Hujan_kab$Hari_hujan)
@@ -2198,27 +2185,53 @@ glimpse(Hujan_kab)
 colSums(is.na(Hujan_kab))
 ```
 
-```{r}
-# Menghapus data NA's
-Hujan_kab_clean <- na.omit(Hujan_kab)
-summary(Hujan_kab_clean)
-```
+### Mengambil data padi di kabupaten Deli serdang dari tahun 2015-2022
 
 ```{r}
-colSums(is.na(Hujan_kab_clean))
-```
-```{r}
-#Filter data Hujan hanya Deli serdang saja
-Hujan_Deli <- Hujan_kab_clean %>%
-  filter(kabupaten_kota == "Deli Serdang")
-Hujan_Deli
-```
-
-
-
-```{r}
-# Filter data for kabupaten hanya deli serdang saja
+# Filter data for kabupaten hanya deli serdang saja dari tahun 2015 s.d 2022
 Padi_deliserdang <- Padi %>%
-  filter(Kabupaten_Kota == "Deli Serdang")
+  filter(Kabupaten_Kota == "Deli Serdang" & year(Tahun) >= 2015 & year(Tahun) <= 2022)
 Padi_deliserdang
 ```
+
+```{r}
+# Mengabungkan kedua dataset
+merged_padi_kab <- merge(Padi_deliserdang, Hujan_kab, by.x = "Tahun", by.y = "Tahun")
+merged_padi_kab
+```
+
+
+Var_padi <- padi[, c("Produksi", "Curah_hujan", "Luas_panen", "Kelembapan", "Suhu_rata_rata")] #subdataset yang hanya berisikan 5 kolom
+
+## VAR Model
+```{r}
+# Pilih variabel yang akan diprediksi
+# dalam pengujian ini akan dilihat apakah ada pengaruh curah hujan terhadap peningkatan produksi
+
+Var1_padi_deli <- merged_padi_kab[, c("Produksi", "Curah_hujan", "Luas_Panen", "Hari_hujan")]
+Var1_padi_deli
+```
+
+Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam format time series (ts)
+
+```{r}
+ts_padi_deli <- ts(Var1_padi_deli, start = c(2015,1), frequency = 1)
+head(ts_padi_deli)
+```
+
+```{r}
+#menetukan jumlah lag yang optimal dlm Var
+lag_padi_deli <- VARselect(ts_padi_deli, lag.max = 1, type = "both")
+lag_padi_deli
+
+#akan berisi hasil pemilihan model VAR terbaik berdasarkan perbandingan AIC dan BIC untuk berbagai jumlah lag
+```
+
+```{r}
+# VAR Model
+var_padi_deliserdang <- VAR(ts_padi_deli, p = lag_padi_deli$selection[1], type = "both") # jumlah order dari model VAR
+summary(var_padi_deliserdang)
+
+#Tujuan dari coding ini adalah untuk membangun model VAR yang sesuai dengan jumlah lag terbaik yang telah Anda tentukan sebelumnya dan kemudian menganalisis model tersebut dengan melihat ringkasan yang dihasilkan. 
+```
+
