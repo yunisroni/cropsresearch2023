@@ -330,6 +330,25 @@ ggplot(data = result_data_rf2, aes(x = Tahun)) +
 ```
 
 ```{r}
+# Ambil variabel yang penting dalam data
+var_importance_rf <- data.frame(Variable = row.names(importance(rf_model)),
+                              Importance = importance(rf_model)[, 1])
+
+# Urutkan data berdasarkan derajat variabel penting
+var_importance_rf <- var_importance_rf[order(var_importance_rf$Importance, decreasing = TRUE), ]
+
+# Visualisasi dengan ggplot
+ggplot(var_importance_rf, aes(x = reorder(Variable, Importance), y = Importance)) +
+  geom_bar(stat = "identity", fill = "blue") +
+  labs(title = "Variable Importance Plot",
+       x = "Variable",
+       y = "Importance") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + # Rotating x-axis menjadi mudah dilihat
+  theme_minimal()
+```
+Berdasarkan hasil diatas bisa disimpulkan, bahwa variabel yang sangat mempengaruhi produksi adalah luas_panen.
+
+```{r}
 # Evaluasi RF Model
 
 # Hitung MAE
@@ -355,7 +374,7 @@ cat(paste("MAPE: ", mape_value_rf, "%\n"))
 
 ```{r}
 # Membuat model SVR
-svr_model <- svm(Produksi ~ ., data = data_train, kernel = "radial", cost = 1)
+svr_model <- svm(Produksi ~ Curah_hujan + Kelembapan + Luas_panen + Suhu_rata_rata, data = data_train, kernel = "radial", cost = 1)
 ```
 
 ```{r}
@@ -402,7 +421,6 @@ ggplot(data = result_data_svr2, aes(x = Tahun)) +
   scale_y_continuous(labels = scales::comma) +
   theme_minimal()
 ```
-
 ```{r}
 # Evaluasi SVR Model
 
@@ -471,6 +489,15 @@ ggplot(data = result_data_xgb, aes(x = Produksi, y = Predictions)) +
   ggtitle("Perbandingan Produksi Aktual dan Prediksi Model XGBoost") +
   theme_minimal()
 ```
+
+```{r}
+# Melihat variabel yang penting
+importance_xgb <- xgb.importance(model = xgb_model)
+importance_xgb
+```
+
+Berdasarkan hasil  diatas bahwa variabel yang sangat penting yang mempengaruhi produksi adalah luas panen dengan nilai Gain 0,92. 
+
 
 ```{r}
 # Evaluasi XGBoost Model
@@ -729,7 +756,7 @@ cat(paste("MSE: ", mse_value_prophet, "\n"))
 cat(paste("RMSE: ", rmse_value_prophet, "\n"))
 cat(paste("MAPE: ", mape_value_prophet, "%\n"))
 ```
-Mengambil data Curah Hujan dari hasil prediksi 2021-2024
+Mengambil data Produksi dari hasil prediksi 2021-2024
 ```{r}
 # Filter data untuk tahun 2021-2024
 forecast_subset <- forecast_ts_pd[forecast_ts_pd$ds >= as.Date("2021-01-01") & forecast_ts_pd$ds <= as.Date("2024-12-31"), ]
@@ -753,46 +780,4 @@ average_pd_df$Tahun <- make_date(average_pd_df$Tahun)
 average_pd_df
 ```
 
-```{r}
-#Hybrid Model SVR dan rf
-predictions_hybrid_svr_rf <- (predictions_svr + predictions_rf) / 2
-```
-
-```{r}
-# Hitung MAE
-mae_value_hybrid_svr_rf <- mae(data_test$Produksi, predictions_hybrid_svr_rf)
-
-# Hitung MSE
-mse_value_hybrid_svr_rf <- mse(data_test$Produksi, predictions_hybrid_svr_rf)
-
-# Hitung RMSE
-rmse_value_hybrid_svr_rf <- rmse(data_test$Produksi, predictions_hybrid_svr_rf)
-
-# Hitung MAPE
-mape_value_hybrid_svr_rf <- mape(data_test$Produksi, predictions_hybrid_svr_rf)
-
-# Tampilkan hasil evaluasi
-cat(paste("MAE: ", mae_value_hybrid_svr_rf, "\n"))
-cat(paste("MSE: ", mse_value_hybrid_svr_rf, "\n"))
-cat(paste("RMSE: ", rmse_value_hybrid_svr_rf, "\n"))
-cat(paste("MAPE: ", mape_value_hybrid_svr_rf, "%\n"))
-```
-
-```{r}
-# Data hasil prediksi dan nilai aktual
-result_data <- data.frame(
-  Produksi = data_test$Produksi,
-  Pred_Hybrid = predictions_hybrid_svr_rf
-)
-
-ggplot(data = result_data, aes(x = Produksi, y = Pred_Hybrid)) +
-  geom_point() +
-  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
-  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
-  scale_x_continuous(labels = scales::comma) +
-  scale_y_continuous(labels = scales::comma) +
-  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model Hybrid") +
-  theme_minimal()
-
-```
-
+ 
