@@ -1,0 +1,31 @@
+---
+title: "Analisis Prediksi Iklim di Sumut"
+author: "Nurul Aina Tasya"
+date: "2023-10-31"
+output: html_document
+---
+
+# 1. Load Library/Packages
+```{r}
+# library manipulasi data
+library(tidyverse)
+# library Untuk partisi dataset
+library(caret) 
+# library untuk evaluasi model
+library(Metrics)
+# library untuk model Prophet
+library (prophet)
+library(readxl)
+```
+
+# 2. Obstain - Load Dataset
+
+```{r}
+Iklim <- read_excel("dataset/Dataset Tanaman Pangan dan Iklim di Indonesia (2006-2015).xlsx")
+Iklim
+```
+
+# 3. Scrub data
+```{r}
+
+```

@@ -1,0 +1,436 @@
+---
+title: "Analisis Prediksi Produksi Padi (Sumut) dengan Model Machine Learning"
+author: "Nurul Aina Tasya"
+date: "2023-10-29"
+output: html_document
+---
+
+# 1. Load Library/Packages
+```{r}
+# library untuk manipulasi data
+library(dplyr)
+library(tidyverse)
+# library untuk manipulasi data tanggal
+library(lubridate)
+# library untuk menampilkan hasil statistik deskriptif
+library(summarytools)
+# library untuk visualisasi data
+library (ggplot2)
+# library untuk membaca data dari file Excel (.xlsx)
+library(readxl)
+# library untuk model Random Forest
+library(randomForest)
+# library untuk model SVR
+library(e1071)
+# library Untuk partisi dataset
+library(caret)
+# library untuk evaluasi model
+library(Metrics)
+# library untuk model Prophet
+library (prophet)
+```
+
+
+# 2. Obstain Data
+
+## a.Import Data
+```{r}
+padi_sumut <- read_excel("dataset/padi-sumut_update.xlsx")
+padi_sumut
+```
+
+## b.Menampilkan Contoh Data
+```{r}
+# Menampilkan 6 data teratas
+head(padi_sumut)
+```
+```{r}
+# Menampilkan 6 data terbawah
+tail(padi_sumut)
+```
+```{r}
+glimpse(padi_sumut)
+```
+
+
+# 3. Scrub Data
+
+## a. Merubah type data
+```{r}
+# Merubah type data karakter menjadi numeric
+padi_sumut$`Rata-rata produksi` <- as.numeric(padi_sumut$`Rata-rata produksi`)
+padi_sumut$Produksi <- as.numeric(padi_sumut$Produksi)
+padi_sumut$`Luas Panen` <- as.numeric(padi_sumut$`Luas Panen`)
+padi_sumut
+```
+```{r}
+# Merubah type Tahun menjadi Date
+padi_sumut$Tahun <- make_date(padi_sumut$Tahun)
+glimpse(padi_sumut)
+```
+```{r}
+# Merubah nama variabel Kabupaten Kota, Rata-rata Produksi dan Luas Panen
+names(padi_sumut)[names(padi_sumut) == "Kabupaten Kota"] <- "Kabupaten_kota"
+names(padi_sumut)[names(padi_sumut) == "Rata-rata produksi"] <- "Rata_rata_produksi"
+names(padi_sumut)[names(padi_sumut) == "Luas Panen"] <- "Luas_panen"
+glimpse(padi_sumut)
+```
+```{r}
+tail(padi_sumut)
+```
+```{r}
+head(padi_sumut)
+```
+
+## b. Menghapus Data Kosong
+```{r}
+# Menampilkan variabel dengan baris kosong
+glimpse(padi_sumut)
+colSums(is.na(padi_sumut))
+```
+Jumlah data : 442 Record. Dari 5 variabel terhadap 3 buah variabel dengan data NA'S
+
+```{r}
+# Menghapus data NA'S
+padisumut_clean <- na.omit(padi_sumut)
+colSums(is.na(padisumut_clean))
+summary(padisumut_clean)
+```
+Berdasarkan hasil diatas bisa dilihat semua variabel tidak ada lagi data
+yang kosong atau NA'
+```{r}
+glimpse(padisumut_clean)
+```
+Jumlah data setelah dihapus data NA' menjadi 428 baris observasi dengan 5 variabel.
+
+```{r}
+padisumutfilter <- padisumut_clean[padisumut_clean$Kabupaten_kota != "Sumatera Utara",]
+padisumutfilter
+```
+
+
+
+# 4. Eksplorasi Data Analisis (EDA)
+
+## a. Jumlah Produksi Padi per Kabupaten/Kota
+
+```{r}
+plot_1 <- ggplot(padisumutfilter, aes(x = Tahun, y = Produksi, group = Kabupaten_kota, color = Kabupaten_kota)) +
+  geom_line() +
+  labs(title = "Jumlah Produksi Padi", x = "Tahun", y = "Produksi Padi (Ha)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "right")
+plot_1
+
+```
+
+```{r}
+# Hitung total produksi per kabupaten/kota
+totproduksi <- padisumutfilter %>% 
+  mutate(first_date_month = floor_date(Tahun, unit = "year")) %>% 
+  group_by(Kabupaten_kota) %>% 
+  summarise(jumlahproduksi = sum(Produksi)) %>% 
+  arrange(jumlahproduksi)
+totproduksi
+```
+
+```{r}
+# Turn off dplyr summarise() warning
+options(dplyr.summarise.inform = FALSE)
+
+# Hitung total produksi per kabupaten/tahun
+totproduksi <- padisumutfilter %>% 
+  group_by(Tahun, Kabupaten_kota, .drop = FALSE) %>%  # Add .drop argument
+  summarise(total_produksi = sum(Produksi))
+
+totproduksi
+```
+
+## b. Tren Produksi Padi per Kabupaten/Kota
+
+```{r}
+# Visualisasi Tren Produksi Padi
+plot_2 <- ggplot(totproduksi, aes(x = Tahun, y = total_produksi, color = Kabupaten_kota)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Tren Produksi Padi", x = "Tahun", y = "Total Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "right")
+plot_2
+```
+
+## c. Perbandingan Produksi Padi per Kabupaten/Kota
+
+```{r}
+
+# Hitung total produksi padi per Kabupaten/Kota
+totproduksi_kabkota <- padisumutfilter %>% 
+  group_by(Kabupaten_kota) %>% 
+  summarise(total_produksi = sum(Produksi))
+totproduksi_kabkota
+
+# Visualisasi dengan barplot
+plot_3 <- ggplot(totproduksi_kabkota, aes(x = Kabupaten_kota, y = total_produksi, fill = Kabupaten_kota)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Perbandingan Produksi Padi antara Kabupaten/Kota", x = "Kabupaten/Kota", y = "Total Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "none")  # hilangkan legend
+
+# Rotasi sumbu x agar mudah dibaca
+plot_3 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+```
+Perbandingan produksi padi dalam kurun waktu 2010 - 2022 adalah dari
+Deli Serdang yang terbanyak dengan Jumlah Produksi Padi sebesar
+5213178.41	Ton
+
+## d. Perbandingan Rata-rata produksi Padi per Kabupaten/Kota
+
+```{r}
+# Turn off dplyr summarise() warning
+options(dplyr.summarise.inform = FALSE)
+
+# Melihat tren rata-rata produksi padi
+rataproduksi <- padisumutfilter %>% 
+  group_by(Tahun, Kabupaten_kota, .drop = FALSE) %>%  # Add .drop argument
+  summarise(Rata_rata_produksi = sum(Rata_rata_produksi))
+rataproduksi
+```
+
+```{r}
+
+# Hitung total rata-rata produksi padi per Kabupaten/Kota
+totrataproduksi_kabkota <- padisumutfilter %>% 
+  group_by(Kabupaten_kota) %>% 
+  summarise(total_rataproduksi = sum(Rata_rata_produksi))
+
+# Visualisasi dengan barplot
+plot_4 <- ggplot(totrataproduksi_kabkota, aes(x = Kabupaten_kota, y = total_rataproduksi, fill = Kabupaten_kota)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Perbandingan Rata_rata Produksi Padi antara Kabupaten/Kota", x = "Kabupaten/Kota", y = "Rata_rata Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "none")  # hilangkan legend
+
+# Rotasi sumbu x agar mudah dibaca
+plot_4 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+```
+
+## e. Korelasi Luas Panen dan Produksi Padi
+
+```{r}
+# Visualisasi korelasi luas panen dan produksi padi
+plot_5 <- ggplot(padisumutfilter, aes(x = Luas_panen, y = Produksi, color = Kabupaten_kota)) +
+  geom_point() +
+  labs(title = "Korelasi Produksi dan Luas Panen", x = "Luas Panen (Ha)", y = "Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "right")
+plot_5
+```
+
+```{r}
+# Hitung Pearson correlation coefficient
+correlation_padi <- cor(padisumutfilter$Luas_panen, padisumutfilter$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson Luas Panen dan Produksi:", correlation_padi)
+```
+
+Berdasarkan grafik diatas bisa lihat bahwa ada korelasi antara luas panen dan produksi. Hubungan korelasi adalah positif dengan nilai korelasi sebesar 0,99, sehingga bisa disimpulkan bahwa jika semakin banyak luas panen maka akan meningkat jumlah produksi padi.
+
+## f. Perbandingan Rata-rata produksi dengan Produksi Padi
+
+```{r}
+# Create a boxplot using ggplot2
+plot_6 <- ggplot(padisumutfilter, aes(x = Kabupaten_kota, y = Produksi - Rata_rata_produksi, fill = Kabupaten_kota)) +
+  geom_boxplot() +
+  labs(title = "Perbandingan Produksi dan Rata-rata Produksi per Kabupaten/Kota", x = "Kabupaten/Kota", y = "Selisih Produksi") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+# Rotasi sumbu x agar mudah dibaca
+plot_6 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+# 5. Prediksi Produksi Padi (Sumut) dengan ML
+
+## a. Partisi Dataset
+```{r}
+set.seed(123)  # Untuk hasil yang dapat direproduksi
+padisumut_splitIndex <- createDataPartition(padisumutfilter$Produksi, p = 0.7, list = FALSE)
+datapadisumut_train <- padisumutfilter[padisumut_splitIndex, ]  # Data pelatihan (70%)
+datapadisumut_test <- padisumutfilter[-padisumut_splitIndex, ]  # Data pengujian (30%)
+dim(datapadisumut_train)
+dim(datapadisumut_test)
+```
+
+##b. Model Random Forest
+```{r}
+# Membuat model RF
+padisumut_rf_model <- randomForest(Produksi ~ Rata_rata_produksi + Luas_panen, data = datapadisumut_train, ntree = 1000)
+```
+```{r}
+# Melakukan Prediksi terhadap Data Pengujian
+predictions_rf_padisumut <- predict(padisumut_rf_model, datapadisumut_test)
+```
+```{r}
+# Visualisasi Hasil
+result_datapadisumut_rf <- data.frame(Produksi = datapadisumut_test$Produksi, Predictions = predictions_rf_padisumut)
+
+# Visualisasi Perbandingan Produksi Aktual dengan Hasil Prediksi
+ggplot(data = result_datapadisumut_rf, aes(x = Produksi, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
+  theme_minimal()
+```
+```{r}
+# Visualisasi Produksi Aktual dengan Hasil Prediksi
+ggplot(data = result_datapadisumut_rf, aes(x = 1:length(Produksi))) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
+  labs(x = "Observasi", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
+  theme_minimal()
+```
+
+```{r}
+# Visualisasi hasil prediksi dengan sumbu x adalah tahun
+result_datapadisumut_rf2 <- data.frame(Tahun = datapadisumut_test$Tahun, Produksi = datapadisumut_test$Produksi, Predictions = predictions_rf_padisumut)
+
+ggplot(data = result_datapadisumut_rf2, aes(x = Tahun)) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
+  labs(x = "Tahun", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal()
+```
+```{r}
+# Evaluasi RF Model
+
+# Hitung MAE
+mae_value_rf_padisumut <- mae(datapadisumut_test$Produksi, predictions_rf_padisumut)
+
+# Hitung MSE
+mse_value_rf_padisumut <- mse(datapadisumut_test$Produksi, predictions_rf_padisumut)
+
+# Hitung RMSE
+rmse_value_rf_padisumut <- rmse(datapadisumut_test$Produksi, predictions_rf_padisumut)
+
+# Hitung MAPE
+mape_value_rf_padisumut <- mape(datapadisumut_test$Produksi, predictions_rf_padisumut)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_value_rf_padisumut, "\n"))
+cat(paste("MSE: ", mse_value_rf_padisumut, "\n"))
+cat(paste("RMSE: ", rmse_value_rf_padisumut, "\n"))
+cat(paste("MAPE: ", mape_value_rf_padisumut, "%\n"))
+```
+
+
+##c. Model SVR
+```{r}
+# Membuat model SVR
+padisumut_svr_model <- svm(Produksi ~ Rata_rata_produksi + Luas_panen, data = datapadisumut_train, kernel = "radial", cost = 1)
+```
+
+```{r}
+# Melakukan prediksi dengan Data Testing
+predictions_svr_padisumut <- predict(padisumut_svr_model, datapadisumut_test)
+```
+
+```{r}
+# Visualisasi hasil prediksi
+result_datapadisumut_svr <- data.frame(Produksi = datapadisumut_test$Produksi, Predictions = predictions_svr_padisumut)
+
+ggplot(data = result_datapadisumut_svr, aes(x = Produksi, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
+  theme_minimal()
+```
+
+```{r}
+# Buat grafik garis dengan ggplot2
+ggplot(data = result_datapadisumut_svr, aes(x = 1:length(Produksi))) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
+  labs(x = "Observasi", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal()
+```
+
+```{r}
+# Visualisasi hasil prediksi dengan sumbu x adalah tahun
+result_datapadisumut_svr2 <- data.frame(Tahun = datapadisumut_test$Tahun, Produksi = datapadisumut_test$Produksi, Predictions = predictions_svr_padisumut)
+
+ggplot(data = result_datapadisumut_svr2, aes(x = Tahun)) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
+  labs(x = "Tahun", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal()
+```
+
+```{r}
+# Evaluasi SVR Model
+
+# Hitung MAE
+mae_value_svr_padisumut <- mae(datapadisumut_test$Produksi, predictions_svr_padisumut)
+
+# Hitung MSE
+mse_value_svr_padisumut <- mse(datapadisumut_test$Produksi, predictions_svr_padisumut)
+
+# Hitung RMSE
+rmse_value_svr_padisumut <- rmse(datapadisumut_test$Produksi, predictions_svr_padisumut)
+
+# Hitung MAPE
+mape_value_svr_padisumut <- mape(datapadisumut_test$Produksi, predictions_svr_padisumut)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_value_svr_padisumut, "\n"))
+cat(paste("MSE: ", mse_value_svr_padisumut, "\n"))
+cat(paste("RMSE: ", rmse_value_svr_padisumut, "\n"))
+cat(paste("MAPE: ", mape_value_svr_padisumut, "%\n"))
+```
+
+##d. Intepretasikan dan Membandingkan Model Random Forest dan SVR
+```{r}
+model_performance_padisumut <- data.frame(
+  No = c(1:2),
+  Model = c("Random Forest", "SVR"),
+  MSE = c(mse_value_rf_padisumut, mse_value_svr_padisumut),
+  RSME = c(rmse_value_rf_padisumut, rmse_value_svr_padisumut),
+  MAE = c(mae_value_rf_padisumut, mae_value_svr_padisumut),
+  MAPE = c(mape_value_rf_padisumut, mape_value_svr_padisumut),
+  stringsAsFactors = FALSE
+  
+)
+model_performance_padisumut
+```
+Berdasarkan hasil diatas, kalau dilihat dari performance matrik tingkat kesalahan yang paling rendah (MAE), maka model **SVR** yang dianggap sebagai model terbaik dalam hal akurasi prediksi produksi padi sumut.
+
+
+# 6. Analisis dampak curah hujan terhadap produksi padi (Sumut)
