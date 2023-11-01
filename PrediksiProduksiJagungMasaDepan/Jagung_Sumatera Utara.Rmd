@@ -303,7 +303,7 @@ prophet_ts_lp <- prophet(yearly.seasonality = TRUE, seasonality.prior.scale = 0.
 ```
 ```{r}
 # Melakukan Prediksi untuk produksi 10 tahun ke depan
-future_prophet_ts_lp <- make_future_dataframe(prophet_ts_lp, periods = 365*12)
+future_prophet_ts_lp <- make_future_dataframe(prophet_ts_lp, periods = 365*13)
 tail(future_prophet_ts_lp)
 ```
 ```{r}
@@ -608,7 +608,7 @@ average_yhat_2024_pr <- mean(forecast_subset_pr$yhat[forecast_subset_pr$ds == as
 average_yhat_2025_pr <- mean(forecast_subset_pr$yhat[forecast_subset_pr$ds == as.Date("2025-01-01")])
 
 # Buat data frame
-average_pr_df <- data.frame(Tahun = c(2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025), LuasPanen = c(average_yhat_2016_pr, average_yhat_2017_pr,average_yhat_2018_pr,average_yhat_2019_pr, average_yhat_2020_pr, average_yhat_2021_pr, average_yhat_2022_pr, average_yhat_2023_pr, average_yhat_2024_pr, average_yhat_2025_pr))
+average_pr_df <- data.frame(Tahun = c(2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025), Produktivitas = c(average_yhat_2016_pr, average_yhat_2017_pr,average_yhat_2018_pr,average_yhat_2019_pr, average_yhat_2020_pr, average_yhat_2021_pr, average_yhat_2022_pr, average_yhat_2023_pr, average_yhat_2024_pr, average_yhat_2025_pr))
 
 # Tampilkan hasilnya
 average_pr_df
