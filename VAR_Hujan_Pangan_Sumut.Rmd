@@ -2201,8 +2201,6 @@ merged_padi_kab
 ```
 
 
-Var_padi <- padi[, c("Produksi", "Curah_hujan", "Luas_panen", "Kelembapan", "Suhu_rata_rata")] #subdataset yang hanya berisikan 5 kolom
-
 ## VAR Model
 ```{r}
 # Pilih variabel yang akan diprediksi
@@ -2214,10 +2212,21 @@ Var1_padi_deli
 
 Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam format time series (ts)
 
+
 ```{r}
-ts_padi_deli <- ts(Var1_padi_deli, start = c(2015,1), frequency = 1)
+Var2_deli <-merged_padi_kab[, c("Produksi", "Luas_Panen")]
+Var2_deli
+```
+
+```{r}
+ts_padi_deli <- ts(Var1_padi_deli, start = c(2015,5), frequency = 1)
 head(ts_padi_deli)
 ```
+```{r}
+ts_deli1 <- ts(Var2_deli, start = c(2015,5), frequency = 1)
+head(ts_deli1)
+```
+
 
 ```{r}
 #menetukan jumlah lag yang optimal dlm Var
@@ -2228,6 +2237,13 @@ lag_padi_deli
 ```
 
 ```{r}
+lag1_deli <- VARselect(ts_deli1, lag.max = 1, type = "both")
+lag1_deli
+```
+
+
+
+```{r}
 # VAR Model
 var_padi_deliserdang <- VAR(ts_padi_deli, p = lag_padi_deli$selection[1], type = "both") # jumlah order dari model VAR
 summary(var_padi_deliserdang)
@@ -2235,3 +2251,43 @@ summary(var_padi_deliserdang)
 #Tujuan dari coding ini adalah untuk membangun model VAR yang sesuai dengan jumlah lag terbaik yang telah Anda tentukan sebelumnya dan kemudian menganalisis model tersebut dengan melihat ringkasan yang dihasilkan. 
 ```
 
+```{r}
+# VAR Model
+Model_var_deli <- VAR(ts_deli1, p = lag1_deli$selection[1], type = "both") # jumlah order dari model VAR
+summary(Model_var_deli)
+```
+
+
+
+```{r}
+# Melakukan uji Granger Causality
+granger_padi_deli <- causality(var_padi_deliserdang, cause = "Curah_hujan")
+granger_padi_deli
+```
+
+```{r}
+# Melakukan uji Granger Causality
+granger_padi_deli1 <- causality(var_padi_deliserdang, cause = "Luas_Panen")
+granger_padi_deli1
+```
+```{r}
+# Hitung Pearson correlation coefficient
+pearson_luaspanen_deli <- cor(merged_padi_kab$Luas_Panen, merged_padi_kab$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson Luas Panen dan Produksi:", pearson_luaspanen_deli)
+```
+```{r}
+# Hitung Pearson correlation coefficient
+pearson_curahhujan_deli <- cor(merged_padi_kab$Curah_hujan, merged_padi_kab$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson Luas Panen dan Produksi:", pearson_curahhujan_deli)
+```
+```{r}
+# Hitung Pearson correlation coefficient
+pearson_harihujan_deli <- cor(merged_padi_kab$Hari_hujan, merged_padi_kab$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson Luas Panen dan Produksi:", pearson_harihujan_deli)
+```
