@@ -2158,7 +2158,7 @@ fit_garch_1 <- ugarchfit(spec = model_garch_1, data = data_padi$Curah_hujan)
 summary(fit_garch_1)
 ```
 
-# 13. Padi Kabupaten
+# 13. Padi Kabupaten Deli Serdang
 
 ##Obstain
 ```{r}
@@ -2169,7 +2169,6 @@ Hujan_kab
 
 
 ```{r}
-
 # Merubah type data Tahun menjadi Date
 Hujan_kab$Tahun <- make_date(Hujan_kab$Tahun)
 #Merubah type data charater menjadi numeric
@@ -2188,7 +2187,7 @@ colSums(is.na(Hujan_kab))
 ### Mengambil data padi di kabupaten Deli serdang dari tahun 2015-2022
 
 ```{r}
-# Filter data for kabupaten hanya deli serdang saja dari tahun 2015 s.d 2022
+# Filter data for kabupaten hanya "deli serdang" saja dari tahun 2015 s.d 2022
 Padi_deliserdang <- Padi %>%
   filter(Kabupaten_Kota == "Deli Serdang" & year(Tahun) >= 2015 & year(Tahun) <= 2022)
 Padi_deliserdang
@@ -2204,28 +2203,20 @@ merged_padi_kab
 ## VAR Model
 ```{r}
 # Pilih variabel yang akan diprediksi
-# dalam pengujian ini akan dilihat apakah ada pengaruh curah hujan terhadap peningkatan produksi
+# dalam pengujian ini akan dilihat apakah ada pengaruh curah hujan, luas panen, dan hari hujan terhadap peningkatan produksi
 
 Var1_padi_deli <- merged_padi_kab[, c("Produksi", "Curah_hujan", "Luas_Panen", "Hari_hujan")]
 Var1_padi_deli
 ```
 
-Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam format time series (ts)
 
 
 ```{r}
-Var2_deli <-merged_padi_kab[, c("Produksi", "Luas_Panen")]
-Var2_deli
-```
-
-```{r}
+#Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam format time series (ts)
 ts_padi_deli <- ts(Var1_padi_deli, start = c(2015,5), frequency = 1)
 head(ts_padi_deli)
 ```
-```{r}
-ts_deli1 <- ts(Var2_deli, start = c(2015,5), frequency = 1)
-head(ts_deli1)
-```
+
 
 
 ```{r}
@@ -2236,27 +2227,28 @@ lag_padi_deli
 #akan berisi hasil pemilihan model VAR terbaik berdasarkan perbandingan AIC dan BIC untuk berbagai jumlah lag
 ```
 
-```{r}
-lag1_deli <- VARselect(ts_deli1, lag.max = 1, type = "both")
-lag1_deli
-```
-
-
 
 ```{r}
 # VAR Model
 var_padi_deliserdang <- VAR(ts_padi_deli, p = lag_padi_deli$selection[1], type = "both") # jumlah order dari model VAR
 summary(var_padi_deliserdang)
 
-#Tujuan dari coding ini adalah untuk membangun model VAR yang sesuai dengan jumlah lag terbaik yang telah Anda tentukan sebelumnya dan kemudian menganalisis model tersebut dengan melihat ringkasan yang dihasilkan. 
+#Saya menguji dengan 4 variabel yaitu produksi, curah hujan, luas panen dan hari hujan
 ```
+*Ksesimpulan*
+Estimation results for equation Produksi: 
+nilai dari p-value luas panen, curah hujan dan hari hujan semuanya lebih besar dari 0,05 yg berarti tidak memiliki pengaruh terhadap produksi, tetapi produksi pada lag 1 memiliki p-value adalah 2.67e-07 *** yang bearti produksi berpengaruh terhadap dirinya sendiri. sedangkan nilai f-statistik p-value (<2.2e-16) syang bearti signifikan dalam menjelaskan hubungan2 variabel tersebut
 
-```{r}
-# VAR Model
-Model_var_deli <- VAR(ts_deli1, p = lag1_deli$selection[1], type = "both") # jumlah order dari model VAR
-summary(Model_var_deli)
-```
+Estimation results for equation Curah_hujan:
+nilai p value dari masing 4 varibel semuanya lebih besar dari 0,05 tetapi nilai f-statistik p-valuenya adalah 7.757e-06  yg lebih kecil dari 0,05 yang bearti signifikan dalam menjelaskan hubungan2 variabel tersebut.
 
+Estimation results for equation Luas_Panen:
+nilai dari p-value produksi, curah hujan dan hari hujan pada lag 1 lebih besar dari 0,05 yg berarti tidak memiliki pengaruh terhadap luas panen. tetapi luas panen pada lag 1 memiliki p-valuen adalah 0.00143 ** yang bearti luas panen berpegaruh terhadap dirinya sendiri. sedangkan nilai f-statistik p-value (< 2.2e-16) yang bearti signifikan dalam menjelaskan hubungan2 variabel tersebut.
+
+Estimation results for equation Hari_hujan:
+nilai dari p-value produksi, curah hujan, hari hujan dan luas panen semuanya lebih besar dari 0,05 yg berarti tidak memiliki pengaruh terhadap hari hujan. sedangkan nilai f-statistik p-value 0.002252  yang bearti signifikan dalam menjelaskan hubungan2 variabel tersebut.
+
+Jadi secara keseluruhan curah hujan, hari hujan dan luas panen tidak berpegaruh terhadap produksi padi di kabupaten deli serdang.
 
 
 ```{r}
@@ -2264,12 +2256,97 @@ summary(Model_var_deli)
 granger_padi_deli <- causality(var_padi_deliserdang, cause = "Curah_hujan")
 granger_padi_deli
 ```
+*Kesimpulan* Tidak terdapat pengaruh jangka panjang tetapi terdapat pengaruh jangka pendek(instans) dengan p-value = 4.182e-07
+
+```{r}
+# Hitung Pearson correlation coefficient
+pearson_curahhujan_deli <- cor(merged_padi_kab$Curah_hujan, merged_padi_kab$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson Curah hujan dan Produksi:", pearson_curahhujan_deli)
+```
+Koefisien Korelasi Pearson Curah hujan dan Produksi: -0.1996802 yang berarti kolerasinya bernilai negetif tetapi sangat lemah karena mendekati 0 
+
+
+### Selanjutnya saya akan mencoba melihat haril model VAR yg menggunakan 2 variabel saja yaitu variabel hari hujan dan produksi
+
+```{r}
+Var1_deli <-merged_padi_kab[, c("Hari_hujan", "Produksi")]
+Var1_deli
+```
+
+```{r}
+ts_deli1 <- ts(Var1_deli, start = c(2015,5), frequency = 1)
+head(ts_deli1)
+```
+
+```{r}
+lag1_deli <- VARselect(ts_deli1, lag.max = 1, type = "both")
+lag1_deli
+```
+
+```{r}
+# VAR Model
+Model_var_deli1 <- VAR(ts_deli1, p = lag1_deli$selection[1], type = "both") # jumlah order dari model VAR
+summary(Model_var_deli1)
+```
 
 ```{r}
 # Melakukan uji Granger Causality
-granger_padi_deli1 <- causality(var_padi_deliserdang, cause = "Luas_Panen")
+granger_padi_deli1 <- causality(var_padi_deliserdang, cause = "Hari_hujan")
 granger_padi_deli1
 ```
+```{r}
+# Hitung Pearson correlation coefficient
+pearson_harihujan_deli <- cor(merged_padi_kab$Hari_hujan, merged_padi_kab$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson Hari_hujan dan Produksi:", pearson_harihujan_deli)
+```
+Koefisien Korelasi Pearson Hari_hujan dan Produksi: 0.01718668
+
+### Saya akan mencoba melakukan VAR luas panen terhadap produksi
+```{r}
+Var2_deli <-merged_padi_kab[, c("Produksi", "Luas_Panen")]
+Var2_deli
+```
+
+```{r}
+ts_deli2 <- ts(Var2_deli, start = c(2015,5), frequency = 1)
+head(ts_deli2)
+```
+
+```{r}
+lag2_deli <- VARselect(ts_deli2, lag.max = 1, type = "both")
+lag2_deli
+```
+
+```{r}
+# VAR Model
+Model_var_deli2 <- VAR(ts_deli2, p = lag2_deli$selection[1], type = "both") # jumlah order dari model VAR
+summary(Model_var_deli2)
+```
+
+Estimation results for equation Luas_Panen: 
+                Estimate Std. Error t value Pr(>|t|)   
+Produksi.l1      0.03973    0.03442   1.154  0.25139   
+Luas_Panen.l1    0.68129    0.20663   3.297  0.00139 **
+Nilai F-statistic p-value: < 2.2e-16 Sehingga dapat di simpulkan bahwa luas panen berpengaruh terhadap dirinya sendiri
+
+Estimation results for equation Produksi: 
+Estimate Std. Error t value Pr(>|t|)    
+Produksi.l1       1.1010     0.1945   5.660 1.74e-07 ***
+Luas_Panen.l1    -1.0851     1.1679  -0.929   0.3553 
+nilai F-statistic  p-value: < 2.2e-16 Sehingga dapat di simpulkan bahwa produksi berpengaruh terhadap dirinya sendiri
+
+
+```{r}
+# Melakukan uji Granger Causality
+granger_padi_deli2 <- causality(Model_var_deli2, cause = "Luas_Panen")
+granger_padi_deli2
+```
+Granger p-value = 0.3541 sedangkan Instant p-value = 1.257e-11, sehingga dapat diismpulkan bahwa tidak terdapat pengaruh jangka panajng tetapi terdapat pengaruh jangka pendek.
+
 ```{r}
 # Hitung Pearson correlation coefficient
 pearson_luaspanen_deli <- cor(merged_padi_kab$Luas_Panen, merged_padi_kab$Produksi)
@@ -2277,17 +2354,185 @@ pearson_luaspanen_deli <- cor(merged_padi_kab$Luas_Panen, merged_padi_kab$Produk
 # Nilai correlation coefficient
 cat("Koefisien Korelasi Pearson Luas Panen dan Produksi:", pearson_luaspanen_deli)
 ```
+Koefisien Korelasi Pearson Luas Panen dan Produksi: 0.9872632, dapat disimpulkan bahwa kolerasinya positif dan kuat karena  mendekati 1
+
+
+### Model VAR Curah hujan terhadap rata-rata produksi padi deli serdang
+
+```{r}
+Var3_deli <-merged_padi_kab[, c("Curah_hujan", "Rata_rata_produksi")]
+Var3_deli
+```
+
+```{r}
+ts_deli3 <- ts(Var3_deli, start = c(2015,5), frequency = 1)
+head(ts_deli3)
+```
+
+```{r}
+lag3_deli <- VARselect(ts_deli3, lag.max = 1, type = "both")
+lag3_deli
+```
+
+```{r}
+# VAR Model
+Model_var_deli3 <- VAR(ts_deli3, p = lag3_deli$selection[1], type = "both") # jumlah order dari model VAR
+summary(Model_var_deli3)
+```
+
+```{r}
+# Melakukan uji Granger Causality
+granger_padi_deli3 <- causality(Model_var_deli3, cause = "Curah_hujan")
+granger_padi_deli3
+```
+
+
 ```{r}
 # Hitung Pearson correlation coefficient
-pearson_curahhujan_deli <- cor(merged_padi_kab$Curah_hujan, merged_padi_kab$Produksi)
+pearson_curahhujan_deli3 <- cor(merged_padi_kab$Curah_hujan, merged_padi_kab$Rata_rata_produksi)
 
 # Nilai correlation coefficient
-cat("Koefisien Korelasi Pearson Luas Panen dan Produksi:", pearson_curahhujan_deli)
+cat("Koefisien Korelasi Pearson Curah hujan dan Rata-rata Produksi:", pearson_curahhujan_deli3)
 ```
+Koefisien Korelasi Pearson Curah hujan dan Rata-rata Produksi: 0.2838944
+
+#Mencoba melihat kolerasi setiap variabel
+
 ```{r}
 # Hitung Pearson correlation coefficient
-pearson_harihujan_deli <- cor(merged_padi_kab$Hari_hujan, merged_padi_kab$Produksi)
+pearson_1 <- cor(merged_padi_kab$Hari_hujan, merged_padi_kab$Rata_rata_produksi)
 
 # Nilai correlation coefficient
-cat("Koefisien Korelasi Pearson Luas Panen dan Produksi:", pearson_harihujan_deli)
+cat("Koefisien Korelasi Pearson Hari hujan dan Rata-rata Produksi:", pearson_1)
 ```
+Koefisien Korelasi Pearson Curah hujan dan Rata-rata Produksi: 0.2838944
+
+```{r}
+# Hitung Pearson correlation coefficient
+pearson_2 <- cor(merged_padi_kab$Luas_Panen, merged_padi_kab$Rata_rata_produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson luas panen dan Rata-rata Produksi:", pearson_2)
+```
+Koefisien Korelasi Pearson luas panen dan Rata-rata Produksi: -0.4080495
+
+
+# 14. Ubi Jalar kab.Dairi
+```{r}
+Hujan<- read_excel("D:/OneDrive - mikroskil.ac.id/Skripsi/Curah hujan palawija Kabupaten.xlsx")
+Hujan
+```
+
+```{r}
+# Merubah type data karakter menjadi numeric
+Hujan$Curah_hujan <- as.numeric(Hujan$Curah_hujan)
+Hujan$Hari_hujan <- as.numeric(Hujan$Hari_hujan)
+Hujan
+```
+
+```{r}
+# Merubah type Tahun menjadi Date
+Hujan$Tahun <- make_date(Hujan$Tahun)
+glimpse(Hujan)
+```
+
+### b. Menghapus Data Kosong
+
+```{r}
+# Menampikan variabel dengan baris kosong
+colSums(is.na(Hujan))
+```
+
+```{r}
+# Menghapus data NA's
+Hujan_clean <- na.omit(Hujan)
+summary(Hujan_clean)
+```
+
+```{r}
+colSums(is.na(Hujan_clean))
+```
+```{r}
+# Filter data for "Dairi" kabupaten dari Hujan Clean
+Dairi_hujan <- Hujan_clean %>%
+  filter(Kabupaten_kota == "Dairi")
+Dairi_hujan
+```
+
+```{r}
+# Filter data for "Dairi" kabupaten dari dataset UbiJalar_Sumut
+Ubijalar_Dairi <- UbiJalar_Sumut %>%
+  filter(Kabupaten_Kota == "Dairi" & year(Tahun) >= 2015 & year(Tahun) <= 2021)
+Ubijalar_Dairi
+```
+
+```{r}
+# Mengabungkan kedua dataset
+merged_dairi <- merge(Ubijalar_Dairi, Dairi_hujan, by.x = "Tahun", by.y = "Tahun")
+merged_dairi
+```
+
+```{r}
+# Pilih variabel yang akan diprediksi
+# dalam pengujian ini akan dilihat apakah ada pengaruh curah hujan terhadap peningkatan produksi
+data_var_dairi <- merged_dairi [, c("Produksi", "Curah_hujan", "Hari_hujan","Luas_Panen")]
+data_var_dairi
+```
+
+
+
+Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam
+format time series (ts)
+
+```{r}
+ts_dairi <- ts(data_var_dairi, start = c(2015,1), frequency = 1)
+ts_dairi
+```
+
+```{r}
+lag_dairi <- VARselect(ts_dairi, lag.max = 5, type = "both")
+lag_dairi
+```
+
+```{r}
+# VAR Model
+var_model_Dairi <- VAR(ts_dairi, p = lag_dairi$selection[1], type = "both") # jumlah order dari model VAR
+summary(var_model_Dairi)
+```
+
+
+```{r}
+# Melakukan uji Granger Causality
+granger_test1 <- causality(var_model_Dairi, cause = "Curah_hujan")
+granger_test1
+```
+
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+correlation_dairi <- cor(data_var_dairi$Produksi, data_var_dairi$Curah_hujan)
+cat("Koefisien Korelasi Pearson Curah hujan Produksi:", correlation_dairi)
+```
+Koefisien Korelasi Pearson Curah hujan Produksi: 0.1315519
+
+```{r}
+# Hitung Pearson correlation coefficient
+pearson_dairi <- cor(data_var_dairi$Hari_hujan, data_var_dairi$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson Hari hujan dan Produksi:", pearson_dairi)
+```
+
+```{r}
+# Hitung Pearson correlation coefficient
+pearson_dairi2 <- cor(data_var_dairi$Luas_Panen, data_var_dairi$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson Luas Panen dan Produksi:", pearson_dairi2)
+```
+Koefisien Korelasi Pearson Luas Panen dan Produksi: 0.9384474
+
+# 15. Kacang Kedelai Kab.Simalungun 
+
+# 16. Jagung kab. Karo
+
