@@ -610,7 +610,7 @@ average_pr_df
 
 ```
 
-Hasil prediksi luas panen 2016-2025
+Hasil prediksi produktivitas 2016-2025
 ```{r}
 average_pr_df$Tahun <- make_date(average_pr_df$Tahun)
 average_pr_df

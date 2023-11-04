@@ -301,7 +301,7 @@ prophet_ts_lp <- prophet(yearly.seasonality = TRUE, seasonality.prior.scale = 0.
 ```
 ```{r}
 # Melakukan Prediksi untuk produksi 10 tahun ke depan
-future_prophet_ts_lp <- make_future_dataframe(prophet_ts_lp, periods = 365*12)
+future_prophet_ts_lp <- make_future_dataframe(prophet_ts_lp, periods = 365*11)
 tail(future_prophet_ts_lp)
 ```
 ```{r}
@@ -611,7 +611,7 @@ average_pr_df
 
 ```
 
-Hasil prediksi luas panen 2016-2025
+Hasil prediksi produktivitas 2016-2025
 ```{r}
 average_pr_df$Tahun <- make_date(average_pr_df$Tahun)
 average_pr_df
