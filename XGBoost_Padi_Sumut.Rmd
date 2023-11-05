@@ -38,6 +38,154 @@ padi <- read.csv("dataset/Data_Tanaman_Padi_Sumatera_V1.csv")
 padi
 ```
 
+```{r}
+# Merubah nama variabel Kabupaten Kota, Rata-rata Produksi dan Luas Panen
+names(padi)[names(padi) == "Curah.hujan"] <- "Curah_hujan"
+names(padi)[names(padi) == "Suhu.rata.rata"] <- "Suhu_rata_rata"
+names(padi)[names(padi) == "Luas.Panen"] <- "Luas_panen"
+glimpse(padi)
+```
+
+## a. Merubah type data
+
+```{r}
+# Merubah type data karakter menjadi numeric
+padi$Produksi <- as.numeric(padi$Produksi)
+padi$`Luas_panen` <- as.numeric(padi$Luas_panen)
+padi$Curah_hujan <- as.numeric(padi$Curah_hujan)
+padi$Kelembapan <- as.numeric(padi$Kelembapan)
+padi$Suhu_rata_rata <- as.numeric(padi$Suhu_rata_rata)
+padi
+```
+
+```{r}
+# Merubah type Tahun menjadi Date
+padi$Tahun <- make_date(padi$Tahun)
+glimpse(padi)
+```
+
+## b. Menghapus Data Kosong
+
+```{r}
+# Menampilkan variabel dengan baris kosong
+colSums(is.na(padi))
+```
+
+```{r}
+unique(padi$Provinsi)
+```
+
+```{r}
+# Filter data dari Provinsi "Aceh"
+aceh_data <- padi %>%
+  filter(Provinsi == "Aceh")
+aceh_data
+```
+
+```{r}
+# Filter data dari Provinsi "Sumatera Utara"
+sumut_data <- padi %>%
+  filter(Provinsi == "Sumatera Utara")
+sumut_data
+```
+
+```{r}
+# Filter data dari Provinsi "Sumatera Barat"
+sumbar_data <- padi %>%
+  filter(Provinsi == "Sumatera Barat")
+sumbar_data
+```
+
+```{r}
+# Filter data dari Provinsi "Riau"
+riau_data <- padi %>%
+  filter(Provinsi == "Riau")
+riau_data
+```
+
+```{r}
+# Filter data dari Provinsi "Jambi"
+jambi_data <- padi %>%
+  filter(Provinsi == "Jambi")
+jambi_data
+```
+
+```{r}
+# Filter data dari Provinsi "Sumatera Selatan"
+sumsel_data <- padi %>%
+  filter(Provinsi == "Sumatera Selatan")
+sumsel_data
+```
+
+```{r}
+# Filter data dari Provinsi "Bengkulu"
+bengkulu_data <- padi %>%
+  filter(Provinsi == "Bengkulu")
+bengkulu_data
+```
+
+```{r}
+# Filter data dari Provinsi "Lampung"
+lampung_data <- padi %>%
+  filter(Provinsi == "Lampung")
+lampung_data
+```
+
+## Eksplorasi Data Analisis (EDA)
+
+### Jumlah Produksi Padi
+
+```{r}
+plot_padi <- ggplot(sumut_data, aes(x = Tahun, y = Produksi, color = Produksi)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Jumlah Produksi Padi di Sumatera Utara", x = "Tahun", y = "Produksi Padi (Ha)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "right")
+plot_padi
+```
+
+```{r}
+# Hitung Pearson correlation coefficient
+correlation_padi <- cor(padi$Luas_panen, padi$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson Luas Panen dan Produksi:", correlation_padi)
+```
+
+Berdasarkan grafik diatas bisa lihat bahwa ada korelasi antara luas panen dan produksi. Hubungan korelasi adalah besar dengan nilai korelasi sebesar 0,905. Hubungan luas panen dan produksi padi bisa disimpulkan bahwa jumlah panen yang besar akan meningkatkan jumlah produksi padi.
+
+```{r}
+# Hitung Pearson correlation coefficient
+correlation_hujan <- cor(padi$Curah_hujan, padi$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson Curah Hujan dan Produksi:", correlation_hujan)
+```
+
+```{r}
+# Menghitung total produksi untuk setiap tahun
+summary_padi <- padi %>%
+  group_by(Tahun) %>%
+  summarise(TotalProduksi = sum(Produksi))
+summary_padi
+```
+
+```{r}
+# Visulisasi Produksi Padi Sepanjang Tahun 1993-2022
+ggplot(summary_padi, aes(x = Tahun, y = TotalProduksi)) +
+  geom_line() +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  labs(title = "Perubahan Jumlah Produksi Padi dari 1993 - 2020",
+       subtitle = "Pulau Sumatera",
+       x = "Tahun",
+       y = "Total Produksi")
+```
+
+# Model Machine Learning
+
 ## Partisi Dataset
 ```{r}
 set.seed(123)  # Untuk hasil yang dapat direproduksi
@@ -48,12 +196,13 @@ data_test <- padi[-splitIndex, ]  # Data pengujian (30%)
 #dim(data_test)
 ```
 
+
 ## Model XGBoost
 ```{r}
 # Mengonversi data frame ke matriks
-X_train <- data.matrix(data_train[, c("Curah_hujan", "Kelembapan", "Luas_Panen", "Suhu_rata_rata")])
+X_train <- data.matrix(data_train[, c("Curah_hujan", "Kelembapan", "Luas_panen", "Suhu_rata_rata")])
 y_train <- data_train$Produksi
-X_test <- data.matrix(data_test[, c("Curah_hujan", "Kelembapan", "Luas_Panen", "Suhu_rata_rata")])
+X_test <- data.matrix(data_test[, c("Curah_hujan", "Kelembapan", "Luas_panen", "Suhu_rata_rata")])
 
 ```
 
@@ -117,73 +266,65 @@ cat(paste("RMSE: ", rmse_value_xgb, "\n"))
 cat(paste("MAPE: ", mape_value_xgb, "%\n"))
 ```
 
+Kesimpulan yang dapat diambil adalah bahwa model XGBoost memiliki kesalahan yang signifikan dalam memprediksi data, terutama jika kita melihat nilai MSE dan RMSE yang tinggi. Dengan MAPE sekitar 0.25%, model ini mungkin memiliki kinerja yang lebih baik dalam memprediksi data secara relatif, tetapi kesalahan mutlak rata-rata (MAE) masih cukup tinggi.
+
+
+## Model Arima
 ```{r}
-# Visualisasi Model Prediksi
-# Gabungkan hasil prediksi dari ketiga model ke dalam satu data frame
-result_data_combined <- data.frame(
-  Produksi = data_test$Produksi,
-  Predictions_RF = predictions_rf,
-  Predictions_SVR = predictions_svr,
-  Predictions_XGB = predictions_xgb
-)
-
-ggplot(data = result_data_combined, aes(x = 1:length(Produksi))) +
-  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
-  geom_line(aes(y = Predictions_RF, color = "RF"), size = 0.5, linetype = "solid") +
-  geom_line(aes(y = Predictions_SVR, color = "SVR"), size = 0.5, linetype = "solid") +
-  geom_line(aes(y = Predictions_XGB, color = "XGB"), size = 0.5, linetype = "solid") +
-  labs(x = "Observasi", y = "Produksi (Ton)") +
-  scale_color_manual(values = c("Aktual" = "green", "RF" = "blue", "SVR" = "red", "XGB" = "brown")) +
-  ggtitle("Perbandingan Produksi Aktual dan Hasil Prediksi dari RF, SVR, dan XGB") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal()
-
-```
-
-library(xgboost)
-
-# Load dataset (gunakan dataset iris sebagai contoh)
-```{r}
-data(padi)
-```
-
-# Split dataset menjadi data pelatihan dan data pengujian
-```{r}
-set.seed(123)
-splitIndex <- createDataPartition(padi$Species, p = 0.7, list = FALSE)
-data_train <- padi[splitIndex, ]  # Data pelatihan (70%)
-data_test <- padi[-splitIndex, ]  # Data pengujian (30%)
-```
-
-```{r}
-table(padi$Species)
+# Memuat paket forecast
+library(forecast)
 ```
 
 
-# Konversi data ke format DMatrix yang digunakan oleh XGBoost
 ```{r}
-dtrain <- xgb.DMatrix(data = as.matrix(data_train[, -5]), label = data_train$Species)
-dtest <- xgb.DMatrix(data = as.matrix(data_test[, -5]))
+# Membaca dataset padi (gantilah 'dataset_padi.csv' dengan nama file yang sesuai)
+padi <- read.csv("dataset_padi.csv")
 ```
 
-# Parameter XGBoost
-params <- list(
-  objective = "multi:softmax",
-  num_class = 3,
-  eta = 0.3,
-  max_depth = 6,
-  nrounds = 100
-)
 
-# Latih model XGBoost
-xgb_model <- xgboost(params = params, data = dtrain, nrounds = 100, verbose = 0)
-
-# Prediksi dengan model
-predictions <- predict(xgb_model, dtest)
-
-# Evaluasi model (misalnya, akurasi)
-confusion_matrix <- table(data_test$Species, predictions)
-accuracy <- sum(diag(confusion_matrix)) / sum(confusion_matrix)
-cat("Akurasi: ", accuracy, "\n")
+```{r}
+# Memastikan kolom tanggal (timestamp) dalam format yang benar
+padi$Tanggal <- as.Date(padi$Tanggal, format = "%Y-%m-%d")
+```
 
 
+```{r}
+# Menggabungkan variabel-variabel yang ingin digunakan
+data <- padi[, c("Curah_hujan", "Kelembapan", "Luas_panen", "Suhu_rata_rata")]
+```
+
+
+```{r}
+# Membuat deret waktu dengan variabel yang ingin digunakan sebagai indeks
+ts_data <- ts(data[, -1], start = c(1993, 1), end = c(2020, 225), frequency = 225)
+```
+
+Kesalahan dimulai dari sini atau terdapat pesan error
+```{r}
+# Memodelkan deret waktu dengan model ARIMA
+arima_model <- auto.arima(ts_data)
+```
+
+
+```{r}
+# Menampilkan informasi tentang model ARIMA
+summary(arima_model)
+```
+
+
+```{r}
+# Melakukan peramalan dengan model ARIMA
+forecast_values <- forecast(arima_model, h = 12)  # Menghasilkan peramalan untuk 12 bulan ke depan
+```
+
+
+```{r}
+# Menampilkan hasil peramalan
+print(forecast_values)
+```
+
+
+```{r}
+# Menampilkan plot peramalan
+plot(forecast_values)
+```
