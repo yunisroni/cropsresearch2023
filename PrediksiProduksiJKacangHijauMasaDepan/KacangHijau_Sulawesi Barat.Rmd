@@ -267,7 +267,7 @@ KacangHijauSulawesiBarat
 # 5. Prediksi Luas Panen Jagung di Masa Depan - Model Prophet
 ```{r}
 # membagi data berdasarkan variabel Produksi
-train_data_index_lp <- createDataPartition(KacangHijauSulawesiBarat$Luas_Panen, p=0.7, list = FALSE)
+train_data_index_lp <- createDataPartition(KacangHijauSulawesiBarat$Luas_Panen, p=0.6, list = FALSE)
 train_data_lp <- KacangHijauSulawesiBarat[train_data_index_lp,]
 train_data_lp
 test_data_lp <- KacangHijauSulawesiBarat[-train_data_index_lp,]
@@ -447,7 +447,7 @@ average_lp_df
 # 6. Prediksi Produktivitas di Masa Depan - Model Prophet
 ```{r}
 # membagi data berdasarkan variabel Produksi
-train_data_index_pr <- createDataPartition(KacangHijauSulawesiBarat$Produktivitas, p=0.7, list = FALSE)
+train_data_index_pr <- createDataPartition(KacangHijauSulawesiBarat$Produktivitas, p=0.6, list = FALSE)
 train_data_pr <- KacangHijauSulawesiBarat[train_data_index_pr,]
 train_data_pr
 test_data_pr <- KacangHijauSulawesiBarat[-train_data_index_pr,]
