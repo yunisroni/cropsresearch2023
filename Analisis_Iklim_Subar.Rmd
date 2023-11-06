@@ -126,55 +126,55 @@ plot_padi
 
 ```{r}
 # Hitung Pearson correlation coefficient
-correlation_luaspanen <- cor(Padi$Luas_Panen, Padi$Produksi)
+correlation_luaspanen_pd <- cor(Padi$Luas_Panen, Padi$Produksi)
 
 # Nilai correlation coefficient
-cat("Koefisien Korelasi Pearson Luas Panen dan Produksi:", correlation_luaspanen)
+cat("Koefisien Korelasi Pearson Luas Panen dan Produksi:", correlation_luaspanen_pd)
 ```
-Berdasarkan grafik diatas bisa lihat bahwa ada korelasi antara luas panen dan produksi. Hubungan korelasi adalah besar dengan nilai korelasi sebesar 0,99. Hubungan luas panen dan produksi padi bisa disimpulkan bahwa jumlah luas panen yang besar akan meningkatkan jumlah produksi padi.
+Hubungan korelasi adalah besar dengan nilai korelasi sebesar 0,99. Hubungan luas panen dan produksi padi bisa disimpulkan bahwa jumlah luas panen yang besar akan meningkatkan jumlah produksi padi.
 
 ```{r}
 # Hitung Pearson correlation coefficient
-correlation_kecepatanangin <- cor(Padi$Kecepatan_Angin, Padi$Produksi)
+correlation_kecepatanangin_pd <- cor(Padi$Kecepatan_Angin, Padi$Produksi)
 
 # Nilai correlation coefficient
-cat("Koefisien Korelasi Pearson Kecepatan Angin dan Produksi:", correlation_kecepatanangin)
+cat("Koefisien Korelasi Pearson Kecepatan Angin dan Produksi:", correlation_kecepatanangin_pd)
 ```
 Hubungan korelasi adalah kecil dengan nilai korelasi sebesar -0,22. 
 
 ```{r}
 # Hitung Pearson correlation coefficient
-correlation_kelembapan <- cor(Padi$Kelembapan, Padi$Produksi)
+correlation_kelembapan_pd <- cor(Padi$Kelembapan, Padi$Produksi)
 
 # Nilai correlation coefficient
-cat("Koefisien Korelasi Pearson kelembapan dan Produksi:", correlation_kelembapan)
+cat("Koefisien Korelasi Pearson kelembapan dan Produksi:", correlation_kelembapan_pd)
 ```
 Hubungan korelasi adalah kecil dengan nilai korelasi sebesar 0,25. 
 
 ```{r}
 # Hitung Pearson correlation coefficient
-correlation_suhu <- cor(Padi$Suhu, Padi$Produksi)
+correlation_suhu_pd <- cor(Padi$Suhu, Padi$Produksi)
 
 # Nilai correlation coefficient
-cat("Koefisien Korelasi Pearson suhu dan Produksi:", correlation_suhu)
+cat("Koefisien Korelasi Pearson suhu dan Produksi:", correlation_suhu_pd)
 ```
 Hubungan korelasi adalah kecil dengan nilai korelasi sebesar 0,08. 
 
 ```{r}
 # Hitung Pearson correlation coefficient
-correlation_tekananudara <- cor(Padi$Tekanan_Udara, Padi$Produksi)
+correlation_tekananudara_pd <- cor(Padi$Tekanan_Udara, Padi$Produksi)
 
 # Nilai correlation coefficient
-cat("Koefisien Korelasi Pearson tekanan udara dan Produksi:", correlation_tekananudara)
+cat("Koefisien Korelasi Pearson tekanan udara dan Produksi:", correlation_tekananudara_pd)
 ```
 Hubungan korelasi adalah kecil dengan nilai korelasi sebesar -0,05. 
 
 ```{r}
 # Hitung Pearson correlation coefficient
-correlation_penyinaranmatahari <- cor(Padi$Penyinaran_Matahari, Padi$Produksi)
+correlation_penyinaranmatahari_pd <- cor(Padi$Penyinaran_Matahari, Padi$Produksi)
 
 # Nilai correlation coefficient
-cat("Koefisien Korelasi Pearson Penyinaran Matahari dan Produksi:", correlation_penyinaranmatahari)
+cat("Koefisien Korelasi Pearson Penyinaran Matahari dan Produksi:", correlation_penyinaranmatahari_pd)
 ```
 Hubungan korelasi adalah kecil dengan nilai korelasi sebesar 0,01. 
 
@@ -202,13 +202,535 @@ ggplot(summary_padi, aes(x = Tahun, y = TotalProduksi)) +
 
 ##2. Kacang Hijau
 
+```{r}
+plot_kacanghijau <- ggplot(KacangHijau, aes(x = Tahun, y = Produksi, color = Produksi)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Jumlah Produksi Kacang Hijau di Sumatera Barat", x = "Tahun", y = "Produksi Kacang Hijau (Ha)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "right")
+plot_kacanghijau
+```
+
+```{r}
+# Hitung Pearson correlation coefficient
+correlation_luaspanen_kh <- cor(KacangHijau$Luas_Panen, KacangHijau$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson Luas Panen dan Produksi:", correlation_luaspanen_kh)
+```
+Hubungan korelasi adalah besar dengan nilai korelasi sebesar 0,99. Hubungan luas panen dan produksi kacang hijau bisa disimpulkan bahwa jumlah luas panen yang besar akan meningkatkan jumlah produksi kacang hijau.
+
+```{r}
+# Hitung Pearson correlation coefficient
+correlation_kecepatanangin_kh <- cor(KacangHijau$Kecepatan_Angin, KacangHijau$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson Kecepatan Angin dan Produksi:", correlation_kecepatanangin_kh)
+```
+Hubungan korelasi adalah kecil dengan nilai korelasi sebesar 0,01. 
+
+```{r}
+# Hitung Pearson correlation coefficient
+correlation_kelembapan_kh <- cor(KacangHijau$Kelembapan, KacangHijau$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson kelembapan dan Produksi:", correlation_kelembapan_kh)
+```
+Hubungan korelasi adalah kecil dengan nilai korelasi sebesar -0,09. 
+
+```{r}
+# Hitung Pearson correlation coefficient
+correlation_suhu_kh <- cor(KacangHijau$Suhu, KacangHijau$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson suhu dan Produksi:", correlation_suhu_kh)
+```
+Hubungan korelasi adalah kecil dengan nilai korelasi sebesar -0,21. 
+
+```{r}
+# Hitung Pearson correlation coefficient
+correlation_tekananudara_kh <- cor(KacangHijau$Tekanan_Udara, KacangHijau$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson tekanan udara dan Produksi:", correlation_tekananudara_kh)
+```
+Hubungan korelasi adalah kecil dengan nilai korelasi sebesar -0,20. 
+
+```{r}
+# Hitung Pearson correlation coefficient
+correlation_penyinaranmatahari_kh <- cor(KacangHijau$Penyinaran_Matahari, KacangHijau$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson Penyinaran Matahari dan Produksi:", correlation_penyinaranmatahari_kh)
+```
+Hubungan korelasi adalah kecil dengan nilai korelasi sebesar -0,28. 
+
+
+```{r}
+# Menghitung total produksi untuk setiap tahun
+summary_kacanghijau <- KacangHijau %>%
+  group_by(Tahun) %>%
+  summarise(TotalProduksi = sum(Produksi))
+summary_kacanghijau
+```
+
+```{r}
+# Visulisasi Produksi Kacang Hijau Sepanjang Tahun 2006-2015
+ggplot(summary_kacanghijau, aes(x = Tahun, y = TotalProduksi)) +
+  geom_line() +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  labs(title = "Perubahan Jumlah Produksi Kacang Hijau dari 2006 - 2015",
+       subtitle = "Sumatera Barat",
+       x = "Tahun",
+       y = "Total Produksi")
+```
+
+
 ##3. Kacang Kedelai
+```{r}
+plot_kacangkedelai <- ggplot(KacangKedelai, aes(x = Tahun, y = Produksi, color = Produksi)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Jumlah Produksi Kacang Kedelai di Sumatera Barat", x = "Tahun", y = "Produksi Kacang Kedelai (Ha)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "right")
+plot_kacangkedelai
+```
+
+```{r}
+# Hitung Pearson correlation coefficient
+correlation_luaspanen_kd <- cor(KacangKedelai$Luas_Panen, KacangKedelai$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson Luas Panen dan Produksi:", correlation_luaspanen_kd)
+```
+Hubungan korelasi adalah besar dengan nilai korelasi sebesar 0,97. Hubungan luas panen dan produksi kacang kedelai bisa disimpulkan bahwa jumlah luas panen yang besar akan meningkatkan jumlah produksi kacang kedelai.
+
+```{r}
+# Hitung Pearson correlation coefficient
+correlation_kecepatanangin_kd <- cor(KacangKedelai$Kecepatan_Angin, KacangKedelai$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson Kecepatan Angin dan Produksi:", correlation_kecepatanangin_kd)
+```
+Hubungan korelasi adalah kecil dengan nilai korelasi sebesar -0,15. 
+
+```{r}
+# Hitung Pearson correlation coefficient
+correlation_kelembapan_kd <- cor(KacangKedelai$Kelembapan, KacangKedelai$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson kelembapan dan Produksi:", correlation_kelembapan_kd)
+```
+Hubungan korelasi adalah kecil dengan nilai korelasi sebesar -0,2. 
+
+```{r}
+# Hitung Pearson correlation coefficient
+correlation_suhu_kd <- cor(KacangKedelai$Suhu, KacangKedelai$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson suhu dan Produksi:", correlation_suhu_kd)
+```
+Hubungan korelasi adalah kecil dengan nilai korelasi sebesar -0,05. 
+
+```{r}
+# Hitung Pearson correlation coefficient
+correlation_tekananudara_kd <- cor(KacangKedelai$Tekanan_Udara, KacangKedelai$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson tekanan udara dan Produksi:", correlation_tekananudara_kd)
+```
+Hubungan korelasi adalah kecil dengan nilai korelasi sebesar -0,36. 
+
+```{r}
+# Hitung Pearson correlation coefficient
+correlation_penyinaranmatahari_kd <- cor(KacangKedelai$Penyinaran_Matahari, KacangKedelai$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson Penyinaran Matahari dan Produksi:", correlation_penyinaranmatahari_kd)
+```
+Hubungan korelasi adalah kecil dengan nilai korelasi sebesar -0,55. 
+
+
+```{r}
+# Menghitung total produksi untuk setiap tahun
+summary_kacangkedelai <- KacangKedelai %>%
+  group_by(Tahun) %>%
+  summarise(TotalProduksi = sum(Produksi))
+summary_kacangkedelai
+```
+
+```{r}
+# Visulisasi Produksi Kacang Hijau Sepanjang Tahun 2006-2015
+ggplot(summary_kacangkedelai, aes(x = Tahun, y = TotalProduksi)) +
+  geom_line() +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  labs(title = "Perubahan Jumlah Produksi Kacang Kedelai dari 2006 - 2015",
+       subtitle = "Sumatera Barat",
+       x = "Tahun",
+       y = "Total Produksi")
+```
+
 
 ##4. Kacang Tanah
+```{r}
+plot_kacangtanah <- ggplot(KacangTanah, aes(x = Tahun, y = Produksi, color = Produksi)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Jumlah Produksi Kacang Tanah di Sumatera Barat", x = "Tahun", y = "Produksi Kacang Tanah (Ha)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "right")
+plot_kacangtanah
+```
+
+```{r}
+# Hitung Pearson correlation coefficient
+correlation_luaspanen_kt <- cor(KacangTanah$Luas_Panen, KacangTanah$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson Luas Panen dan Produksi:", correlation_luaspanen_kt)
+```
+Hubungan korelasi adalah besar dengan nilai korelasi sebesar 0,89. Hubungan luas panen dan produksi kacang tanah bisa disimpulkan bahwa jumlah luas panen yang besar akan meningkatkan jumlah produksi kacang tanah.
+
+```{r}
+# Hitung Pearson correlation coefficient
+correlation_kecepatanangin_kt <- cor(KacangTanah$Kecepatan_Angin, KacangTanah$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson Kecepatan Angin dan Produksi:", correlation_kecepatanangin_kt)
+```
+Hubungan korelasi adalah kecil dengan nilai korelasi sebesar -0,14. 
+
+```{r}
+# Hitung Pearson correlation coefficient
+correlation_kelembapan_kt <- cor(KacangTanah$Kelembapan, KacangTanah$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson kelembapan dan Produksi:", correlation_kelembapan_kt)
+```
+Hubungan korelasi adalah kecil dengan nilai korelasi sebesar -0,57. 
+
+```{r}
+# Hitung Pearson correlation coefficient
+correlation_suhu_kt <- cor(KacangTanah$Suhu, KacangTanah$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson suhu dan Produksi:", correlation_suhu_kt)
+```
+Hubungan korelasi adalah kecil dengan nilai korelasi sebesar -0,08. 
+
+```{r}
+# Hitung Pearson correlation coefficient
+correlation_tekananudara_kt <- cor(KacangTanah$Tekanan_Udara, KacangTanah$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson tekanan udara dan Produksi:", correlation_tekananudara_kt)
+```
+Hubungan korelasi adalah kecil dengan nilai korelasi sebesar -0,49. 
+
+```{r}
+# Hitung Pearson correlation coefficient
+correlation_penyinaranmatahari_kt <- cor(KacangTanah$Penyinaran_Matahari, KacangTanah$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson Penyinaran Matahari dan Produksi:", correlation_penyinaranmatahari_kt)
+```
+Hubungan korelasi adalah kecil dengan nilai korelasi sebesar -0,62. 
+
+
+```{r}
+# Menghitung total produksi untuk setiap tahun
+summary_kacangtanah <- KacangTanah %>%
+  group_by(Tahun) %>%
+  summarise(TotalProduksi = sum(Produksi))
+summary_kacangtanah
+```
+
+```{r}
+# Visulisasi Produksi Kacang Tanah Sepanjang Tahun 2006-2015
+ggplot(summary_kacangtanah, aes(x = Tahun, y = TotalProduksi)) +
+  geom_line() +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  labs(title = "Perubahan Jumlah Produksi Kacang Tanah dari 2006 - 2015",
+       subtitle = "Sumatera Barat",
+       x = "Tahun",
+       y = "Total Produksi")
+```
+
 
 ##5. Ubi Jalar
 
+```{r}
+plot_ubijalar <- ggplot(UbiJalar, aes(x = Tahun, y = Produksi, color = Produksi)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Jumlah Produksi Ubi Jalar di Sumatera Barat", x = "Tahun", y = "Produksi Ubi Jalar (Ha)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "right")
+plot_ubijalar
+```
+
+```{r}
+# Hitung Pearson correlation coefficient
+correlation_luaspanen_uj <- cor(UbiJalar$Luas_Panen, UbiJalar$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson Luas Panen dan Produksi:", correlation_luaspanen_uj)
+```
+Hubungan korelasi adalah besar dengan nilai korelasi sebesar 0,91. Hubungan luas panen dan produksi ubi jalar bisa disimpulkan bahwa jumlah luas panen yang besar akan meningkatkan jumlah produksi ubi jalar.
+
+```{r}
+# Hitung Pearson correlation coefficient
+correlation_kecepatanangin_uj <- cor(UbiJalar$Kecepatan_Angin, UbiJalar$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson Kecepatan Angin dan Produksi:", correlation_kecepatanangin_uj)
+```
+Hubungan korelasi adalah kecil dengan nilai korelasi sebesar -0,15. 
+
+```{r}
+# Hitung Pearson correlation coefficient
+correlation_kelembapan_uj <- cor(UbiJalar$Kelembapan, UbiJalar$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson kelembapan dan Produksi:", correlation_kelembapan_uj)
+```
+Hubungan korelasi adalah kecil dengan nilai korelasi sebesar 0,12. 
+
+```{r}
+# Hitung Pearson correlation coefficient
+correlation_suhu_uj <- cor(UbiJalar$Suhu, UbiJalar$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson suhu dan Produksi:", correlation_suhu_uj)
+```
+Hubungan korelasi adalah kecil dengan nilai korelasi sebesar 0,07. 
+
+```{r}
+# Hitung Pearson correlation coefficient
+correlation_tekananudara_uj <- cor(UbiJalar$Tekanan_Udara, UbiJalar$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson tekanan udara dan Produksi:", correlation_tekananudara_uj)
+```
+Hubungan korelasi adalah kecil dengan nilai korelasi sebesar 0,03. 
+
+```{r}
+# Hitung Pearson correlation coefficient
+correlation_penyinaranmatahari_uj <- cor(UbiJalar$Penyinaran_Matahari, UbiJalar$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson Penyinaran Matahari dan Produksi:", correlation_penyinaranmatahari_uj)
+```
+Hubungan korelasi adalah kecil dengan nilai korelasi sebesar 0,11. 
+
+
+```{r}
+# Menghitung total produksi untuk setiap tahun
+summary_ubijalar <- UbiJalar %>%
+  group_by(Tahun) %>%
+  summarise(TotalProduksi = sum(Produksi))
+summary_ubijalar
+```
+
+```{r}
+# Visulisasi Produksi Ubi Jalar Sepanjang Tahun 2006-2015
+ggplot(summary_ubijalar, aes(x = Tahun, y = TotalProduksi)) +
+  geom_line() +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  labs(title = "Perubahan Jumlah Produksi Ubi Jalar dari 2006 - 2015",
+       subtitle = "Sumatera Barat",
+       x = "Tahun",
+       y = "Total Produksi")
+```
+
+
 ##6. Ubi Kayu
+
+```{r}
+plot_ubikayu <- ggplot(UbiKayu, aes(x = Tahun, y = Produksi, color = Produksi)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Jumlah Produksi Ubi Kayu di Sumatera Barat", x = "Tahun", y = "Produksi Ubi Kayu (Ha)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "right")
+plot_ubikayu
+```
+
+```{r}
+# Hitung Pearson correlation coefficient
+correlation_luaspanen_uk <- cor(UbiKayu$Luas_Panen, UbiKayu$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson Luas Panen dan Produksi:", correlation_luaspanen_uk)
+```
+Hubungan korelasi adalah kecil dengan nilai korelasi sebesar -0,23. 
+
+```{r}
+# Hitung Pearson correlation coefficient
+correlation_kecepatanangin_uk <- cor(UbiKayu$Kecepatan_Angin, UbiKayu$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson Kecepatan Angin dan Produksi:", correlation_kecepatanangin_uk)
+```
+Hubungan korelasi adalah kecil dengan nilai korelasi sebesar -0,06. 
+
+```{r}
+# Hitung Pearson correlation coefficient
+correlation_kelembapan_uk <- cor(UbiKayu$Kelembapan, UbiKayu$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson kelembapan dan Produksi:", correlation_kelembapan_uk)
+```
+Hubungan korelasi adalah kecil dengan nilai korelasi sebesar -0,08. 
+
+```{r}
+# Hitung Pearson correlation coefficient
+correlation_suhu_uk <- cor(UbiKayu$Suhu, UbiKayu$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson suhu dan Produksi:", correlation_suhu_uk)
+```
+Hubungan korelasi adalah kecil dengan nilai korelasi sebesar 0,08. 
+
+```{r}
+# Hitung Pearson correlation coefficient
+correlation_tekananudara_uk <- cor(UbiKayu$Tekanan_Udara, UbiKayu$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson tekanan udara dan Produksi:", correlation_tekananudara_uk)
+```
+Hubungan korelasi adalah kecil dengan nilai korelasi sebesar -0,08. 
+
+```{r}
+# Hitung Pearson correlation coefficient
+correlation_penyinaranmatahari_uk <- cor(UbiKayu$Penyinaran_Matahari, UbiKayu$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson Penyinaran Matahari dan Produksi:", correlation_penyinaranmatahari_uk)
+```
+Hubungan korelasi adalah kecil dengan nilai korelasi sebesar -0,07. 
+
+
+```{r}
+# Menghitung total produksi untuk setiap tahun
+summary_ubikayu <- UbiKayu %>%
+  group_by(Tahun) %>%
+  summarise(TotalProduksi = sum(Produksi))
+summary_ubikayu
+```
+
+```{r}
+# Visulisasi Produksi Ubi Kayu Sepanjang Tahun 2006-2015
+ggplot(summary_ubikayu, aes(x = Tahun, y = TotalProduksi)) +
+  geom_line() +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  labs(title = "Perubahan Jumlah Produksi Ubi Kayu dari 2006 - 2015",
+       subtitle = "Sumatera Barat",
+       x = "Tahun",
+       y = "Total Produksi")
+```
+
+
+##7. Jagung
+
+```{r}
+plot_jagung <- ggplot(Jagung, aes(x = Tahun, y = Produksi, color = Produksi)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Jumlah Produksi Jagung di Sumatera Barat", x = "Tahun", y = "Produksi Jagung (Ha)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "right")
+plot_jagung
+```
+
+```{r}
+# Hitung Pearson correlation coefficient
+correlation_luaspanen_jg <- cor(Jagung$Luas_Panen, Jagung$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson Luas Panen dan Produksi:", correlation_luaspanen_jg)
+```
+Hubungan korelasi adalah besar dengan nilai korelasi sebesar 0,91. Hubungan luas panen dan produksi jagung bisa disimpulkan bahwa jumlah luas panen yang besar akan meningkatkan jumlah produksi jagung.
+
+```{r}
+# Hitung Pearson correlation coefficient
+correlation_kecepatanangin_jg <- cor(Jagung$Kecepatan_Angin, Jagung$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson Kecepatan Angin dan Produksi:", correlation_kecepatanangin_jg)
+```
+Hubungan korelasi adalah kecil dengan nilai korelasi sebesar -0,34. 
+
+```{r}
+# Hitung Pearson correlation coefficient
+correlation_kelembapan_jg <- cor(Jagung$Kelembapan, Jagung$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson kelembapan dan Produksi:", correlation_kelembapan_jg)
+```
+Hubungan korelasi adalah kecil dengan nilai korelasi sebesar 0,007. 
+
+```{r}
+# Hitung Pearson correlation coefficient
+correlation_suhu_jg <- cor(Jagung$Suhu, Jagung$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson suhu dan Produksi:", correlation_suhu_jg)
+```
+Hubungan korelasi adalah kecil dengan nilai korelasi sebesar 0,01. 
+
+```{r}
+# Hitung Pearson correlation coefficient
+correlation_tekananudara_jg <- cor(Jagung$Tekanan_Udara, Jagung$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson tekanan udara dan Produksi:", correlation_tekananudara_jg)
+```
+Hubungan korelasi adalah kecil dengan nilai korelasi sebesar -0,11. 
+
+```{r}
+# Hitung Pearson correlation coefficient
+correlation_penyinaranmatahari_jg <- cor(Jagung$Penyinaran_Matahari, Jagung$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson Penyinaran Matahari dan Produksi:", correlation_penyinaranmatahari_jg)
+```
+Hubungan korelasi adalah kecil dengan nilai korelasi sebesar -0,02. 
+
+
+```{r}
+# Menghitung total produksi untuk setiap tahun
+summary_jagung <- Jagung %>%
+  group_by(Tahun) %>%
+  summarise(TotalProduksi = sum(Produksi))
+summary_jagung
+```
+
+```{r}
+# Visulisasi Produksi Jagung Sepanjang Tahun 2006-2015
+ggplot(summary_jagung, aes(x = Tahun, y = TotalProduksi)) +
+  geom_line() +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  labs(title = "Perubahan Jumlah Produksi Jagung dari 2006 - 2015",
+       subtitle = "Sumatera Barat",
+       x = "Tahun",
+       y = "Total Produksi")
+```
+
 
 
 
