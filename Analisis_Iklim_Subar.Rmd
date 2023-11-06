@@ -1,5 +1,5 @@
 ---
-title: "Analisis Prediksi Iklim di Sumut"
+title: "Analisis Dampak Iklim Terhadap Produksi Pangan di Sumatera Barat"
 author: "Nurul Aina Tasya"
 date: "2023-10-31"
 output: html_document
@@ -13,19 +13,388 @@ library(tidyverse)
 library(caret) 
 # library untuk evaluasi model
 library(Metrics)
-# library untuk model Prophet
-library (prophet)
+# library untuk import excel
 library(readxl)
+# library untuk model Random Forest
+library(randomForest)
+# library untuk model SVR
+library(e1071)
 ```
 
 # 2. Obstain - Load Dataset
-
+## a. Import Data
 ```{r}
 Iklim <- read_excel("dataset/Dataset Tanaman Pangan dan Iklim di Indonesia (2006-2015).xlsx")
 Iklim
 ```
 
-# 3. Scrub data
+## b.Menampilkan Contoh Data
 ```{r}
+# Menampilkan 6 data teratas
+head(Iklim)
+```
+```{r}
+# Menampilkan 6 data terbawah
+tail(Iklim)
+```
+```{r}
+glimpse(Iklim)
+```
+
+
+# 3. Scrub data
+## a. Merubah type data
+```{r}
+# Merubah type Tahun menjadi Date
+Iklim$Tahun <- make_date(Iklim$Tahun)
+glimpse(Iklim)
+tail(Iklim)
+head(Iklim)
+```
+## b. Menghapus Data Kosong
+```{r}
+# Menampilkan variabel dengan baris kosong
+glimpse(Iklim)
+colSums(is.na(Iklim))
+```
+Jumlah data : 2,380 Record. Dari 11 variabel terhadap 8 buah variabel dengan data NA'S
+
+```{r}
+# Menghapus data NA'S
+iklim_clean <- na.omit(Iklim)
+colSums(is.na(iklim_clean))
+summary(iklim_clean)
+```
+Berdasarkan hasil diatas bisa dilihat semua variabel tidak ada lagi data
+yang kosong atau NA'
+```{r}
+glimpse(iklim_clean)
+```
+Jumlah data setelah dihapus data NA' menjadi 2,026 baris observasi dengan 11 variabel.
+
+## c. Filter data
+### - Filter data jagung
+```{r}
+Jagung <- filter(iklim_clean, Jenis_Komoditi == "Jagung", Provinsi == "SUMATERA BARAT")
+Jagung
 
 ```
+### - Filter data kacang hijau
+```{r}
+KacangHijau <- filter(iklim_clean, Jenis_Komoditi == "Kacang Hijau", Provinsi == "SUMATERA BARAT")
+KacangHijau
+```
+### - Filter data kacang kedelai
+```{r}
+KacangKedelai <- filter(iklim_clean, Jenis_Komoditi == "Kedelai", Provinsi == "SUMATERA BARAT")
+KacangKedelai
+```
+### - Filter data kacang tanah
+```{r}
+KacangTanah <- filter(iklim_clean, Jenis_Komoditi == "Kacang Tanah", Provinsi == "SUMATERA BARAT")
+KacangTanah
+```
+### - Filter data ubi jalar
+```{r}
+UbiJalar <- filter(iklim_clean, Jenis_Komoditi == "Ubi Jalar", Provinsi == "SUMATERA BARAT")
+UbiJalar
+
+```
+### - Filter data ubi kayu
+```{r}
+UbiKayu <- filter(iklim_clean, Jenis_Komoditi == "Ubi Kayu", Provinsi == "SUMATERA BARAT")
+UbiKayu
+```
+### - Filter data padi
+```{r}
+Padi <- filter(iklim_clean, Jenis_Komoditi == "Padi", Provinsi == "SUMATERA BARAT")
+Padi
+```
+
+# 4. Eksplorasi Data Analisis (EDA)
+## 1. Padi
+```{r}
+plot_padi <- ggplot(Padi, aes(x = Tahun, y = Produksi, color = Produksi)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Jumlah Produksi Padi di Sumatera Barat", x = "Tahun", y = "Produksi Padi (Ha)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "right")
+plot_padi
+```
+
+```{r}
+# Hitung Pearson correlation coefficient
+correlation_luaspanen <- cor(Padi$Luas_Panen, Padi$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson Luas Panen dan Produksi:", correlation_luaspanen)
+```
+Berdasarkan grafik diatas bisa lihat bahwa ada korelasi antara luas panen dan produksi. Hubungan korelasi adalah besar dengan nilai korelasi sebesar 0,99. Hubungan luas panen dan produksi padi bisa disimpulkan bahwa jumlah luas panen yang besar akan meningkatkan jumlah produksi padi.
+
+```{r}
+# Hitung Pearson correlation coefficient
+correlation_kecepatanangin <- cor(Padi$Kecepatan_Angin, Padi$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson Kecepatan Angin dan Produksi:", correlation_kecepatanangin)
+```
+Hubungan korelasi adalah kecil dengan nilai korelasi sebesar -0,22. 
+
+```{r}
+# Hitung Pearson correlation coefficient
+correlation_kelembapan <- cor(Padi$Kelembapan, Padi$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson kelembapan dan Produksi:", correlation_kelembapan)
+```
+Hubungan korelasi adalah kecil dengan nilai korelasi sebesar 0,25. 
+
+```{r}
+# Hitung Pearson correlation coefficient
+correlation_suhu <- cor(Padi$Suhu, Padi$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson suhu dan Produksi:", correlation_suhu)
+```
+Hubungan korelasi adalah kecil dengan nilai korelasi sebesar 0,08. 
+
+```{r}
+# Hitung Pearson correlation coefficient
+correlation_tekananudara <- cor(Padi$Tekanan_Udara, Padi$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson tekanan udara dan Produksi:", correlation_tekananudara)
+```
+Hubungan korelasi adalah kecil dengan nilai korelasi sebesar -0,05. 
+
+```{r}
+# Hitung Pearson correlation coefficient
+correlation_penyinaranmatahari <- cor(Padi$Penyinaran_Matahari, Padi$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson Penyinaran Matahari dan Produksi:", correlation_penyinaranmatahari)
+```
+Hubungan korelasi adalah kecil dengan nilai korelasi sebesar 0,01. 
+
+
+```{r}
+# Menghitung total produksi untuk setiap tahun
+summary_padi <- Padi %>%
+  group_by(Tahun) %>%
+  summarise(TotalProduksi = sum(Produksi))
+summary_padi
+```
+
+```{r}
+# Visulisasi Produksi Padi Sepanjang Tahun 2006-2015
+ggplot(summary_padi, aes(x = Tahun, y = TotalProduksi)) +
+  geom_line() +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  labs(title = "Perubahan Jumlah Produksi Padi dari 2006 - 2015",
+       subtitle = "Sumatera Barat",
+       x = "Tahun",
+       y = "Total Produksi")
+```
+
+
+##2. Kacang Hijau
+
+##3. Kacang Kedelai
+
+##4. Kacang Tanah
+
+##5. Ubi Jalar
+
+##6. Ubi Kayu
+
+
+
+# 4. Model
+## 1. Padi
+### a. Model Random Forest
+####- Partisi Dataset
+```{r}
+set.seed(123)  # Untuk hasil yang dapat direproduksi
+splitIndex <- createDataPartition(Padi$Produksi, p = 0.6, list = FALSE)
+data_train_Padi <- Padi[splitIndex, ]  # Data pelatihan (60%)
+data_test_Padi <- Padi[-splitIndex, ]  # Data pengujian (40%)
+data_train_Padi
+data_test_Padi 
+```
+
+####- Model RF 
+```{r}
+# Membuat model RF
+rf_model_Padi <- randomForest(Produksi ~ Produktivitas + Luas_Panen + Kecepatan_Angin + Kelembapan + Suhu + Tekanan_Udara + Penyinaran_Matahari, data = data_train, ntree = 1000)
+rf_model_Padi
+```
+
+```{r}
+# Melakukan Prediksi terhadap Data Pengujian
+predictions_rf_Padi <- predict(rf_model_Padi, data_test_Padi)
+predictions_rf_Padi
+```
+
+```{r}
+# Visualisasi Hasil
+result_data_rf_Padi <- data.frame(Produksi = data_test_Padi$Produksi, Predictions = predictions_rf_Padi)
+
+# Visualisasi Perbandingan Produksi Aktual dengan Hasil Prediksi
+ggplot(data = result_data_rf_Padi, aes(x = Produksi, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
+  theme_minimal()
+```
+
+```{r}
+# Visualisasi Produksi Aktual dengan Hasil Prediksi
+ggplot(data = result_data_rf_Padi, aes(x = 1:length(Produksi))) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
+  labs(x = "Observasi", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
+  theme_minimal()
+```
+
+```{r}
+# Visualisasi hasil prediksi dengan sumbu x adalah tahun
+result_data_rf2_Padi <- data.frame(Tahun = data_test_Padi$Tahun, Produksi = data_test_Padi$Produksi, Predictions = predictions_rf_Padi)
+
+ggplot(data = result_data_rf2_Padi, aes(x = Tahun)) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
+  labs(x = "Tahun", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal()
+```
+
+```{r}
+# Ambil variabel yang penting dalam data
+importance_rf_Padi <- data.frame(Variable = row.names(importance(rf_model_Padi)),
+                              Importance = importance(rf_model_Padi)[, 1])
+
+# Urutkan data berdasarkan derajat variabel penting
+importance_rf_Padi <- importance_rf_Padi[order(importance_rf_Padi$Importance, decreasing = TRUE), ]
+importance_rf_Padi
+
+# Visualisasi dengan ggplot
+ggplot(importance_rf_Padi, aes(x = reorder(Variable, Importance), y = Importance)) +
+  geom_bar(stat = "identity", fill = "blue") +
+  labs(title = "Variable Importance Plot",
+       x = "Variable",
+       y = "Importance") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + # Rotating x-axis menjadi mudah dilihat
+  theme_minimal()
+```
+Berdasarkan hasil diatas bisa disimpulkan, bahwa variabel yang sangat mempengaruhi produksi adalah Produktivitas dan Luas Panen.
+
+```{r}
+# Evaluasi RF Model
+
+# Hitung MAE
+mae_value_rf_Padi <- mae(data_test_Padi$Produksi, predictions_rf_Padi)
+
+# Hitung MSE
+mse_value_rf_Padi <- mse(data_test_Padi$Produksi, predictions_rf_Padi)
+
+# Hitung RMSE
+rmse_value_rf_Padi <- rmse(data_test_Padi$Produksi, predictions_rf_Padi)
+
+# Hitung MAPE
+mape_value_rf_Padi <- mape(data_test_Padi$Produksi, predictions_rf_Padi)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_value_rf_Padi, "\n"))
+cat(paste("MSE: ", mse_value_rf_Padi, "\n"))
+cat(paste("RMSE: ", rmse_value_rf_Padi, "\n"))
+cat(paste("MAPE: ", mape_value_rf_Padi, "%\n"))
+```
+### b. Model SVR
+
+```{r}
+# Membuat model SVR
+svr_model_Padi <- svm(Produksi ~ Produktivitas + Luas_Panen + Kecepatan_Angin + Kelembapan + Suhu + Tekanan_Udara + Penyinaran_Matahari, data = data_train_Padi, kernel = "radial", cost = 1)
+svr_model_Padi
+```
+
+```{r}
+# Melakukan prediksi dengan Data Testing
+predictions_svr_Padi <- predict(svr_model_Padi, data_test_Padi)
+predictions_svr_Padi
+```
+
+```{r}
+# Visualisasi hasil prediksi
+result_data_svr_Padi <- data.frame(Produksi = data_test_Padi$Produksi, Predictions = predictions_svr_Padi)
+
+ggplot(data = result_data_svr_Padi, aes(x = Produksi, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
+  theme_minimal()
+```
+
+```{r}
+# Buat grafik garis dengan ggplot2
+ggplot(data = result_data_svr_Padi, aes(x = 1:length(Produksi))) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
+  labs(x = "Observasi", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal()
+```
+
+```{r}
+# Visualisasi hasil prediksi dengan sumbu x adalah tahun
+result_data_svr2_Padi <- data.frame(Tahun = data_test_Padi$Tahun, Produksi = data_test_Padi$Produksi, Predictions = predictions_svr_Padi)
+
+ggplot(data = result_data_svr2_Padi, aes(x = Tahun)) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
+  labs(x = "Tahun", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal()
+```
+```{r}
+# Evaluasi SVR Model
+
+# Hitung MAE
+mae_value_svr_Padi <- mae(data_test_Padi$Produksi, predictions_svr_Padi)
+
+# Hitung MSE
+mse_value_svr_Padi <- mse(data_test_Padi$Produksi, predictions_svr_Padi)
+
+# Hitung RMSE
+rmse_value_svr_Padi <- rmse(data_test_Padi$Produksi, predictions_svr_Padi)
+
+# Hitung MAPE
+mape_value_svr_Padi <- mape(data_test_Padi$Produksi, predictions_svr_Padi)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_value_svr_Padi, "\n"))
+cat(paste("MSE: ", mse_value_svr_Padi, "\n"))
+cat(paste("RMSE: ", rmse_value_svr_Padi, "\n"))
+cat(paste("MAPE: ", mape_value_svr_Padi, "%\n"))
+```
+
+
+
+
+
