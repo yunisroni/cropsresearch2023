@@ -1,7 +1,7 @@
 ---
-title: "Prediksi Variabel Yang Mempengaruhi Produksi Jagung Masa Depan - Bengkulu"
+title: "Prediksi Variabel Yang Mempengaruhi Produksi Jagung Masa Depan - DI Yogyakarta"
 author: "Nurul Aina Tasya"
-date: "2023-11-01"
+date: "2023-11-04"
 output: html_document
 ---
 
@@ -258,20 +258,21 @@ Berdasarkan grafik diatas bisa lihat bahwa ada korelasi antara luas panen dan pr
 ## h. Filter data jagung
 
 ```{r}
-JagungBengkulu <- filter(pangan_clean, Jenis_Komoditi == "Jagung", Provinsi == "BENGKULU")
-JagungBengkulu
+JagungDIYogyakarta <- filter(pangan_clean, Jenis_Komoditi == "Jagung", Provinsi == "DI YOGYAKARTA")
+JagungDIYogyakarta
 
 ```
+
 
 
 
 # 5. Prediksi Luas Panen Jagung di Masa Depan - Model Prophet
 ```{r}
 # membagi data berdasarkan variabel Produksi
-train_data_index_lp <- createDataPartition(JagungBengkulu$Luas_Panen, p=0.7, list = FALSE)
-train_data_lp <- JagungBengkulu[train_data_index_lp,]
+train_data_index_lp <- createDataPartition(JagungDIYogyakarta$Luas_Panen, p=0.7, list = FALSE)
+train_data_lp <- JagungDIYogyakarta[train_data_index_lp,]
 train_data_lp
-test_data_lp <- JagungBengkulu[-train_data_index_lp,]
+test_data_lp <- JagungDIYogyakarta[-train_data_index_lp,]
 test_data_lp
 ```
 
@@ -302,7 +303,7 @@ prophet_ts_lp <- prophet(yearly.seasonality = TRUE, seasonality.prior.scale = 0.
 ```
 ```{r}
 # Melakukan Prediksi untuk produksi 10 tahun ke depan
-future_prophet_ts_lp <- make_future_dataframe(prophet_ts_lp, periods = 365*12)
+future_prophet_ts_lp <- make_future_dataframe(prophet_ts_lp, periods = 365*13)
 tail(future_prophet_ts_lp)
 ```
 ```{r}
@@ -443,13 +444,15 @@ average_lp_df
 
 
 
+
+
 # 6. Prediksi Produktivitas di Masa Depan - Model Prophet
 ```{r}
 # membagi data berdasarkan variabel Produksi
-train_data_index_pr <- createDataPartition(JagungBengkulu$Produktivitas, p=0.7, list = FALSE)
-train_data_pr <- JagungBengkulu[train_data_index_pr,]
+train_data_index_pr <- createDataPartition(JagungDIYogyakarta$Produktivitas, p=0.7, list = FALSE)
+train_data_pr <- JagungDIYogyakarta[train_data_index_pr,]
 train_data_pr
-test_data_pr <- JagungBengkulu[-train_data_index_pr,]
+test_data_pr <- JagungDIYogyakarta[-train_data_index_pr,]
 test_data_pr
 ```
 
@@ -587,7 +590,7 @@ cat(paste("MSE: ", mse_value_prophet_pr, "\n"))
 cat(paste("RMSE: ", rmse_value_prophet_pr, "\n"))
 cat(paste("MAPE: ", mape_value_prophet_pr, "%\n"))
 ```
-Mengambil data luas panen dari hasil prediksi 2016-2025
+Mengambil data produktivitas dari hasil prediksi 2016-2025
 ```{r}
 # Filter data untuk tahun 2021-2024
 forecast_subset_pr <- forecast_ts_pr[forecast_ts_pr$ds >= as.Date("2016-01-01") & forecast_ts_pr$ds <= as.Date("2025-12-31"), ]

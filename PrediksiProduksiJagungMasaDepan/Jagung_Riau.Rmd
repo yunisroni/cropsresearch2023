@@ -586,7 +586,7 @@ cat(paste("MSE: ", mse_value_prophet_pr, "\n"))
 cat(paste("RMSE: ", rmse_value_prophet_pr, "\n"))
 cat(paste("MAPE: ", mape_value_prophet_pr, "%\n"))
 ```
-Mengambil data luas panen dari hasil prediksi 2016-2025
+Mengambil data produktivitas dari hasil prediksi 2016-2025
 ```{r}
 # Filter data untuk tahun 2021-2024
 forecast_subset_pr <- forecast_ts_pr[forecast_ts_pr$ds >= as.Date("2016-01-01") & forecast_ts_pr$ds <= as.Date("2025-12-31"), ]
@@ -611,7 +611,7 @@ average_pr_df
 
 ```
 
-Hasil prediksi luas panen 2016-2025
+Hasil prediksi produktivitas 2016-2025
 ```{r}
 average_pr_df$Tahun <- make_date(average_pr_df$Tahun)
 average_pr_df

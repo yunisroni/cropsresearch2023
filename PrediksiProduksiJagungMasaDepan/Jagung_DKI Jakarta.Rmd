@@ -480,7 +480,7 @@ prophet_ts_pr <- prophet(yearly.seasonality = TRUE, seasonality.prior.scale = 0.
 ```
 ```{r}
 # Melakukan Prediksi untuk produksi 10 tahun ke depan
-future_prophet_ts_pr <- make_future_dataframe(prophet_ts_pr, periods = 365*14)
+future_prophet_ts_pr <- make_future_dataframe(prophet_ts_pr, periods = 365*15)
 tail(future_prophet_ts_pr)
 ```
 ```{r}

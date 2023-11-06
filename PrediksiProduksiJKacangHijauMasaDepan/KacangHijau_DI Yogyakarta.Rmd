@@ -1,10 +1,10 @@
 ---
-title: "Prediksi Variabel Yang Mempengaruhi Produksi Jagung Masa Depan - Bengkulu"
+title: "Prediksi Variabel Yang Mempengaruhi Produksi Kacang Hijau Masa Depan - DI
+  Yogyakarta"
 author: "Nurul Aina Tasya"
-date: "2023-11-01"
+date: "2023-11-05"
 output: html_document
 ---
-
 
 
 # 1. Load Library/Packages
@@ -37,7 +37,7 @@ library (prophet)
 
 ## a.Import Data
 ```{r}
-pangan <- read_excel("Dataset Jagung Indonesia/pangan_Indonesia.xlsx")
+pangan <- read_excel("Dataset Kacang Hijau Indonesia/pangan_Indonesia.xlsx")
 ```
 
 ## b.Menampilkan Contoh Data
@@ -94,7 +94,7 @@ yang kosong atau NA'
 ```{r}
 glimpse(pangan_clean)
 ```
-Jumlah data setelah dihapus data NA' menjadi 4,643 baris observasi dengan
+Jumlah data setelah dihapus data NA' menjadi 4,642 baris observasi dengan
 6 variabel.
 
 
@@ -109,26 +109,26 @@ descr(pangan_clean)
 ```
 
 
-## c. Jumlah Produksi Jagung Per Provinsi
+## c. Jumlah Produksi Kacang Hijau Per Provinsi
 ```{r}
-plot_jagung_1 <- ggplot(Jagung, aes(x = Tahun, y = Produksi, group = Provinsi, color = Provinsi)) +
+plot_kacanghijau_1 <- ggplot(KacangHijau, aes(x = Tahun, y = Produksi, group = Provinsi, color = Provinsi)) +
   geom_line() +
-  labs(title = "Jumlah Produksi Jagung", x = "Tahun", y = "Produksi Jagung (Ton)") +
+  labs(title = "Jumlah Produksi Kacang Hijau", x = "Tahun", y = "Produksi Kacang Hijau (Ton)") +
   scale_y_continuous(labels = scales::comma) +
   theme_minimal() +
   theme(legend.position = "right")
-plot_jagung_1
+plot_kacanghijau_1
 
 ```
 
 ```{r}
 # Hitung total produksi per provinsi
-totproduksi_jagung <- Jagung %>% 
+totproduksi_kacanghijau <- KacangHijau %>% 
   #mutate(first_date_month = floor_date(Tahun, unit = "year")) %>% 
   group_by(Provinsi) %>% 
   summarise(JumlahProduksi = sum(Produksi)) %>% 
   arrange(JumlahProduksi)
-totproduksi_jagung
+totproduksi_kacanghijau
 ```
 
 ```{r}
@@ -136,130 +136,129 @@ totproduksi_jagung
 options(dplyr.summarise.inform = FALSE)
 
 # Hitung total produksi per provinsi/tahun
-totproduksi_jagung <- Jagung %>% 
+totproduksi_kacanghijau <- KacangHijau %>% 
   group_by(Tahun, Provinsi, .drop = FALSE) %>%  # Add .drop argument
   summarise(TotalProduksi = sum(Produksi))
 
-totproduksi_jagung
+totproduksi_kacanghijau
 ```
 
 ```{r}
-summary(totproduksi_jagung)
+summary(totproduksi_kacanghijau)
 ```
-## d. Tren Produksi Jagung Per Provinsi
+
+## d. Tren Produksi Kacang Hijau Per Provinsi
 ```{r}
-# Visualisasi Tren Produksi Jagung
-plot_jagung_2 <- ggplot(totproduksi_jagung, aes(x = Tahun, y = TotalProduksi, color = Provinsi)) +
+# Visualisasi Tren Produksi Kacang Hijau
+plot_kacanghijau_2 <- ggplot(totproduksi_kacanghijau, aes(x = Tahun, y = TotalProduksi, color = Provinsi)) +
   geom_line() +
   geom_point() +
-  labs(title = "Tren Produksi Jagung", x = "Tahun", y = "Total Produksi (Ton)") +
+  labs(title = "Tren Produksi Kacang Hijau", x = "Tahun", y = "Total Produksi (Ton)") +
   scale_y_continuous(labels = scales::comma) +
   theme_minimal() +
   theme(legend.position = "right")
-plot_jagung_2
+plot_kacanghijau_2
 ```
 
-## e. Perbandingan Produksi Jagung Per Provinsi
+## e. Perbandingan Produksi Kacang Hijau Per Provinsi
 ```{r}
-# Hitung total produksi Jagung per Provinsi
-totproduksi_jagung_provinsi <- Jagung %>% 
+# Hitung total produksi Kacang Hijau per Provinsi
+totproduksi_kacanghijau_provinsi <- KacangHijau %>% 
   group_by(Provinsi) %>% 
   summarise(TotalProduksi = sum(Produksi))
-totproduksi_jagung_provinsi
+totproduksi_kacanghijau_provinsi
 
 # Visualisasi dengan barplot
-plot_jagung_3 <- ggplot(totproduksi_jagung_provinsi, aes(x = Provinsi, y = TotalProduksi, fill = Provinsi)) +
+plot_kacanghijau_3 <- ggplot(totproduksi_kacanghijau_provinsi, aes(x = Provinsi, y = TotalProduksi, fill = Provinsi)) +
   geom_bar(stat = "identity") +
-  labs(title = "Perbandingan Produksi Jagung antara Provinsi", x = "Provinsi", y = "Total Produksi (Ton)") +
+  labs(title = "Perbandingan Produksi Kacang Hijau antara Provinsi", x = "Provinsi", y = "Total Produksi (Ton)") +
   scale_y_continuous(labels = scales::comma) +
   theme_minimal() +
   theme(legend.position = "none")  # hilangkan legend
 
 # Rotasi sumbu x agar mudah dibaca
-plot_jagung_3 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+plot_kacanghijau_3 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
-Perbandingan produksi Jagung dalam kurun waktu 1993 - 2015 adalah dari provinsi Jawa Timur yang terbanyak dengan Jumlah Produksi Jagung sebesar 98164357 Ton.
+Perbandingan produksi kacang hiaju dalam kurun waktu 1993 - 2015 adalah dari provinsi Jawa Tengah yang terbanyak dengan Jumlah Produksi kacang hiaju sebesar 1549775 Ton.
 
-## f. Perbandingan Produktivitas Jagung Per Provinsi
+## f. Perbandingan Produktivitas kacang hiaju Per Provinsi
 ```{r}
 # Turn off dplyr summarise() warning
 options(dplyr.summarise.inform = FALSE)
 
-# Melihat tren produktivitas jagung
-produktivitas_jagung <- Jagung %>% 
+# Melihat tren produktivitas Kacang Hijau
+produktivitas_kacanghijau <- KacangHijau %>% 
   group_by(Tahun, Provinsi, .drop = FALSE) %>%  # Add .drop argument
   summarise(Produktivitas = sum(Produktivitas))
-produktivitas_jagung
+produktivitas_kacanghijau
 ```
 
 ```{r}
 
-# Hitung total produktivitas Jagung per provinsi
-totproduktivitas_jagung_provinsi <- Jagung %>% 
+# Hitung total produktivitas Kacang Hijau per provinsi
+totproduktivitas_kacanghijau_provinsi <- KacangHijau %>% 
   group_by(Provinsi) %>% 
   summarise(Total_Produktivitas = sum(Produktivitas))
 
 # Visualisasi dengan barplot
-plot_jagung_4 <- ggplot(totproduktivitas_jagung_provinsi, aes(x = Provinsi, y = Total_Produktivitas, fill = Provinsi)) +
+plot_kacanghijau_4 <- ggplot(totproduktivitas_kacanghijau_provinsi, aes(x = Provinsi, y = Total_Produktivitas, fill = Provinsi)) +
   geom_bar(stat = "identity") +
-  labs(title = "Perbandingan Produktivitas Jagung antar Provinsi", x = "Provinsi", y = "Produktivitas (Kuintal/Hektar)") +
+  labs(title = "Perbandingan Produktivitas Kacang Hijau antar Provinsi", x = "Provinsi", y = "Produktivitas (Kuintal/Hektar)") +
   scale_y_continuous(labels = scales::comma) +
   theme_minimal() +
   theme(legend.position = "none")  # hilangkan legend
 
 # Rotasi sumbu x agar mudah dibaca
-plot_jagung_4 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+plot_kacanghijau_4 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 
 ```
 
+
 ## g. Korelasi Luas Panen, Produktivitas dengan Produksi Jagung
 ```{r}
-# Visualisasi korelasi luas panen dan produksi Jagung
-plot_jagung_5 <- ggplot(Jagung, aes(x = Luas_Panen, y = Produksi, color = Provinsi)) +
+# Visualisasi korelasi luas panen dan produksi Kacang Hijau
+plot_kacanghijau_5 <- ggplot(KacangHijau, aes(x = Luas_Panen, y = Produksi, color = Provinsi)) +
   geom_point() +
   labs(title = "Korelasi Produksi dan Luas Panen", x = "Luas Panen (Ha)", y = "Produksi (Ton)") +
   scale_y_continuous(labels = scales::comma) +
   theme_minimal() +
   theme(legend.position = "right")
-plot_jagung_5
+plot_kacanghijau_5
 ```
 
 ```{r}
 # Hitung Pearson correlation coefficient
-correlation_jagung1 <- cor(Jagung$Luas_Panen, Jagung$Produksi)
+correlation_kacanghijau <- cor(KacangHijau$Luas_Panen, KacangHijau$Produksi)
 
 # Nilai correlation coefficient
-cat("Koefisien Korelasi Pearson Luas Panen dan Produksi:", correlation_jagung1)
+cat("Koefisien Korelasi Pearson Luas Panen dan Produksi:", correlation_kacanghijau)
 ```
-Berdasarkan grafik diatas bisa lihat bahwa ada korelasi antara luas panen dan produksi. Hubungan korelasi adalah positif dengan nilai korelasi sebesar 0,95; sehingga bisa disimpulkan bahwa jika semakin banyak luas panen maka akan meningkat jumlah produksi jagung.
-
+Berdasarkan grafik diatas bisa lihat bahwa ada korelasi antara luas panen dan produksi. Hubungan korelasi adalah positif dengan nilai korelasi sebesar 0,96; sehingga bisa disimpulkan bahwa jika semakin banyak luas panen maka akan meningkat jumlah produksi jagung.
 ```{r}
-# Visualisasi korelasi produktifitas dan produksi Jagung
-plot_jagung_5 <- ggplot(Jagung, aes(x = Produktivitas, y = Produksi, color = Provinsi)) +
+# Visualisasi korelasi produktifitas dan produksi Kacang Hijau
+plot_kacanghijau_6 <- ggplot(KacangHijau, aes(x = Produktivitas, y = Produksi, color = Provinsi)) +
   geom_point() +
   labs(title = "Korelasi Produksi dan Produktivitas", x = "Produktivitas (Kuintal/Ha)", y = "Produksi (Ton)") +
   scale_y_continuous(labels = scales::comma) +
   theme_minimal() +
   theme(legend.position = "right")
-plot_jagung_5
+plot_kacanghijau_5
 ```
 
 ```{r}
 # Hitung Pearson correlation coefficient
-correlation_jagung2 <- cor(Jagung$Produktivitas, Jagung$Produksi)
+correlation_kacanghijau2 <- cor(KacangHijau$Produktivitas, KacangHijau$Produksi)
 
 # Nilai correlation coefficient
-cat("Koefisien Korelasi Pearson Luas Panen dan Produksi:", correlation_jagung2)
+cat("Koefisien Korelasi Pearson Produktivitas dan Produksi:", correlation_kacanghijau)
 ```
-Berdasarkan grafik diatas bisa lihat bahwa ada korelasi antara luas panen dan produksi. Hubungan korelasi adalah positif dengan nilai korelasi sebesar 0.38; Nilai korelasi sebesar 0.38 menunjukkan hubungan positif yang relatif lemah. Ini berarti bahwa meskipun ada hubungan antara produktivitas dan produksi, hubungannya tidak sangat kuat. Namun, itu masih dapat dianggap sebagai hubungan yang signifikan.
+Berdasarkan grafik diatas bisa lihat bahwa ada korelasi antara produktivitas dan produksi. Hubungan korelasi adalah positif dengan nilai korelasi sebesar 0.96; Nilai korelasi sebesar 0.96 menunjukkan hubungan positif yang relatif kuat. Ini berarti bahwa meskipun ada hubungan antara produktivitas dan produksi, hubungannya sangat kuat.
 
-
-## h. Filter data jagung
-
+## h. Filter data Kacang Hijau
 ```{r}
-JagungBengkulu <- filter(pangan_clean, Jenis_Komoditi == "Jagung", Provinsi == "BENGKULU")
-JagungBengkulu
+KacangHijauDIYogyakarta <- filter(pangan_clean, Jenis_Komoditi == "Kacang Hijau", Provinsi == "DI YOGYAKARTA")
+KacangHijauDIYogyakarta
 
 ```
 
@@ -268,10 +267,10 @@ JagungBengkulu
 # 5. Prediksi Luas Panen Jagung di Masa Depan - Model Prophet
 ```{r}
 # membagi data berdasarkan variabel Produksi
-train_data_index_lp <- createDataPartition(JagungBengkulu$Luas_Panen, p=0.7, list = FALSE)
-train_data_lp <- JagungBengkulu[train_data_index_lp,]
+train_data_index_lp <- createDataPartition(KacangHijauDIYogyakarta$Luas_Panen, p=0.7, list = FALSE)
+train_data_lp <- KacangHijauDIYogyakarta[train_data_index_lp,]
 train_data_lp
-test_data_lp <- JagungBengkulu[-train_data_index_lp,]
+test_data_lp <- KacangHijauDIYogyakarta[-train_data_index_lp,]
 test_data_lp
 ```
 
@@ -302,7 +301,7 @@ prophet_ts_lp <- prophet(yearly.seasonality = TRUE, seasonality.prior.scale = 0.
 ```
 ```{r}
 # Melakukan Prediksi untuk produksi 10 tahun ke depan
-future_prophet_ts_lp <- make_future_dataframe(prophet_ts_lp, periods = 365*12)
+future_prophet_ts_lp <- make_future_dataframe(prophet_ts_lp, periods = 365*13)
 tail(future_prophet_ts_lp)
 ```
 ```{r}
@@ -443,13 +442,15 @@ average_lp_df
 
 
 
+
+
 # 6. Prediksi Produktivitas di Masa Depan - Model Prophet
 ```{r}
 # membagi data berdasarkan variabel Produksi
-train_data_index_pr <- createDataPartition(JagungBengkulu$Produktivitas, p=0.7, list = FALSE)
-train_data_pr <- JagungBengkulu[train_data_index_pr,]
+train_data_index_pr <- createDataPartition(KacangHijauDIYogyakarta$Produktivitas, p=0.7, list = FALSE)
+train_data_pr <- KacangHijauDIYogyakarta[train_data_index_pr,]
 train_data_pr
-test_data_pr <- JagungBengkulu[-train_data_index_pr,]
+test_data_pr <- KacangHijauDIYogyakarta[-train_data_index_pr,]
 test_data_pr
 ```
 
@@ -587,7 +588,7 @@ cat(paste("MSE: ", mse_value_prophet_pr, "\n"))
 cat(paste("RMSE: ", rmse_value_prophet_pr, "\n"))
 cat(paste("MAPE: ", mape_value_prophet_pr, "%\n"))
 ```
-Mengambil data luas panen dari hasil prediksi 2016-2025
+Mengambil data produktivitas dari hasil prediksi 2016-2025
 ```{r}
 # Filter data untuk tahun 2021-2024
 forecast_subset_pr <- forecast_ts_pr[forecast_ts_pr$ds >= as.Date("2016-01-01") & forecast_ts_pr$ds <= as.Date("2025-12-31"), ]
@@ -617,3 +618,4 @@ Hasil prediksi produktivitas 2016-2025
 average_pr_df$Tahun <- make_date(average_pr_df$Tahun)
 average_pr_df
 ```
+
