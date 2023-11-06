@@ -2525,6 +2525,7 @@ Simalungun_hujan <- Hujan_clean %>%
   filter(Kabupaten_kota == "Simalungun")
 Simalungun_hujan
 ```
+
 ```{r}
 # Filter data for "Simalungun" kabupaten dari dataset Kacang_Kedelai
 Kedelai_simalungun <- Kacang_Kedelai %>%
