@@ -740,9 +740,9 @@ ggplot(summary_jagung, aes(x = Tahun, y = TotalProduksi)) +
 ####- Partisi Dataset
 ```{r}
 set.seed(123)  # Untuk hasil yang dapat direproduksi
-splitIndex <- createDataPartition(Padi$Produksi, p = 0.6, list = FALSE)
-data_train_Padi <- Padi[splitIndex, ]  # Data pelatihan (60%)
-data_test_Padi <- Padi[-splitIndex, ]  # Data pengujian (40%)
+splitIndex_Padi <- createDataPartition(Padi$Produksi, p = 0.6, list = FALSE)
+data_train_Padi <- Padi[splitIndex_Padi, ]  # Data pelatihan (60%)
+data_test_Padi <- Padi[-splitIndex_Padi, ]  # Data pengujian (40%)
 data_train_Padi
 data_test_Padi 
 ```
@@ -750,7 +750,7 @@ data_test_Padi
 ####- Model RF 
 ```{r}
 # Membuat model RF
-rf_model_Padi <- randomForest(Produksi ~ Produktivitas + Luas_Panen + Kecepatan_Angin + Kelembapan + Suhu + Tekanan_Udara + Penyinaran_Matahari, data = data_train, ntree = 1000)
+rf_model_Padi <- randomForest(Produksi ~ Produktivitas + Luas_Panen + Kecepatan_Angin + Kelembapan + Suhu + Tekanan_Udara + Penyinaran_Matahari, data = data_train_Padi, ntree = 1000)
 rf_model_Padi
 ```
 
@@ -914,6 +914,188 @@ cat(paste("MAE: ", mae_value_svr_Padi, "\n"))
 cat(paste("MSE: ", mse_value_svr_Padi, "\n"))
 cat(paste("RMSE: ", rmse_value_svr_Padi, "\n"))
 cat(paste("MAPE: ", mape_value_svr_Padi, "%\n"))
+```
+
+
+## 2. Kacang Hijau
+### a. Model Random Forest
+####- Partisi Dataset
+```{r}
+set.seed(123)  # Untuk hasil yang dapat direproduksi
+splitIndex_KacangHijau <- createDataPartition(KacangHijau$Produksi, p = 0.6, list = FALSE)
+data_train_KacangHijau <- KacangHijau[splitIndex_KacangHijau, ]  # Data pelatihan (60%)
+data_test_KacangHijau <- KacangHijau[-splitIndex_KacangHijau, ]  # Data pengujian (40%)
+data_train_KacangHijau
+data_test_KacangHijau 
+```
+
+####- Model RF 
+```{r}
+# Membuat model RF
+rf_model_KacangHijau <- randomForest(Produksi ~ Produktivitas + Luas_Panen + Kecepatan_Angin + Kelembapan + Suhu + Tekanan_Udara + Penyinaran_Matahari, data = data_train_KacangHijau, ntree = 1000)
+rf_model_KacangHijau
+```
+
+```{r}
+# Melakukan Prediksi terhadap Data Pengujian
+predictions_rf_KacangHijau <- predict(rf_model_KacangHijau, data_test_KacangHijau)
+predictions_rf_KacangHijau
+```
+
+```{r}
+# Visualisasi Hasil
+result_data_rf_KacangHijau <- data.frame(Produksi = data_test_KacangHijau$Produksi, Predictions = predictions_rf_KacangHijau)
+
+# Visualisasi Perbandingan Produksi Aktual dengan Hasil Prediksi
+ggplot(data = result_data_rf_KacangHijau, aes(x = Produksi, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
+  theme_minimal()
+```
+
+```{r}
+# Visualisasi Produksi Aktual dengan Hasil Prediksi
+ggplot(data = result_data_rf_KacangHijau, aes(x = 1:length(Produksi))) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
+  labs(x = "Observasi", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
+  theme_minimal()
+```
+
+```{r}
+# Visualisasi hasil prediksi dengan sumbu x adalah tahun
+result_data_rf2_KacangHijau <- data.frame(Tahun = data_test_KacangHijau$Tahun, Produksi = data_test_KacangHijau$Produksi, Predictions = predictions_rf_KacangHijau)
+
+ggplot(data = result_data_rf2_KacangHijau, aes(x = Tahun)) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
+  labs(x = "Tahun", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal()
+```
+
+```{r}
+# Ambil variabel yang penting dalam data
+importance_rf_KacangHijau <- data.frame(Variable = row.names(importance(rf_model_KacangHijau)),
+                              Importance = importance(rf_model_KacangHijau)[, 1])
+
+# Urutkan data berdasarkan derajat variabel penting
+importance_rf_KacangHijau <- importance_rf_KacangHijau[order(importance_rf_KacangHijau$Importance, decreasing = TRUE), ]
+importance_rf_KacangHijau
+
+# Visualisasi dengan ggplot
+ggplot(importance_rf_KacangHijau, aes(x = reorder(Variable, Importance), y = Importance)) +
+  geom_bar(stat = "identity", fill = "blue") +
+  labs(title = "Variable Importance Plot",
+       x = "Variable",
+       y = "Importance") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + # Rotating x-axis menjadi mudah dilihat
+  theme_minimal()
+```
+Berdasarkan hasil diatas bisa disimpulkan, bahwa variabel yang sangat mempengaruhi produksi adalah Produktivitas dan Luas Panen.
+
+```{r}
+# Evaluasi RF Model
+
+# Hitung MAE
+mae_value_rf_KacangHijau <- mae(data_test_KacangHijau$Produksi, predictions_rf_KacangHijau)
+
+# Hitung MSE
+mse_value_rf_KacangHijau <- mse(data_test_KacangHijau$Produksi, predictions_rf_KacangHijau)
+
+# Hitung RMSE
+rmse_value_rf_KacangHijau <- rmse(data_test_KacangHijau$Produksi, predictions_rf_KacangHijau)
+
+# Hitung MAPE
+mape_value_rf_KacangHijau <- mape(data_test_KacangHijau$Produksi, predictions_rf_KacangHijau)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_value_rf_KacangHijau, "\n"))
+cat(paste("MSE: ", mse_value_rf_KacangHijau, "\n"))
+cat(paste("RMSE: ", rmse_value_rf_KacangHijau, "\n"))
+cat(paste("MAPE: ", mape_value_rf_KacangHijau, "%\n"))
+```
+### b. Model SVR
+
+```{r}
+# Membuat model SVR
+svr_model_KacangHijau <- svm(Produksi ~ Produktivitas + Luas_Panen + Kecepatan_Angin + Kelembapan + Suhu + Tekanan_Udara + Penyinaran_Matahari, data = data_train_KacangHijau, kernel = "radial", cost = 1)
+svr_model_KacangHijau
+```
+
+```{r}
+# Melakukan prediksi dengan Data Testing
+predictions_svr_KacangHijau <- predict(svr_model_KacangHijau, data_test_KacangHijau)
+predictions_svr_KacangHijau
+```
+
+```{r}
+# Visualisasi hasil prediksi
+result_data_svr_KacangHijau <- data.frame(Produksi = data_test_KacangHijau$Produksi, Predictions = predictions_svr_KacangHijau)
+
+ggplot(data = result_data_svr_KacangHijau, aes(x = Produksi, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
+  theme_minimal()
+```
+
+```{r}
+# Buat grafik garis dengan ggplot2
+ggplot(data = result_data_svr_KacangHijau, aes(x = 1:length(Produksi))) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
+  labs(x = "Observasi", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal()
+```
+
+```{r}
+# Visualisasi hasil prediksi dengan sumbu x adalah tahun
+result_data_svr2_KacangHijau <- data.frame(Tahun = data_test_KacangHijau$Tahun, Produksi = data_test_KacangHijau$Produksi, Predictions = predictions_svr_KacangHijau)
+
+ggplot(data = result_data_svr2_KacangHijau, aes(x = Tahun)) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
+  labs(x = "Tahun", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal()
+```
+```{r}
+# Evaluasi SVR Model
+
+# Hitung MAE
+mae_value_svr_KacangHijau <- mae(data_test_KacangHijau$Produksi, predictions_svr_KacangHijau)
+
+# Hitung MSE
+mse_value_svr_KacangHijau <- mse(data_test_KacangHijau$Produksi, predictions_svr_KacangHijau)
+
+# Hitung RMSE
+rmse_value_svr_KacangHijau <- rmse(data_test_KacangHijau$Produksi, predictions_svr_KacangHijau)
+
+# Hitung MAPE
+mape_value_svr_KacangHijau <- mape(data_test_KacangHijau$Produksi, predictions_svr_KacangHijau)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_value_svr_KacangHijau, "\n"))
+cat(paste("MSE: ", mse_value_svr_KacangHijau, "\n"))
+cat(paste("RMSE: ", rmse_value_svr_KacangHijau, "\n"))
+cat(paste("MAPE: ", mape_value_svr_KacangHijau, "%\n"))
 ```
 
 
