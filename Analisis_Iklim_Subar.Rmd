@@ -1099,6 +1099,914 @@ cat(paste("MAPE: ", mape_value_svr_KacangHijau, "%\n"))
 ```
 
 
+## 3. Kacang Kedelai
+### a. Model Random Forest
+####- Partisi Dataset
+```{r}
+set.seed(123)  # Untuk hasil yang dapat direproduksi
+splitIndex_KacangKedelai <- createDataPartition(KacangKedelai$Produksi, p = 0.6, list = FALSE)
+data_train_KacangKedelai <- KacangKedelai[splitIndex_KacangKedelai, ]  # Data pelatihan (60%)
+data_test_KacangKedelai <- KacangKedelai[-splitIndex_KacangKedelai, ]  # Data pengujian (40%)
+data_train_KacangKedelai
+data_test_KacangKedelai
+```
+
+####- Model RF 
+```{r}
+# Membuat model RF
+rf_model_KacangKedelai <- randomForest(Produksi ~ Produktivitas + Luas_Panen + Kecepatan_Angin + Kelembapan + Suhu + Tekanan_Udara + Penyinaran_Matahari, data = data_train_KacangKedelai, ntree = 1000)
+rf_model_KacangKedelai
+```
+
+```{r}
+# Melakukan Prediksi terhadap Data Pengujian
+predictions_rf_KacangKedelai <- predict(rf_model_KacangKedelai, data_test_KacangKedelai)
+predictions_rf_KacangKedelai
+```
+
+```{r}
+# Visualisasi Hasil
+result_data_rf_KacangKedelai <- data.frame(Produksi = data_test_KacangKedelai$Produksi, Predictions = predictions_rf_KacangKedelai)
+
+# Visualisasi Perbandingan Produksi Aktual dengan Hasil Prediksi
+ggplot(data = result_data_rf_KacangKedelai, aes(x = Produksi, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
+  theme_minimal()
+```
+
+```{r}
+# Visualisasi Produksi Aktual dengan Hasil Prediksi
+ggplot(data = result_data_rf_KacangKedelai, aes(x = 1:length(Produksi))) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
+  labs(x = "Observasi", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
+  theme_minimal()
+```
+
+```{r}
+# Visualisasi hasil prediksi dengan sumbu x adalah tahun
+result_data_rf2_KacangKedelai <- data.frame(Tahun = data_test_KacangKedelai$Tahun, Produksi = data_test_KacangKedelai$Produksi, Predictions = predictions_rf_KacangKedelai)
+
+ggplot(data = result_data_rf2_KacangKedelai, aes(x = Tahun)) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
+  labs(x = "Tahun", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal()
+```
+
+```{r}
+# Ambil variabel yang penting dalam data
+importance_rf_KacangKedelai <- data.frame(Variable = row.names(importance(rf_model_KacangKedelai)),
+                              Importance = importance(rf_model_KacangKedelai)[, 1])
+
+# Urutkan data berdasarkan derajat variabel penting
+importance_rf_KacangKedelai <- importance_rf_KacangKedelai[order(importance_rf_KacangKedelai$Importance, decreasing = TRUE), ]
+importance_rf_KacangKedelai
+
+# Visualisasi dengan ggplot
+ggplot(importance_rf_KacangKedelai, aes(x = reorder(Variable, Importance), y = Importance)) +
+  geom_bar(stat = "identity", fill = "blue") +
+  labs(title = "Variable Importance Plot",
+       x = "Variable",
+       y = "Importance") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + # Rotating x-axis menjadi mudah dilihat
+  theme_minimal()
+```
+Berdasarkan hasil diatas bisa disimpulkan, bahwa variabel yang sangat mempengaruhi produksi adalah Produktivitas dan Luas Panen.
+
+```{r}
+# Evaluasi RF Model
+
+# Hitung MAE
+mae_value_rf_KacangKedelai <- mae(data_test_KacangKedelai$Produksi, predictions_rf_KacangKedelai)
+
+# Hitung MSE
+mse_value_rf_KacangKedelai <- mse(data_test_KacangKedelai$Produksi, predictions_rf_KacangKedelai)
+
+# Hitung RMSE
+rmse_value_rf_KacangKedelai <- rmse(data_test_KacangKedelai$Produksi, predictions_rf_KacangKedelai)
+
+# Hitung MAPE
+mape_value_rf_KacangKedelai <- mape(data_test_KacangKedelai$Produksi, predictions_rf_KacangKedelai)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_value_rf_KacangKedelai, "\n"))
+cat(paste("MSE: ", mse_value_rf_KacangKedelai, "\n"))
+cat(paste("RMSE: ", rmse_value_rf_KacangKedelai, "\n"))
+cat(paste("MAPE: ", mape_value_rf_KacangKedelai, "%\n"))
+```
+### b. Model SVR
+
+```{r}
+# Membuat model SVR
+svr_model_KacangKedelai <- svm(Produksi ~ Produktivitas + Luas_Panen + Kecepatan_Angin + Kelembapan + Suhu + Tekanan_Udara + Penyinaran_Matahari, data = data_train_KacangKedelai, kernel = "radial", cost = 1)
+svr_model_KacangKedelai
+```
+
+```{r}
+# Melakukan prediksi dengan Data Testing
+predictions_svr_KacangKedelai <- predict(svr_model_KacangKedelai, data_test_KacangKedelai)
+predictions_svr_KacangKedelai
+```
+
+```{r}
+# Visualisasi hasil prediksi
+result_data_svr_KacangKedelai <- data.frame(Produksi = data_test_KacangKedelai$Produksi, Predictions = predictions_svr_KacangKedelai)
+
+ggplot(data = result_data_svr_KacangKedelai, aes(x = Produksi, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
+  theme_minimal()
+```
+
+```{r}
+# Buat grafik garis dengan ggplot2
+ggplot(data = result_data_svr_KacangKedelai, aes(x = 1:length(Produksi))) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
+  labs(x = "Observasi", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal()
+```
+
+```{r}
+# Visualisasi hasil prediksi dengan sumbu x adalah tahun
+result_data_svr2_KacangKedelai <- data.frame(Tahun = data_test_KacangKedelai$Tahun, Produksi = data_test_KacangKedelai$Produksi, Predictions = predictions_svr_KacangKedelai)
+
+ggplot(data = result_data_svr2_KacangKedelai, aes(x = Tahun)) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
+  labs(x = "Tahun", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal()
+```
+```{r}
+# Evaluasi SVR Model
+
+# Hitung MAE
+mae_value_svr_KacangKedelai <- mae(data_test_KacangKedelai$Produksi, predictions_svr_KacangKedelai)
+
+# Hitung MSE
+mse_value_svr_KacangKedelai <- mse(data_test_KacangKedelai$Produksi, predictions_svr_KacangKedelai)
+
+# Hitung RMSE
+rmse_value_svr_KacangKedelai <- rmse(data_test_KacangKedelai$Produksi, predictions_svr_KacangKedelai)
+
+# Hitung MAPE
+mape_value_svr_KacangKedelai <- mape(data_test_KacangKedelai$Produksi, predictions_svr_KacangKedelai)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_value_svr_KacangKedelai, "\n"))
+cat(paste("MSE: ", mse_value_svr_KacangKedelai, "\n"))
+cat(paste("RMSE: ", rmse_value_svr_KacangKedelai, "\n"))
+cat(paste("MAPE: ", mape_value_svr_KacangKedelai, "%\n"))
+```
+
+
+## 4. Kacang Tanah
+### a. Model Random Forest
+####- Partisi Dataset
+```{r}
+set.seed(123)  # Untuk hasil yang dapat direproduksi
+splitIndex_KacangTanah <- createDataPartition(KacangTanah$Produksi, p = 0.6, list = FALSE)
+data_train_KacangTanah <- KacangTanah[splitIndex_KacangTanah, ]  # Data pelatihan (60%)
+data_test_KacangTanah <- KacangTanah[-splitIndex_KacangTanah, ]  # Data pengujian (40%)
+data_train_KacangTanah
+data_test_KacangTanah
+```
+
+####- Model RF 
+```{r}
+# Membuat model RF
+rf_model_KacangTanah <- randomForest(Produksi ~ Produktivitas + Luas_Panen + Kecepatan_Angin + Kelembapan + Suhu + Tekanan_Udara + Penyinaran_Matahari, data = data_train_KacangTanah, ntree = 1000)
+rf_model_KacangTanah
+```
+
+```{r}
+# Melakukan Prediksi terhadap Data Pengujian
+predictions_rf_KacangTanah <- predict(rf_model_KacangTanah, data_test_KacangTanah)
+predictions_rf_KacangTanah
+```
+
+```{r}
+# Visualisasi Hasil
+result_data_rf_KacangTanah <- data.frame(Produksi = data_test_KacangTanah$Produksi, Predictions = predictions_rf_KacangTanah)
+
+# Visualisasi Perbandingan Produksi Aktual dengan Hasil Prediksi
+ggplot(data = result_data_rf_KacangTanah, aes(x = Produksi, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
+  theme_minimal()
+```
+
+```{r}
+# Visualisasi Produksi Aktual dengan Hasil Prediksi
+ggplot(data = result_data_rf_KacangTanah, aes(x = 1:length(Produksi))) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
+  labs(x = "Observasi", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
+  theme_minimal()
+```
+
+```{r}
+# Visualisasi hasil prediksi dengan sumbu x adalah tahun
+result_data_rf2_KacangTanah <- data.frame(Tahun = data_test_KacangTanah$Tahun, Produksi = data_test_KacangTanah$Produksi, Predictions = predictions_rf_KacangTanah)
+
+ggplot(data = result_data_rf2_KacangTanah, aes(x = Tahun)) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
+  labs(x = "Tahun", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal()
+```
+
+```{r}
+# Ambil variabel yang penting dalam data
+importance_rf_KacangTanah <- data.frame(Variable = row.names(importance(rf_model_KacangTanah)),
+                              Importance = importance(rf_model_KacangTanah)[, 1])
+
+# Urutkan data berdasarkan derajat variabel penting
+importance_rf_KacangTanah <- importance_rf_KacangTanah[order(importance_rf_KacangTanah$Importance, decreasing = TRUE), ]
+importance_rf_KacangTanah
+
+# Visualisasi dengan ggplot
+ggplot(importance_rf_KacangTanah, aes(x = reorder(Variable, Importance), y = Importance)) +
+  geom_bar(stat = "identity", fill = "blue") +
+  labs(title = "Variable Importance Plot",
+       x = "Variable",
+       y = "Importance") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + # Rotating x-axis menjadi mudah dilihat
+  theme_minimal()
+```
+Berdasarkan hasil diatas bisa disimpulkan, bahwa variabel yang sangat mempengaruhi produksi adalah Luas Panena dan penyinaran matahari.
+
+```{r}
+# Evaluasi RF Model
+
+# Hitung MAE
+mae_value_rf_KacangTanah <- mae(data_test_KacangTanah$Produksi, predictions_rf_KacangTanah)
+
+# Hitung MSE
+mse_value_rf_KacangTanah <- mse(data_test_KacangTanah$Produksi, predictions_rf_KacangTanah)
+
+# Hitung RMSE
+rmse_value_rf_KacangTanah <- rmse(data_test_KacangTanah$Produksi, predictions_rf_KacangTanah)
+
+# Hitung MAPE
+mape_value_rf_KacangTanah <- mape(data_test_KacangTanah$Produksi, predictions_rf_KacangTanah)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_value_rf_KacangTanah, "\n"))
+cat(paste("MSE: ", mse_value_rf_KacangTanah, "\n"))
+cat(paste("RMSE: ", rmse_value_rf_KacangTanah, "\n"))
+cat(paste("MAPE: ", mape_value_rf_KacangTanah, "%\n"))
+```
+### b. Model SVR
+
+```{r}
+# Membuat model SVR
+svr_model_KacangTanah <- svm(Produksi ~ Produktivitas + Luas_Panen + Kecepatan_Angin + Kelembapan + Suhu + Tekanan_Udara + Penyinaran_Matahari, data = data_train_KacangTanah, kernel = "radial", cost = 1)
+svr_model_KacangTanah
+```
+
+```{r}
+# Melakukan prediksi dengan Data Testing
+predictions_svr_KacangTanah <- predict(svr_model_KacangTanah, data_test_KacangTanah)
+predictions_svr_KacangTanah
+```
+
+```{r}
+# Visualisasi hasil prediksi
+result_data_svr_KacangTanah <- data.frame(Produksi = data_test_KacangTanah$Produksi, Predictions = predictions_svr_KacangTanah)
+
+ggplot(data = result_data_svr_KacangTanah, aes(x = Produksi, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
+  theme_minimal()
+```
+
+```{r}
+# Buat grafik garis dengan ggplot2
+ggplot(data = result_data_svr_KacangTanah, aes(x = 1:length(Produksi))) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
+  labs(x = "Observasi", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal()
+```
+
+```{r}
+# Visualisasi hasil prediksi dengan sumbu x adalah tahun
+result_data_svr2_KacangTanah <- data.frame(Tahun = data_test_KacangTanah$Tahun, Produksi = data_test_KacangTanah$Produksi, Predictions = predictions_svr_KacangTanah)
+
+ggplot(data = result_data_svr2_KacangTanah, aes(x = Tahun)) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
+  labs(x = "Tahun", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal()
+```
+```{r}
+# Evaluasi SVR Model
+
+# Hitung MAE
+mae_value_svr_KacangTanah <- mae(data_test_KacangTanah$Produksi, predictions_svr_KacangTanah)
+
+# Hitung MSE
+mse_value_svr_KacangTanah <- mse(data_test_KacangTanah$Produksi, predictions_svr_KacangTanah)
+
+# Hitung RMSE
+rmse_value_svr_KacangTanah <- rmse(data_test_KacangTanah$Produksi, predictions_svr_KacangTanah)
+
+# Hitung MAPE
+mape_value_svr_KacangTanah <- mape(data_test_KacangTanah$Produksi, predictions_svr_KacangTanah)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_value_svr_KacangTanah, "\n"))
+cat(paste("MSE: ", mse_value_svr_KacangTanah, "\n"))
+cat(paste("RMSE: ", rmse_value_svr_KacangTanah, "\n"))
+cat(paste("MAPE: ", mape_value_svr_KacangTanah, "%\n"))
+```
 
 
 
+##5. Ubi Jalar
+### a. Model Random Forest
+####- Partisi Dataset
+```{r}
+set.seed(123)  # Untuk hasil yang dapat direproduksi
+splitIndex_UbiJalar <- createDataPartition(UbiJalar$Produksi, p = 0.6, list = FALSE)
+data_train_UbiJalar <- UbiJalar[splitIndex_UbiJalar, ]  # Data pelatihan (60%)
+data_test_UbiJalar <- UbiJalar[-splitIndex_UbiJalar, ]  # Data pengujian (40%)
+data_train_UbiJalar
+data_test_UbiJalar
+```
+
+####- Model RF 
+```{r}
+# Membuat model RF
+rf_model_UbiJalar <- randomForest(Produksi ~ Produktivitas + Luas_Panen + Kecepatan_Angin + Kelembapan + Suhu + Tekanan_Udara + Penyinaran_Matahari, data = data_train_UbiJalar, ntree = 1000)
+rf_model_UbiJalar
+```
+
+```{r}
+# Melakukan Prediksi terhadap Data Pengujian
+predictions_rf_UbiJalar <- predict(rf_model_UbiJalar, data_test_UbiJalar)
+predictions_rf_UbiJalar
+```
+
+```{r}
+# Visualisasi Hasil
+result_data_rf_UbiJalar <- data.frame(Produksi = data_test_UbiJalar$Produksi, Predictions = predictions_rf_UbiJalar)
+
+# Visualisasi Perbandingan Produksi Aktual dengan Hasil Prediksi
+ggplot(data = result_data_rf_UbiJalar, aes(x = Produksi, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
+  theme_minimal()
+```
+
+```{r}
+# Visualisasi Produksi Aktual dengan Hasil Prediksi
+ggplot(data = result_data_rf_UbiJalar, aes(x = 1:length(Produksi))) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
+  labs(x = "Observasi", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
+  theme_minimal()
+```
+
+```{r}
+# Visualisasi hasil prediksi dengan sumbu x adalah tahun
+result_data_rf2_UbiJalar <- data.frame(Tahun = data_test_UbiJalar$Tahun, Produksi = data_test_UbiJalar$Produksi, Predictions = predictions_rf_UbiJalar)
+
+ggplot(data = result_data_rf2_UbiJalar, aes(x = Tahun)) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
+  labs(x = "Tahun", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal()
+```
+
+```{r}
+# Ambil variabel yang penting dalam data
+importance_rf_UbiJalar <- data.frame(Variable = row.names(importance(rf_model_UbiJalar)),
+                              Importance = importance(rf_model_UbiJalar)[, 1])
+
+# Urutkan data berdasarkan derajat variabel penting
+importance_rf_UbiJalar <- importance_rf_UbiJalar[order(importance_rf_UbiJalar$Importance, decreasing = TRUE), ]
+importance_rf_UbiJalar
+
+# Visualisasi dengan ggplot
+ggplot(importance_rf_UbiJalar, aes(x = reorder(Variable, Importance), y = Importance)) +
+  geom_bar(stat = "identity", fill = "blue") +
+  labs(title = "Variable Importance Plot",
+       x = "Variable",
+       y = "Importance") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + # Rotating x-axis menjadi mudah dilihat
+  theme_minimal()
+```
+Berdasarkan hasil diatas bisa disimpulkan, bahwa variabel yang sangat mempengaruhi produksi adalah Produktivitas dan Luas Panen.
+
+```{r}
+# Evaluasi RF Model
+
+# Hitung MAE
+mae_value_rf_UbiJalar <- mae(data_test_UbiJalar$Produksi, predictions_rf_UbiJalar)
+
+# Hitung MSE
+mse_value_rf_UbiJalar <- mse(data_test_UbiJalar$Produksi, predictions_rf_UbiJalar)
+
+# Hitung RMSE
+rmse_value_rf_UbiJalar <- rmse(data_test_UbiJalar$Produksi, predictions_rf_UbiJalar)
+
+# Hitung MAPE
+mape_value_rf_UbiJalar <- mape(data_test_UbiJalar$Produksi, predictions_rf_UbiJalar)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_value_rf_UbiJalar, "\n"))
+cat(paste("MSE: ", mse_value_rf_UbiJalar, "\n"))
+cat(paste("RMSE: ", rmse_value_rf_UbiJalar, "\n"))
+cat(paste("MAPE: ", mape_value_rf_UbiJalar, "%\n"))
+```
+### b. Model SVR
+
+```{r}
+# Membuat model SVR
+svr_model_UbiJalar <- svm(Produksi ~ Produktivitas + Luas_Panen + Kecepatan_Angin + Kelembapan + Suhu + Tekanan_Udara + Penyinaran_Matahari, data = data_train_UbiJalar, kernel = "radial", cost = 1)
+svr_model_UbiJalar
+```
+
+```{r}
+# Melakukan prediksi dengan Data Testing
+predictions_svr_UbiJalar <- predict(svr_model_UbiJalar, data_test_UbiJalar)
+predictions_svr_UbiJalar
+```
+
+```{r}
+# Visualisasi hasil prediksi
+result_data_svr_UbiJalar <- data.frame(Produksi = data_test_UbiJalar$Produksi, Predictions = predictions_svr_UbiJalar)
+
+ggplot(data = result_data_svr_UbiJalar, aes(x = Produksi, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
+  theme_minimal()
+```
+
+```{r}
+# Buat grafik garis dengan ggplot2
+ggplot(data = result_data_svr_UbiJalar, aes(x = 1:length(Produksi))) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
+  labs(x = "Observasi", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal()
+```
+
+```{r}
+# Visualisasi hasil prediksi dengan sumbu x adalah tahun
+result_data_svr2_UbiJalar <- data.frame(Tahun = data_test_UbiJalar$Tahun, Produksi = data_test_UbiJalar$Produksi, Predictions = predictions_svr_UbiJalar)
+
+ggplot(data = result_data_svr2_UbiJalar, aes(x = Tahun)) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
+  labs(x = "Tahun", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal()
+```
+```{r}
+# Evaluasi SVR Model
+
+# Hitung MAE
+mae_value_svr_UbiJalar <- mae(data_test_UbiJalar$Produksi, predictions_svr_UbiJalar)
+
+# Hitung MSE
+mse_value_svr_UbiJalar <- mse(data_test_UbiJalar$Produksi, predictions_svr_UbiJalar)
+
+# Hitung RMSE
+rmse_value_svr_UbiJalar <- rmse(data_test_UbiJalar$Produksi, predictions_svr_UbiJalar)
+
+# Hitung MAPE
+mape_value_svr_UbiJalar <- mape(data_test_UbiJalar$Produksi, predictions_svr_UbiJalar)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_value_svr_UbiJalar, "\n"))
+cat(paste("MSE: ", mse_value_svr_UbiJalar, "\n"))
+cat(paste("RMSE: ", rmse_value_svr_UbiJalar, "\n"))
+cat(paste("MAPE: ", mape_value_svr_UbiJalar, "%\n"))
+```
+
+
+
+## 6. Ubi Kayu
+### a. Model Random Forest
+####- Partisi Dataset
+```{r}
+set.seed(123)  # Untuk hasil yang dapat direproduksi
+splitIndex_UbiKayu <- createDataPartition(UbiKayu$Produksi, p = 0.6, list = FALSE)
+data_train_UbiKayu <-UbiKayu[splitIndex_UbiKayu, ]  # Data pelatihan (60%)
+data_test_UbiKayu <- UbiKayu[-splitIndex_UbiKayu, ]  # Data pengujian (40%)
+data_train_UbiKayu
+data_test_UbiKayu
+```
+
+####- Model RF 
+```{r}
+# Membuat model RF
+rf_model_UbiKayu <- randomForest(Produksi ~ Produktivitas + Luas_Panen + Kecepatan_Angin + Kelembapan + Suhu + Tekanan_Udara + Penyinaran_Matahari, data = data_train_UbiKayu, ntree = 1000)
+rf_model_UbiKayu
+```
+
+```{r}
+# Melakukan Prediksi terhadap Data Pengujian
+predictions_rf_UbiKayu <- predict(rf_model_UbiKayu, data_test_UbiKayu)
+predictions_rf_UbiKayu
+```
+
+```{r}
+# Visualisasi Hasil
+result_data_rf_UbiKayu <- data.frame(Produksi = data_test_UbiKayu$Produksi, Predictions = predictions_rf_UbiKayu)
+
+# Visualisasi Perbandingan Produksi Aktual dengan Hasil Prediksi
+ggplot(data = result_data_rf_UbiKayu, aes(x = Produksi, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
+  theme_minimal()
+```
+
+```{r}
+# Visualisasi Produksi Aktual dengan Hasil Prediksi
+ggplot(data = result_data_rf_UbiKayu, aes(x = 1:length(Produksi))) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
+  labs(x = "Observasi", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
+  theme_minimal()
+```
+
+```{r}
+# Visualisasi hasil prediksi dengan sumbu x adalah tahun
+result_data_rf2_UbiKayu <- data.frame(Tahun = data_test_UbiKayu$Tahun, Produksi = data_test_UbiKayu$Produksi, Predictions = predictions_rf_UbiKayu)
+
+ggplot(data = result_data_rf2_UbiKayu, aes(x = Tahun)) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
+  labs(x = "Tahun", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal()
+```
+
+```{r}
+# Ambil variabel yang penting dalam data
+importance_rf_UbiKayu <- data.frame(Variable = row.names(importance(rf_model_UbiKayu)),
+                              Importance = importance(rf_model_UbiKayu)[, 1])
+
+# Urutkan data berdasarkan derajat variabel penting
+importance_rf_UbiKayu <- importance_rf_UbiKayu[order(importance_rf_UbiKayu$Importance, decreasing = TRUE), ]
+importance_rf_UbiKayu
+
+# Visualisasi dengan ggplot
+ggplot(importance_rf_UbiKayu, aes(x = reorder(Variable, Importance), y = Importance)) +
+  geom_bar(stat = "identity", fill = "blue") +
+  labs(title = "Variable Importance Plot",
+       x = "Variable",
+       y = "Importance") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + # Rotating x-axis menjadi mudah dilihat
+  theme_minimal()
+```
+Berdasarkan hasil diatas bisa disimpulkan, bahwa variabel yang sangat mempengaruhi produksi adalah Produktivitas.
+
+```{r}
+# Evaluasi RF Model
+
+# Hitung MAE
+mae_value_rf_UbiKayu <- mae(data_test_UbiKayu$Produksi, predictions_rf_UbiKayu)
+
+# Hitung MSE
+mse_value_rf_UbiKayu <- mse(data_test_UbiKayu$Produksi, predictions_rf_UbiKayu)
+
+# Hitung RMSE
+rmse_value_rf_UbiKayu <- rmse(data_test_UbiKayu$Produksi, predictions_rf_UbiKayu)
+
+# Hitung MAPE
+mape_value_rf_UbiKayu <- mape(data_test_UbiKayu$Produksi, predictions_rf_UbiKayu)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_value_rf_UbiKayu, "\n"))
+cat(paste("MSE: ", mse_value_rf_UbiKayu, "\n"))
+cat(paste("RMSE: ", rmse_value_rf_UbiKayu, "\n"))
+cat(paste("MAPE: ", mape_value_rf_UbiKayu, "%\n"))
+```
+### b. Model SVR
+
+```{r}
+# Membuat model SVR
+svr_model_UbiKayu <- svm(Produksi ~ Produktivitas + Luas_Panen + Kecepatan_Angin + Kelembapan + Suhu + Tekanan_Udara + Penyinaran_Matahari, data = data_train_UbiKayu, kernel = "radial", cost = 1)
+svr_model_UbiKayu
+```
+
+```{r}
+# Melakukan prediksi dengan Data Testing
+predictions_svr_UbiKayu <- predict(svr_model_UbiKayu, data_test_UbiKayu)
+predictions_svr_UbiKayu
+```
+
+```{r}
+# Visualisasi hasil prediksi
+result_data_svr_UbiKayu <- data.frame(Produksi = data_test_UbiKayu$Produksi, Predictions = predictions_svr_UbiKayu)
+
+ggplot(data = result_data_svr_UbiKayu, aes(x = Produksi, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
+  theme_minimal()
+```
+
+```{r}
+# Buat grafik garis dengan ggplot2
+ggplot(data = result_data_svr_UbiKayu, aes(x = 1:length(Produksi))) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
+  labs(x = "Observasi", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal()
+```
+
+```{r}
+# Visualisasi hasil prediksi dengan sumbu x adalah tahun
+result_data_svr2_UbiKayu <- data.frame(Tahun = data_test_UbiKayu$Tahun, Produksi = data_test_UbiKayu$Produksi, Predictions = predictions_svr_UbiKayu)
+
+ggplot(data = result_data_svr2_UbiKayu, aes(x = Tahun)) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
+  labs(x = "Tahun", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal()
+```
+```{r}
+# Evaluasi SVR Model
+
+# Hitung MAE
+mae_value_svr_UbiKayu <- mae(data_test_UbiKayu$Produksi, predictions_svr_UbiKayu)
+
+# Hitung MSE
+mse_value_svr_UbiKayu <- mse(data_test_UbiKayu$Produksi, predictions_svr_UbiKayu)
+
+# Hitung RMSE
+rmse_value_svr_UbiKayu <- rmse(data_test_UbiKayu$Produksi, predictions_svr_UbiKayu)
+
+# Hitung MAPE
+mape_value_svr_UbiKayu <- mape(data_test_UbiKayu$Produksi, predictions_svr_UbiKayu)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_value_svr_UbiKayu, "\n"))
+cat(paste("MSE: ", mse_value_svr_UbiKayu, "\n"))
+cat(paste("RMSE: ", rmse_value_svr_UbiKayu, "\n"))
+cat(paste("MAPE: ", mape_value_svr_UbiKayu, "%\n"))
+```
+
+
+
+## 7. Jagung
+### a. Model Random Forest
+####- Partisi Dataset
+```{r}
+set.seed(123)  # Untuk hasil yang dapat direproduksi
+splitIndex_Jagung <- createDataPartition(Jagung$Produksi, p = 0.6, list = FALSE)
+data_train_Jagung <- Jagung[splitIndex_Jagung, ]  # Data pelatihan (60%)
+data_test_Jagung <- Jagung[-splitIndex_Jagung, ]  # Data pengujian (40%)
+data_train_Jagung
+data_test_Jagung
+```
+
+####- Model RF 
+```{r}
+# Membuat model RF
+rf_model_Jagung <- randomForest(Produksi ~ Produktivitas + Luas_Panen + Kecepatan_Angin + Kelembapan + Suhu + Tekanan_Udara + Penyinaran_Matahari, data = data_train_Jagung, ntree = 1000)
+rf_model_Jagung
+```
+
+```{r}
+# Melakukan Prediksi terhadap Data Pengujian
+predictions_rf_Jagung <- predict(rf_model_Jagung, data_test_Jagung)
+predictions_rf_Jagung
+```
+
+```{r}
+# Visualisasi Hasil
+result_data_rf_Jagung <- data.frame(Produksi = data_test_Jagung$Produksi, Predictions = predictions_rf_Jagung)
+
+# Visualisasi Perbandingan Produksi Aktual dengan Hasil Prediksi
+ggplot(data = result_data_rf_Jagung, aes(x = Produksi, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
+  theme_minimal()
+```
+
+```{r}
+# Visualisasi Produksi Aktual dengan Hasil Prediksi
+ggplot(data = result_data_rf_Jagung, aes(x = 1:length(Produksi))) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
+  labs(x = "Observasi", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
+  theme_minimal()
+```
+
+```{r}
+# Visualisasi hasil prediksi dengan sumbu x adalah tahun
+result_data_rf2_Jagung <- data.frame(Tahun = data_test_Jagung$Tahun, Produksi = data_test_Jagung$Produksi, Predictions = predictions_rf_Jagung)
+
+ggplot(data = result_data_rf2_Jagung, aes(x = Tahun)) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
+  labs(x = "Tahun", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal()
+```
+
+```{r}
+# Ambil variabel yang penting dalam data
+importance_rf_Jagung <- data.frame(Variable = row.names(importance(rf_model_Jagung)),
+                              Importance = importance(rf_model_Jagung)[, 1])
+
+# Urutkan data berdasarkan derajat variabel penting
+importance_rf_Jagung <- importance_rf_Jagung[order(importance_rf_Jagung$Importance, decreasing = TRUE), ]
+importance_rf_Jagung
+
+# Visualisasi dengan ggplot
+ggplot(importance_rf_Jagung, aes(x = reorder(Variable, Importance), y = Importance)) +
+  geom_bar(stat = "identity", fill = "blue") +
+  labs(title = "Variable Importance Plot",
+       x = "Variable",
+       y = "Importance") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + # Rotating x-axis menjadi mudah dilihat
+  theme_minimal()
+```
+Berdasarkan hasil diatas bisa disimpulkan, bahwa variabel yang sangat mempengaruhi produksi adalah Produktivitas dan Luas Panen.
+
+```{r}
+# Evaluasi RF Model
+
+# Hitung MAE
+mae_value_rf_Jagung <- mae(data_test_Jagung$Produksi, predictions_rf_Jagung)
+
+# Hitung MSE
+mse_value_rf_Jagung <- mse(data_test_Jagung$Produksi, predictions_rf_Jagung)
+
+# Hitung RMSE
+rmse_value_rf_Jagung <- rmse(data_test_Jagung$Produksi, predictions_rf_Jagung)
+
+# Hitung MAPE
+mape_value_rf_Jagung <- mape(data_test_Jagung$Produksi, predictions_rf_Jagung)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_value_rf_Jagung, "\n"))
+cat(paste("MSE: ", mse_value_rf_Jagung, "\n"))
+cat(paste("RMSE: ", rmse_value_rf_Jagung, "\n"))
+cat(paste("MAPE: ", mape_value_rf_Jagung, "%\n"))
+```
+### b. Model SVR
+
+```{r}
+# Membuat model SVR
+svr_model_Jagung <- svm(Produksi ~ Produktivitas + Luas_Panen + Kecepatan_Angin + Kelembapan + Suhu + Tekanan_Udara + Penyinaran_Matahari, data = data_train_Jagung, kernel = "radial", cost = 1)
+svr_model_Jagung
+```
+
+```{r}
+# Melakukan prediksi dengan Data Testing
+predictions_svr_Jagung <- predict(svr_model_Jagung, data_test_Jagung)
+predictions_svr_Jagung
+```
+
+```{r}
+# Visualisasi hasil prediksi
+result_data_svr_Jagung <- data.frame(Produksi = data_test_Jagung$Produksi, Predictions = predictions_svr_Jagung)
+
+ggplot(data = result_data_svr_Jagung, aes(x = Produksi, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
+  theme_minimal()
+```
+
+```{r}
+# Buat grafik garis dengan ggplot2
+ggplot(data = result_data_svr_Jagung, aes(x = 1:length(Produksi))) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
+  labs(x = "Observasi", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal()
+```
+
+```{r}
+# Visualisasi hasil prediksi dengan sumbu x adalah tahun
+result_data_svr2_Jagung <- data.frame(Tahun = data_test_Jagung$Tahun, Produksi = data_test_Jagung$Produksi, Predictions = predictions_svr_Jagung)
+
+ggplot(data = result_data_svr2_Jagung, aes(x = Tahun)) +
+  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
+  labs(x = "Tahun", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal()
+```
+```{r}
+# Evaluasi SVR Model
+
+# Hitung MAE
+mae_value_svr_Jagung <- mae(data_test_Jagung$Produksi, predictions_svr_Jagung)
+
+# Hitung MSE
+mse_value_svr_Jagung <- mse(data_test_Jagung$Produksi, predictions_svr_Jagung)
+
+# Hitung RMSE
+rmse_value_svr_Jagung <- rmse(data_test_Jagung$Produksi, predictions_svr_Jagung)
+
+# Hitung MAPE
+mape_value_svr_Jagung <- mape(data_test_Jagung$Produksi, predictions_svr_Jagung)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_value_svr_Jagung, "\n"))
+cat(paste("MSE: ", mse_value_svr_Jagung, "\n"))
+cat(paste("RMSE: ", rmse_value_svr_Jagung, "\n"))
+cat(paste("MAPE: ", mape_value_svr_Jagung, "%\n"))
+```
