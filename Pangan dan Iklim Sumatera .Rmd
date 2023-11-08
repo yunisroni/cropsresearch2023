@@ -12,7 +12,6 @@ output: pdf_document
 
 
 
-
 ```{r}
 library(readxl)
 library(dplyr)
@@ -44,7 +43,7 @@ library(vars)
 #Hujan_kab
 ```
 
-
+# Load Data
 ```{r}
 data_iklim <-read_excel("D:/OneDrive - mikroskil.ac.id/Documents/File R skripsi/Dataset Tanaman Pangan dan Iklim Pulau Sumatera 2006-2015.xlsx")
 data_iklim
@@ -91,6 +90,8 @@ ks.test(data_iklim$Produksi, "pnorm", mean=mean(data_iklim$Produksi), sd=sd(data
 ks.test(data_iklim$Kelembapan, "pnorm", mean=mean(data_iklim$Kelembapan), sd=sd(data_iklim$Kelembapan))
 ```
 
+
+## Membersihkan Data
 ```{r}
 # Menampikan variabel dengan baris kosong
 colSums(is.na(data_iklim))
@@ -138,21 +139,20 @@ Iklim_clean$Produksi_transformed <- log(Iklim_clean$Produksi)
 hist(Iklim_clean$Produksi_transformed)
 hist(Iklim_clean$Produktivitas_transformed)
 ```
-## Melakukan Analisis Iklim terhadap tanaman pangan di indonesia tahun 2006-2015 dengan model VAR
 
-### Analisis Iklim terhadap Padi di indonesia tahun 2006-2015 dengan model VAR
+# Melakukan VAR Analisis Iklim terhadap tanaman pangan di pulau Sumatera tahun 2006-2015 dengan model VAR
+
+
+## Analisis Iklim terhadap Produksi Padi di pulau sumatera tahun 2006-2015 dengan model VAR
 
 ```{r}
 #Mengambil tanaman pangan padi di pulau sumatera
+
 Iklim_padi <- Iklim_clean %>%
   filter(Jenis_Komoditi == "Padi") 
 
 Iklim_padi
 ```
-
-
-
-## Iklim terhadap produksi Padi Sumatera
 
 ```{r}
 # Pilih variabel yang akan diprediksi
@@ -161,10 +161,10 @@ padi_var_sumatera1 <- Iklim_padi[, c("Produksi", "Luas_Panen", "Kecepatan_Angin"
 padi_var_sumatera1
 ```
 
-Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam
-format time series (ts)
+Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam format time series (ts)
 
 ```{r}
+#Format time series
 ts_data_padi_sumatera <- ts(padi_var_sumatera1, start = c(2006,1), frequency = 1)
 ts_data_padi_sumatera
 ```
@@ -174,6 +174,7 @@ ts_data_padi_sumatera
 best_lag_padi_sumatera<- VARselect(ts_data_padi_sumatera, lag.max = 5, type = "both")
 best_lag_padi_sumatera
 ```
+
 ### VAR Model Iklim terhadap produksi padi sumatera
 ```{r}
 
@@ -181,7 +182,7 @@ var_model_Padi_sumatera <- VAR(ts_data_padi_sumatera, p = best_lag_padi_sumatera
 summary(var_model_Padi_sumatera)
 ```
 
-
+### Uji Kolersi Pearson
 ```{r}
 # Menghitung koefisien korelasi Pearson
 kolerasi_padi1 <- cor(padi_var_sumatera1$Produksi, padi_var_sumatera1$Curah_hujan)
@@ -225,10 +226,44 @@ cat ("Koefisien Korelasi Pearson Suhu dan Produksi:", kolerasi_padi6)
 ```
 Koefisien Korelasi Pearson Suhu dan Produksi: 0.03617682
 
+### Uji Granger Causality
+```{r}
+# Melakukan uji Granger Causality 
+granger_padi_sumatera1 <- causality(var_model_Padi_sumatera, cause = "Curah_hujan")
+granger_padi_sumatera1
+
+#Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
+```
+
+```{r}
+# Melakukan uji Granger Causality 
+granger_padi_sumatera2 <- causality(var_model_Padi_sumatera, cause = "Luas_Panen")
+granger_padi_sumatera2
+
+#Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
+```
+
+```{r}
+# Melakukan uji Granger Causality 
+granger_padi_sumatera3 <- causality(var_model_Padi_sumatera, cause = "Suhu")
+granger_padi_sumatera3
+
+#Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
+```
+
+
+### Uji regresi linier
+```{r}
+# Membuat model regresi linier
+regresi_padi_sumatera <- lm(Produksi ~ Curah_hujan + Kelembapan + Luas_Panen + Suhu + Kecepatan_Angin + Penyinaran_Matahari, data = padi_var_sumatera1)
+
+# Ringkasan hasil model
+summary(regresi_padi_sumatera)
+```
 
 
 
-## Iklim terhadap Produktivitas Padi Sumatera
+## Analisis Iklim terhadap Produktivitas Padi di pulau sumatera tahun 2006-2015 dengan model VAR 
 
 ```{r}
 # Pilih variabel yang akan diprediksi
@@ -250,6 +285,7 @@ ts_padi_sumatera2
 best_lag_padi_sumatera2<- VARselect(ts_padi_sumatera2, lag.max = 5, type = "both")
 best_lag_padi_sumatera2
 ```
+
 ### VAR Model Iklim terhadap produktivitas padi sumatera
 ```{r}
 
@@ -257,7 +293,7 @@ var_model_Padi_sumatera2 <- VAR(ts_padi_sumatera2, p = best_lag_padi_sumatera2$s
 summary(var_model_Padi_sumatera2)
 ```
 
-
+## Uji Kolerasi Pearson
 ```{r}
 # Menghitung koefisien korelasi Pearson
 kolerasi_padi7 <- cor(padi_var_sumatera2$Produktivitas, padi_var_sumatera2$Curah_hujan)
@@ -301,6 +337,42 @@ cat ("Koefisien Korelasi Pearson Suhu dan Produktivitas:", kolerasi_padi6)
 Koefisien Korelasi Pearson Suhu dan Produktivitas: -0.085
 
 
+### Uji Granger Causality
+```{r}
+# Melakukan uji Granger Causality 
+granger_padi_sumatera8 <- causality(var_model_Padi_sumatera2, cause = "Curah_hujan")
+granger_padi_sumatera8
+
+#Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
+```
+
+```{r}
+# Melakukan uji Granger Causality 
+granger_padi_sumatera9 <- causality(var_model_Padi_sumatera2, cause = "Luas_Panen")
+granger_padi_sumatera9
+
+#Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
+```
+
+```{r}
+# Melakukan uji Granger Causality 
+granger_padi_sumatera10 <- causality(var_model_Padi_sumatera, cause = "Suhu")
+granger_padi_sumatera10
+
+#Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
+```
+
+
+### Uji regresi linier
+```{r}
+# Membuat model regresi linier
+regresi_padi_sumatera2 <- lm(Produksi ~ Curah_hujan + Kelembapan + Luas_Panen + Suhu + Kecepatan_Angin + Penyinaran_Matahari, data = padi_var_sumatera2)
+
+# Ringkasan hasil model
+summary(regresi_padi_sumatera2)
+```
+
+
 ## Iklim terhadap Produksi_transformed Padi Sumatera
 
 ```{r}
@@ -323,7 +395,8 @@ ts_data_padi_sumatera3
 best_lag_padi_sumatera3<- VARselect(ts_data_padi_sumatera3, lag.max = 5, type = "both")
 best_lag_padi_sumatera3
 ```
-### VAR Model Iklim indonesia terhadap produksi padi Sumatera
+
+### VAR Model Iklim indonesia terhadap produksi_transformed padi Sumatera
 ```{r}
 
 var_model_Padi_sumatera3 <- VAR(ts_data_padi_sumatera3, p = best_lag_padi_sumatera3$selection[1], type = "both") # jumlah order dari model VAR
@@ -374,7 +447,7 @@ cat ("Koefisien Korelasi Pearson Kecepatan angin dan Produksi transformed:",Pear
 Koefisien Korelasi Pearson Kecepatan angin dan Produksi transformed: -0.5333232
 
 
-## Analisis Iklim terhadap Jagung di Pulau sumatera 2006-20015 dengan Model VAR
+## Analisis Iklim terhadap Produksi Jagung di Pulau sumatera 2006-20015 dengan Model VAR
 
 ```{r}
 #Mengambil tanaman pangan padi di pulau sumatera
@@ -384,7 +457,6 @@ Iklim_jagung <- Iklim_clean %>%
 Iklim_jagung
 ```
 
-## Iklim terhadap produksi Jagung Sumatera
 
 ```{r}
 # Pilih variabel yang akan diprediksi
@@ -406,6 +478,7 @@ ts_jagung_sumatera
 best_lag_jagung_sumatera<- VARselect(ts_jagung_sumatera, lag.max = 5, type = "both")
 best_lag_jagung_sumatera
 ```
+
 ### VAR Model Iklim terhadap produksi Jagung sumatera
 ```{r}
 
@@ -413,7 +486,7 @@ var_model_jagung_sumatera <- VAR(ts_jagung_sumatera, p = best_lag_jagung_sumater
 summary(var_model_jagung_sumatera)
 ```
 
-
+### Uji Kolereasi Pearson
 ```{r}
 # Menghitung koefisien korelasi Pearson
 kolerasi_jagung1 <- cor(jagung_var_sumatera1$Produksi, jagung_var_sumatera1$Curah_hujan)
@@ -457,10 +530,42 @@ cat ("Koefisien Korelasi Pearson Suhu dan Produksi:", kolerasi_jagung6)
 ```
 Koefisien Korelasi Pearson Suhu dan Produksi: 0.05
 
+### Uji Granger Causality
+```{r}
+# Melakukan uji Granger Causality 
+granger_jagung_sumatera1 <- causality(var_model_jagung_sumatera, cause = "Curah_hujan")
+granger_jagung_sumatera1
+
+#Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
+```
+
+```{r}
+# Melakukan uji Granger Causality 
+granger_jagung_sumatera2 <- causality(var_model_jagung_sumatera, cause = "Luas_Panen")
+granger_jagung_sumatera2
+
+#Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
+```
+
+```{r}
+# Melakukan uji Granger Causality 
+granger_jagung_sumatera3 <- causality(var_model_jagung_sumatera, cause = "Suhu")
+granger_jagung_sumatera3
+
+#Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
+```
+
+### Uji regresi linier
+```{r}
+# Membuat model regresi linier
+regresi_jagung_sumatera1 <- lm(Produksi ~ Curah_hujan + Kelembapan + Luas_Panen + Suhu + Kecepatan_Angin + Penyinaran_Matahari, data = jagung_var_sumatera1)
+
+# Ringkasan hasil model
+summary(regresi_jagung_sumatera1)
+```
 
 
-
-## Iklim terhadap Produktivitas Jagung Sumatera
+## Analisis VAR Iklim terhadap Produktivitas Jagung Sumatera
 
 ```{r}
 # Pilih variabel yang akan diprediksi
@@ -490,7 +595,7 @@ var_model_jagung_sumatera2 <- VAR(ts_jagung_sumatera2, p = best_lag_jagung_sumat
 summary(var_model_jagung_sumatera2)
 ```
 
-
+### Uji kolerasi Pearson jagung
 ```{r}
 # Menghitung koefisien korelasi Pearson
 kolerasi_padi7 <- cor(jagung_var_sumatera2$Produktivitas, jagung_var_sumatera2$Curah_hujan)
@@ -533,8 +638,42 @@ cat ("Koefisien Korelasi Pearson Suhu dan Produktivitas:", kolerasi_jagung12)
 ```
 Koefisien Korelasi Pearson Suhu dan Produktivitas: -0.16
 
+### Uji Granger Causality produktivitas jagung
+```{r}
+# Melakukan uji Granger Causality 
+granger_jagung_produktivitas1 <- causality(var_model_jagung_sumatera2, cause = "Curah_hujan")
+granger_jagung_produktivitas1
 
-## Iklim terhadap Produksi_transformed Padi Sumatera
+#Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
+```
+
+```{r}
+# Melakukan uji Granger Causality 
+granger_jagung_produktivitas2 <- causality(var_model_jagung_sumatera, cause = "Luas_Panen")
+granger_jagung_produktivitas2
+
+#Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
+```
+
+```{r}
+# Melakukan uji Granger Causality 
+granger_jagung_produktivitas3 <- causality(var_model_jagung_sumatera, cause = "Suhu")
+granger_jagung_produktivitas3
+
+#Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
+```
+
+### Uji regresi linier produktivitas Jagung
+```{r}
+# Membuat model regresi linier
+regresi_jagung_sumatera2 <- lm(Produktivitas ~ Curah_hujan + Kelembapan + Luas_Panen + Suhu + Kecepatan_Angin + Penyinaran_Matahari, data = jagung_var_sumatera2)
+
+# Ringkasan hasil model
+summary(regresi_jagung_sumatera2)
+```
+
+
+## Iklim terhadap Produksi_transformed Jagung Sumatera
 
 ```{r}
 # Pilih variabel yang akan diprediksi
@@ -556,7 +695,9 @@ ts_data_jagung_sumatera3
 best_lag_jagung_sumatera3<- VARselect(ts_data_jagung_sumatera3, lag.max = 5, type = "both")
 best_lag_jagung_sumatera3
 ```
-### VAR Model Iklim indonesia terhadap produksi padi Sumatera
+
+
+### VAR Model Iklim indonesia terhadap produksi_transformde jagung Sumatera
 ```{r}
 
 var_model_jagung_sumatera3 <- VAR(ts_data_jagung_sumatera3, p = best_lag_jagung_sumatera3$selection[1], type = "both") # jumlah order dari model VAR
@@ -608,7 +749,7 @@ Koefisien Korelasi Pearson Kecepatan angin dan Produksi transformed: -0.56
 
 
 
-## Analisis Iklim terhadap Ubi Jalar di Pulau sumatera 2006-20015 dengan Model VAR
+## Analisis Iklim terhadap Produksi Ubi Jalar di Pulau sumatera 2006-20015 dengan Model VAR
 
 ```{r}
 #Mengambil tanaman pangan ubi jalar di pulau sumatera
@@ -640,13 +781,14 @@ ts_ubi_jalar_sumatera
 lag_ubijalar_sumatera<- VARselect(ts_ubi_jalar_sumatera, lag.max = 5, type = "both")
 lag_ubijalar_sumatera
 ```
-### VAR Model Iklim terhadap produksi padi sumatera
+
+### VAR Model Iklim terhadap produksi ubi jalar Sumatera
 ```{r}
 var_model_ubijalar_sumatera <- VAR(ts_ubi_jalar_sumatera, p = lag_ubijalar_sumatera$selection[1], type = "both") # jumlah order dari model VAR
 summary(var_model_ubijalar_sumatera)
 ```
 
-
+### Uji kolerasi pearson produksi ubi jalar Sumatera
 ```{r}
 # Menghitung koefisien korelasi Pearson
 kolerasi_ubi_jalar1 <- cor(ubi_jalar_var_sumatera1$Produksi, ubi_jalar_var_sumatera1$Curah_hujan)
@@ -690,9 +832,42 @@ cat ("Koefisien Korelasi Pearson Suhu dan Produksi:", kolerasi_ubijalar6)
 ```
 Koefisien Korelasi Pearson Suhu dan Produksi: 0.016
 
+### Uji Granger Causality produktivitas Ubijalar
+```{r}
+# Melakukan uji Granger Causality 
+granger_ubijalar_sumatera1 <- causality(var_model_ubijalar_sumatera, cause = "Curah_hujan")
+granger_ubijalar_sumatera1
+
+#Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
+```
+
+```{r}
+# Melakukan uji Granger Causality 
+granger_ubijalar_sumatera2 <- causality(var_model_ubijalar_sumatera, cause = "Luas_Panen")
+granger_ubijalar_sumatera2
+
+#Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
+```
+
+```{r}
+# Melakukan uji Granger Causality 
+granger_ubijalar_sumatera3 <- causality(var_model_ubijalar_sumatera, cause = "Suhu")
+granger_ubijalar_sumatera3
+
+#Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
+```
+
+### Uji regresi linier produktivitas Ubijalar
+```{r}
+# Membuat model regresi linier
+regresi_ubijalar_sumatera1 <- lm(Produktivitas ~ Curah_hujan + Kelembapan + Luas_Panen + Suhu + Kecepatan_Angin + Penyinaran_Matahari, data = ubi_jalar_var_sumatera1)
+
+# Ringkasan hasil model
+summary(regresi_ubijalar_sumatera1)
+```
 
 
-## Iklim terhadap Produktivitas Padi Sumatera
+## Analisis Iklim terhadap Produktivitas Ubijalar Sumatera
 
 ```{r}
 # Pilih variabel yang akan diprediksi
@@ -714,14 +889,15 @@ ts_ubijalar_sumatera2
 lag_ubijalar_sumatera2<- VARselect(ts_ubijalar_sumatera2, lag.max = 5, type = "both")
 lag_ubijalar_sumatera2
 ```
-### VAR Model Iklim terhadap produktivitas Jagung sumatera
+
+### VAR Model Iklim terhadap produktivitas Ubijalar sumatera
 ```{r}
 
 var_model_ubijalar_sumatera2 <- VAR(ts_ubijalar_sumatera2, p = lag_ubijalar_sumatera2$selection[1], type = "both") # jumlah order dari model VAR
 summary(var_model_ubijalar_sumatera2)
 ```
 
-
+### Uji Kolerasi person Produktivitas Ubi jalar
 ```{r}
 # Menghitung koefisien korelasi Pearson
 kolerasi_ubijalar7 <- cor(ubijalar_var_sumatera2$Produktivitas, ubijalar_var_sumatera2$Curah_hujan)
@@ -763,6 +939,497 @@ kolerasi_ubijalar12 <- cor(ubijalar_var_sumatera2$Produktivitas, ubijalar_var_su
 cat ("Koefisien Korelasi Pearson Suhu dan Produktivitas:", kolerasi_ubijalar12)
 ```
 Koefisien Korelasi Pearson Suhu dan Produktivitas: -0.2519937
+
+### Uji Granger Causality produktivitas Ubijalar
+```{r}
+# Melakukan uji Granger Causality 
+granger_ubijalar_produktivitas1 <- causality(var_model_ubijalar_sumatera2, cause = "Curah_hujan")
+granger_ubijalar_produktivitas1
+
+#Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
+```
+
+```{r}
+# Melakukan uji Granger Causality 
+granger_ubijalar_produktivitas2 <- causality(var_model_ubijalar_sumatera2, cause = "Luas_Panen")
+granger_ubijalar_produktivitas2
+
+#Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
+```
+
+```{r}
+# Melakukan uji Granger Causality 
+granger_ubijalar_produktivitas3 <- causality(var_model_ubijalar_sumatera2, cause = "Suhu")
+granger_ubijalar_produktivitas3
+
+#Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
+```
+
+### Uji regresi linier produktivitas Ubi Jalar
+```{r}
+# Membuat model regresi linier
+regresi_ubijalar_sumatera2 <- lm(Produktivitas ~ Curah_hujan + Kelembapan + Luas_Panen + Suhu + Kecepatan_Angin + Penyinaran_Matahari, data = ubijalar_var_sumatera2)
+
+# Ringkasan hasil model
+summary(regresi_ubijalar_sumatera2)
+```
+
+
+## Analisis Iklim terhadap Produksi Ubi Kayu di Pulau sumatera 2006-20015 dengan Model VAR
+
+```{r}
+#Mengambil tanaman pangan ubi kayu di pulau sumatera
+Iklim_ubikayu <- Iklim_clean %>%
+  filter(Jenis_Komoditi == "Ubi Kayu") 
+
+Iklim_ubikayu
+```
+
+## Iklim terhadap produksi Ubi kayu Sumatera
+```{r}
+# Pilih variabel yang akan diprediksi
+
+ubikayu_var_sumatera1 <- Iklim_ubikayu[, c("Produksi", "Luas_Panen", "Kecepatan_Angin", "Kelembapan", "Suhu", "Penyinaran_Matahari", "Curah_hujan")]
+ubikayu_var_sumatera1
+```
+
+Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam
+format time series (ts)
+
+```{r}
+ts_ubikayu_sumatera <- ts(ubikayu_var_sumatera1, start = c(2006,1), frequency = 1)
+ts_ubikayu_sumatera
+```
+
+
+```{r}
+lag_ubikayu_sumatera<- VARselect(ts_ubikayu_sumatera, lag.max = 5, type = "both")
+lag_ubikayu_sumatera
+```
+
+### VAR Model Iklim terhadap produksi ubi jalar Sumatera
+```{r}
+var_model_ubikayu_sumatera <- VAR(ts_ubikayu_sumatera, p = lag_ubikayu_sumatera$selection[1], type = "both") # jumlah order dari model VAR
+summary(var_model_ubikayu_sumatera)
+```
+
+### Uji kolerasi pearson produksi ubi jalar Sumatera
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_ubikayu1 <- cor(ubikayu_var_sumatera1$Produksi, ubikayu_var_sumatera1$Curah_hujan)
+cat ("Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi:",kolerasi_ubikayu1)
+```
+Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi: 0.19
+
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_ubikayu2 <- cor(ubikayu_var_sumatera1$Produksi, ubikayu_var_sumatera1$Luas_Panen)
+cat ("Koefisien Korelasi Pearson Luas panen dan Produksi:", kolerasi_ubikayu2)
+```
+Koefisien Korelasi Pearson Luas panen dan Produksi: 0.88
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_ubikayu3 <- cor(ubikayu_var_sumatera1$Produksi, ubikayu_var_sumatera1$Kecepatan_Angin)
+cat ("Koefisien Korelasi Pearson Kecepatan Angin dan Produksi:", kolerasi_ubikayu3)
+```
+Koefisien Korelasi Pearson Kecepatan Angin dan Produksi:  -0.51
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_ubikayu4 <- cor(ubikayu_var_sumatera1$Produksi, ubikayu_var_sumatera1$Kelembapan)
+cat ("Koefisien Korelasi Pearson Kelembapan dan Produksi:", kolerasi_ubikayu4)
+```
+Koefisien Korelasi Pearson Kelembapan dan Produksi: -0.003
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_ubikayu5 <- cor(ubikayu_var_sumatera1$Produksi, ubikayu_var_sumatera1$Penyinaran_Matahari)
+cat ("Koefisien Korelasi Pearson Penyinaran_Matahari dan Produksi:", kolerasi_ubikayu5)
+```
+Koefisien Korelasi Pearson Penyinaran_Matahari dan Produksi: -0.24
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_ubikayu6 <- cor(ubikayu_var_sumatera1$Produksi, ubikayu_var_sumatera1$Suhu)
+cat ("Koefisien Korelasi Pearson Suhu dan Produksi:", kolerasi_ubikayu6)
+```
+Koefisien Korelasi Pearson Suhu dan Produksi: 0.016
+
+### Uji Granger Causality produksi ubi kayu
+```{r}
+# Melakukan uji Granger Causality 
+granger_ubikayu_sumatera1 <- causality(var_model_ubikayu_sumatera, cause = "Curah_hujan")
+granger_ubikayu_sumatera1
+
+#Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
+```
+
+```{r}
+# Melakukan uji Granger Causality 
+granger_ubikayu_sumatera2 <- causality(var_model_ubikayu_sumatera, cause = "Luas_Panen")
+granger_ubikayu_sumatera2
+
+#Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
+```
+
+```{r}
+# Melakukan uji Granger Causality 
+granger_ubikayu_sumatera3 <- causality(var_model_ubikayu_sumatera, cause = "Suhu")
+granger_ubikayu_sumatera3
+
+#Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
+```
+
+### Uji regresi linier produksi Ubijalar
+```{r}
+# Membuat model regresi linier
+regresi_ubikayu_sumatera1 <- lm(Produktivitas ~ Curah_hujan + Kelembapan + Luas_Panen + Suhu + Kecepatan_Angin + Penyinaran_Matahari, data = ubikayu_var_sumatera1)
+
+# Ringkasan hasil model
+summary(regresi_ubikayu_sumatera1)
+```
+
+
+## Analisis Iklim terhadap Produktivitas Ubijalar Sumatera
+
+```{r}
+# Pilih variabel yang akan diprediksi
+
+ubikayu_var_sumatera2 <- Iklim_ubikayu[, c("Produktivitas", "Luas_Panen", "Kecepatan_Angin", "Kelembapan", "Suhu", "Penyinaran_Matahari", "Curah_hujan")]
+ubikayu_var_sumatera2
+```
+
+Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam
+format time series (ts)
+
+```{r}
+ts_ubikayu_sumatera2 <- ts(ubikayu_var_sumatera2, start = c(2006,1), frequency = 1)
+ts_ubikayu_sumatera2
+```
+
+
+```{r}
+lag_ubikayu_sumatera2<- VARselect(ts_ubikayu_sumatera2, lag.max = 5, type = "both")
+lag_ubikayu_sumatera2
+```
+
+### VAR Model Iklim terhadap produktivitas Ubi kayu sumatera
+```{r}
+
+var_model_ubikayu_sumatera2 <- VAR(ts_ubikayu_sumatera2, p = lag_ubikayu_sumatera2$selection[1], type = "both") # jumlah order dari model VAR
+summary(var_model_ubikayu_sumatera2)
+```
+
+### Uji Kolerasi person Produktivitas Ubi kayu
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_ubikayu7 <- cor(ubikayu_var_sumatera2$Produktivitas, ubikayu_var_sumatera2$Curah_hujan)
+cat ("Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi:",kolerasi_ubikayu7)
+```
+Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi: -0.017
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_ubikayu8 <- cor(ubikayu_var_sumatera2$Produktivitas, ubikayu_var_sumatera2$Luas_Panen)
+cat ("Koefisien Korelasi Pearson Luas panen dan Produktivitas:", kolerasi_ubikayu8)
+```
+Koefisien Korelasi Pearson Luas panen dan Produktivitas: 0.22
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_ubikayu9 <- cor(ubijalar_var_sumatera2$Produktivitas, ubijalar_var_sumatera2$Kecepatan_Angin)
+cat ("Koefisien Korelasi Pearson Kecepatan Angin dan Produktivitas:", kolerasi_ubijakayu9)
+```
+Koefisien Korelasi Pearson Kecepatan Angin dan Produktivitas: -0.65
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_ubikayu10<- cor(ubikayu_var_sumatera2$Produktivitas, ubikayu_var_sumatera2$Kelembapan)
+cat ("Koefisien Korelasi Pearson Kelembapan dan Produktivitas:", kolerasi_ubikayu10)
+```
+Koefisien Korelasi Pearson Kelembapan dan Produktivitas: 0.05
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_ubikayu11 <- cor(ubikayu_var_sumatera2$Produktivitas, ubikayu_var_sumatera2$Penyinaran_Matahari)
+cat ("Koefisien Korelasi Pearson Penyinaran_Matahari dan Produktivitas:", kolerasi_ubikayu11)
+```
+Koefisien Korelasi Pearson Penyinaran_Matahari dan Produktivitas : -0.26
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_ubikayu12 <- cor(ubikayu_var_sumatera2$Produktivitas, ubikayu_var_sumatera2$Suhu)
+cat ("Koefisien Korelasi Pearson Suhu dan Produktivitas:", kolerasi_ubikayu12)
+```
+Koefisien Korelasi Pearson Suhu dan Produktivitas: -0.2519937
+
+### Uji Granger Causality produktivitas Ubijalar
+```{r}
+# Melakukan uji Granger Causality 
+granger_ubikayu_produktivitas1 <- causality(var_model_ubikayu_sumatera2, cause = "Curah_hujan")
+granger_ubikayu_produktivitas1
+
+#Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
+```
+
+```{r}
+# Melakukan uji Granger Causality 
+granger_ubikayu_produktivitas2 <- causality(var_model_ubikayu_sumatera2, cause = "Luas_Panen")
+granger_ubikayu_produktivitas2
+
+#Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
+```
+
+```{r}
+# Melakukan uji Granger Causality 
+granger_ubikayu_produktivitas3 <- causality(var_model_ubikayu_sumatera2, cause = "Suhu")
+granger_ubikayu_produktivitas3
+
+#Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
+```
+
+### Uji regresi linier produktivitas Ubi Kayu
+```{r}
+# Membuat model regresi linier
+regresi_ubikayu_sumatera2 <- lm(Produktivitas ~ Curah_hujan + Kelembapan + Luas_Panen + Suhu + Kecepatan_Angin + Penyinaran_Matahari, data = ubikayu_var_sumatera2)
+
+# Ringkasan hasil model
+summary(regresi_ubikayu_sumatera2)
+```
+
+
+#Kacang kedelai
+## Analisis Iklim terhadap Produksi Kacang kedelai di Pulau sumatera 2006-20015 dengan Model VAR
+
+```{r}
+#Mengambil tanaman pangan Kacang kedelai di pulau sumatera
+Iklim_Kedelai<- Iklim_clean %>%
+  filter(Jenis_Komoditi == "Kacang Kedelai") 
+
+Iklim_Kedelai
+```
+
+## Iklim terhadap produksi Kacang Kedelai Sumatera
+
+```{r}
+# Pilih variabel yang akan diprediksi
+
+kedelai_var_sumatera1 <- Iklim_Kedelai[, c("Produksi", "Luas_Panen", "Kecepatan_Angin", "Kelembapan", "Suhu", "Penyinaran_Matahari", "Curah_hujan")]
+kedelai_var_sumatera1
+```
+
+Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam
+format time series (ts)
+
+```{r}
+ts_kedelai_sumatera <- ts(kedelai_var_sumatera1, start = c(2006,1), frequency = 1)
+ts_kedelai_sumatera
+```
+
+
+```{r}
+lag_kedelai_sumatera<- VARselect(ts_kedelai_sumatera, lag.max = 5, type = "both")
+lag_kedelai_sumatera
+```
+
+### VAR Model Iklim terhadap produksi kedelai Sumatera
+```{r}
+var_model_kedelai_sumatera <- VAR(ts_kedelai_sumatera, p = lag_kedelai_sumatera$selection[1], type = "both") # jumlah order dari model VAR
+summary(var_model_kedelai_sumatera)
+```
+
+### Uji kolerasi pearson produksi kedelai Sumatera
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_kedelai1 <- cor(kedelai_var_sumatera1$Produksi, kedelai_var_sumatera1$Curah_hujan)
+cat ("Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi:",kolerasi_kedelai1)
+```
+Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi: 0.19
+
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_kedelai2 <- cor(kedelai_var_sumatera1$Produksi, kedelai_var_sumatera1$Luas_Panen)
+cat ("Koefisien Korelasi Pearson Luas panen dan Produksi:", kolerasi_kedelai2)
+```
+Koefisien Korelasi Pearson Luas panen dan Produksi: 0.88
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_kedelai3 <- cor(kedelai_var_sumatera1$Produksi, kedelai_var_sumatera1$Kecepatan_Angin)
+cat ("Koefisien Korelasi Pearson Kecepatan Angin dan Produksi:", kolerasi_kedelai3)
+```
+Koefisien Korelasi Pearson Kecepatan Angin dan Produksi:  -0.51
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_kedelai4 <- cor(kedelai_var_sumatera1$Produksi, kedelai_var_sumatera1$Kelembapan)
+cat ("Koefisien Korelasi Pearson Kelembapan dan Produksi:", kolerasi_kedelai4)
+```
+Koefisien Korelasi Pearson Kelembapan dan Produksi: -0.003
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_kedelai5 <- cor(kedelai_var_sumatera1$Produksi, kedelai_var_sumatera1$Penyinaran_Matahari)
+cat ("Koefisien Korelasi Pearson Penyinaran_Matahari dan Produksi:", kolerasi_kedelai5)
+```
+Koefisien Korelasi Pearson Penyinaran_Matahari dan Produksi: -0.24
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_kedelai6 <- cor(kedelai_var_sumatera1$Produksi, kedelai_var_sumatera1$Suhu)
+cat ("Koefisien Korelasi Pearson Suhu dan Produksi:", kolerasi_kedelai6)
+```
+Koefisien Korelasi Pearson Suhu dan Produksi: 0.016
+
+### Uji Granger Causality produktivitas kedelai
+```{r}
+# Melakukan uji Granger Causality 
+granger_kedelai_sumatera1 <- causality(var_model_kedelai_sumatera, cause = "Curah_hujan")
+granger_kedelai_sumatera1
+
+#Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
+```
+
+```{r}
+# Melakukan uji Granger Causality 
+granger_kedelai_sumatera2 <- causality(var_model_kedelai_sumatera, cause = "Luas_Panen")
+granger_kedelai_sumatera2
+
+#Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
+```
+
+```{r}
+# Melakukan uji Granger Causality 
+granger_kedelai_sumatera3 <- causality(var_model_kedelai_sumatera, cause = "Suhu")
+granger_kedelai_sumatera3
+
+#Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
+```
+
+### Uji regresi linier produktivitas kedelai
+```{r}
+# Membuat model regresi linier
+regresi_kedelai_sumatera1 <- lm(Produktivitas ~ Curah_hujan + Kelembapan + Luas_Panen + Suhu + Kecepatan_Angin + Penyinaran_Matahari, data = kedelai_var_sumatera1)
+
+# Ringkasan hasil model
+summary(regresi_kedelai_sumatera1)
+```
+
+
+## Analisis Iklim terhadap Produktivitas Ubijalar Sumatera
+
+```{r}
+# Pilih variabel yang akan diprediksi
+
+kedelai_var_sumatera2 <- Iklim_kedelai[, c("Produktivitas", "Luas_Panen", "Kecepatan_Angin", "Kelembapan", "Suhu", "Penyinaran_Matahari", "Curah_hujan")]
+kedelai_var_sumatera2
+```
+
+Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam
+format time series (ts)
+
+```{r}
+ts_kedelai_sumatera2 <- ts(kedelai_var_sumatera2, start = c(2006,1), frequency = 1)
+ts_kedelai_sumatera2
+```
+
+
+```{r}
+lag_kedelai_sumatera2<- VARselect(ts_kedelai_sumatera2, lag.max = 5, type = "both")
+lag_kedelai_sumatera2
+```
+
+### VAR Model Iklim terhadap produktivitas kedelai sumatera
+```{r}
+
+var_model_kedelai_sumatera2 <- VAR(ts_kedelai_sumatera2, p = lag_kedelai_sumatera2$selection[1], type = "both") # jumlah order dari model VAR
+summary(var_model_kedelai_sumatera2)
+```
+
+### Uji Kolerasi person Produktivitas kedelai
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_kedelai7 <- cor(kedelai_var_sumatera2$Produktivitas, kedelai_var_sumatera2$Curah_hujan)
+cat ("Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi:",kolerasi_kedelai7)
+```
+Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi: -0.017
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_kedelai8 <- cor(kedelai_var_sumatera2$Produktivitas, kedelai_var_sumatera2$Luas_Panen)
+cat ("Koefisien Korelasi Pearson Luas panen dan Produktivitas:", kolerasi_kedelai8)
+```
+Koefisien Korelasi Pearson Luas panen dan Produktivitas: 0.22
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_kedelai9 <- cor(kedelai_var_sumatera2$Produktivitas, kedelai_var_sumatera2$Kecepatan_Angin)
+cat ("Koefisien Korelasi Pearson Kecepatan Angin dan Produktivitas:", kolerasi_kedelai9)
+```
+Koefisien Korelasi Pearson Kecepatan Angin dan Produktivitas: -0.65
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_kedelai10<- cor(kedelai_var_sumatera2$Produktivitas, kedelai_var_sumatera2$Kelembapan)
+cat ("Koefisien Korelasi Pearson Kelembapan dan Produktivitas:", kolerasi_kedelai10)
+```
+Koefisien Korelasi Pearson Kelembapan dan Produktivitas: 0.05
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_kedelai11 <- cor(kedelai_var_sumatera2$Produktivitas, kedelai_var_sumatera2$Penyinaran_Matahari)
+cat ("Koefisien Korelasi Pearson Penyinaran_Matahari dan Produktivitas:", kolerasi_kedelai11)
+```
+Koefisien Korelasi Pearson Penyinaran_Matahari dan Produktivitas : -0.26
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_kedelai12 <- cor(kedelai_var_sumatera2$Produktivitas, kedelai_var_sumatera2$Suhu)
+cat ("Koefisien Korelasi Pearson Suhu dan Produktivitas:", kolerasi_kedelai12)
+```
+Koefisien Korelasi Pearson Suhu dan Produktivitas: -0.2519937
+
+### Uji Granger Causality produktivitas Ubijalar
+```{r}
+# Melakukan uji Granger Causality 
+granger_kedelai_produktivitas1 <- causality(var_model_kedelai_sumatera2, cause = "Curah_hujan")
+granger_kedelai_produktivitas1
+
+#Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
+```
+
+```{r}
+# Melakukan uji Granger Causality 
+granger_kedelai_produktivitas2 <- causality(var_model_kedelai_sumatera2, cause = "Luas_Panen")
+granger_kedelai_produktivitas2
+
+#Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
+```
+
+```{r}
+# Melakukan uji Granger Causality 
+granger_kedelai_produktivitas3 <- causality(var_model_kedelai_sumatera2, cause = "Suhu")
+granger_kedelai_produktivitas3
+
+#Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
+```
+
+### Uji regresi linier produktivitas Ubi Jalar
+```{r}
+# Membuat model regresi linier
+regresi_kedelai_sumatera2 <- lm(Produktivitas ~ Curah_hujan + Kelembapan + Luas_Panen + Suhu + Kecepatan_Angin + Penyinaran_Matahari, data = kedelai_var_sumatera2)
+
+# Ringkasan hasil model
+summary(regresi_kedelai_sumatera2)
+```
+
+
+#Kacang tanah
+
+#Kacang hijau
 
 
 ## Melakukan VAR Iklim terhadap tanaman pangan pada provinsi ACEH
