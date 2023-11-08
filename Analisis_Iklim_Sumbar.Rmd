@@ -26,6 +26,8 @@ library(e1071)
 ```{r}
 Iklim <- read_excel("dataset/Dataset Tanaman Pangan dan Iklim di Indonesia (2006-2015).xlsx")
 Iklim
+CurahHujan <- read.csv("dataset/climateserv-statistical - SUMBAR.csv")
+CurahHujan
 ```
 
 ## b.Menampilkan Contoh Data
@@ -51,6 +53,11 @@ glimpse(Iklim)
 tail(Iklim)
 head(Iklim)
 ```
+```{r}
+# Merubah type variabel DateTime menjadi Date
+
+```
+
 ## b. Menghapus Data Kosong
 ```{r}
 # Menampilkan variabel dengan baris kosong
