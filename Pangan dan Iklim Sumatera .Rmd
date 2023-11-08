@@ -1,0 +1,857 @@
+---
+title: "Pangan dan Iklim"
+author: "Fitria"
+date: "2023-10-29"
+output: pdf_document
+---
+
+
+```{r}
+.libPaths("C:/Users/Lenovo/AppData/Local/R/win-library/4.3")
+```
+
+
+
+
+```{r}
+library(readxl)
+library(dplyr)
+library(stats)
+library(lubridate)
+library(ggplot2)
+library(lubridate)
+library(summarytools)
+library(cluster)
+library(scales)
+library(vars)
+
+```
+
+
+```{r}
+
+# Buat vektor untuk mengonversi nama bulan ke angka bulan
+#bulan<- c("Januari" = 1, "Februari" = 2, "Maret" = 3, "April" = 4, "Mei" = 5, "Juni" = 6, "Juli" = 7, "Agustus" = 8, "September" = 9, "Oktober" = 10, "November" = 11, "Desember" = 12)
+# Mengubah variabel bulan menjadi angka
+#Hujan_kab$bulan_angka <- bulan[Hujan_kab$Bulan]
+#Hujan_kab
+
+```
+
+```{r}
+# Mengonversi variabel tahun dan bulan menjadi tipe data Date dengan format "YYYY-MM-01"
+#Hujan_kab$tanggal <- as.Date(paste0(Hujan_kab$Tahun, "-", Hujan_kab$bulan_angka, "-01"))
+#Hujan_kab
+```
+
+
+```{r}
+data_iklim <-read_excel("D:/OneDrive - mikroskil.ac.id/Documents/File R skripsi/Dataset Tanaman Pangan dan Iklim Pulau Sumatera 2006-2015.xlsx")
+data_iklim
+```
+
+```{r}
+
+#Merubah type data dari cdouble menjadi numeric agar mudah di operasikan
+data_iklim$Produktivitas<-as.numeric(data_iklim$Produktivitas)
+data_iklim$Produksi<-as.numeric(data_iklim$Produksi)
+data_iklim$Luas_Panen<-as.numeric(data_iklim$Luas_Panen)
+data_iklim$Kecepatan_Angin<-as.numeric(data_iklim$Kecepatan_Angin)
+data_iklim$Kelembapan<-as.numeric(data_iklim$Kelembapan)
+data_iklim$Suhu<-as.numeric(data_iklim$Suhu)
+data_iklim$Penyinaran_Matahari<-as.numeric(data_iklim$Penyinaran_Matahari)
+data_iklim$Curah_hujan<-as.numeric(data_iklim$Curah_hujan)
+data_iklim
+```
+
+```{r}
+data_iklim$Tahun<-make_date(data_iklim$Tahun)
+data_iklim
+```
+
+```{r}
+tail(data_iklim)
+```
+
+
+```{r}
+shapiro.test(data_iklim$Produksi)
+shapiro.test(data_iklim$Produktivitas)
+shapiro.test(data_iklim$Luas_Panen)
+shapiro.test(data_iklim$Kecepatan_Angin)
+shapiro.test(data_iklim$Kelembapan)
+shapiro.test(data_iklim$Suhu)
+shapiro.test(data_iklim$Penyinaran_Matahari)
+shapiro.test(data_iklim$Curah_hujan)
+```
+
+
+```{r}
+ks.test(data_iklim$Produksi, "pnorm", mean=mean(data_iklim$Produksi), sd=sd(data_iklim$Produksi))
+ks.test(data_iklim$Kelembapan, "pnorm", mean=mean(data_iklim$Kelembapan), sd=sd(data_iklim$Kelembapan))
+```
+
+```{r}
+# Menampikan variabel dengan baris kosong
+colSums(is.na(data_iklim))
+```
+
+```{r}
+# Menghapus data NA's
+Iklim_clean <- na.omit(data_iklim)
+summary(Iklim_clean)
+```
+```{r}
+colSums(is.na(Iklim_clean))
+```
+```{r}
+tail(Iklim_clean)
+```
+
+
+```{r}
+shapiro.test(Iklim_clean$Produksi)
+shapiro.test(Iklim_clean$Produktivitas)
+shapiro.test(Iklim_clean$Luas_Panen)
+shapiro.test(Iklim_clean$Kecepatan_Angin)
+shapiro.test(Iklim_clean$Kelembapan)
+shapiro.test(Iklim_clean$Suhu)
+shapiro.test(Iklim_clean$Penyinaran_Matahari)
+shapiro.test(Iklim_clean$Curah_hujan)
+```
+
+```{r}
+#hist(data$variabel_dependen) untuk variabel dependen numerik yang hasilnya menunjukkan bahwa distribusi data tidak normal 
+hist(Iklim_clean$Produksi)
+hist(Iklim_clean$Produktivitas)
+```
+```{r}
+# Melakukan transformasi logaritmik pada variabel Produktivitas
+Iklim_clean$Produktivitas_transformed <- log(Iklim_clean$Produktivitas)
+
+# Melakukan transformasi logaritmik pada variabel Produksi
+Iklim_clean$Produksi_transformed <- log(Iklim_clean$Produksi)
+```
+
+
+```{r}
+hist(Iklim_clean$Produksi_transformed)
+hist(Iklim_clean$Produktivitas_transformed)
+```
+## Melakukan Analisis Iklim terhadap tanaman pangan di indonesia tahun 2006-2015 dengan model VAR
+
+### Analisis Iklim terhadap Padi di indonesia tahun 2006-2015 dengan model VAR
+
+```{r}
+#Mengambil tanaman pangan padi di pulau sumatera
+Iklim_padi <- Iklim_clean %>%
+  filter(Jenis_Komoditi == "Padi") 
+
+Iklim_padi
+```
+
+
+
+## Iklim terhadap produksi Padi Sumatera
+
+```{r}
+# Pilih variabel yang akan diprediksi
+
+padi_var_sumatera1 <- Iklim_padi[, c("Produksi", "Luas_Panen", "Kecepatan_Angin", "Kelembapan", "Suhu", "Penyinaran_Matahari", "Curah_hujan")]
+padi_var_sumatera1
+```
+
+Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam
+format time series (ts)
+
+```{r}
+ts_data_padi_sumatera <- ts(padi_var_sumatera1, start = c(2006,1), frequency = 1)
+ts_data_padi_sumatera
+```
+
+
+```{r}
+best_lag_padi_sumatera<- VARselect(ts_data_padi_sumatera, lag.max = 5, type = "both")
+best_lag_padi_sumatera
+```
+### VAR Model Iklim terhadap produksi padi sumatera
+```{r}
+
+var_model_Padi_sumatera <- VAR(ts_data_padi_sumatera, p = best_lag_padi_sumatera$selection[1], type = "both") # jumlah order dari model VAR
+summary(var_model_Padi_sumatera)
+```
+
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_padi1 <- cor(padi_var_sumatera1$Produksi, padi_var_sumatera1$Curah_hujan)
+cat ("Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi:",kolerasi_padi1)
+```
+Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi: 0.0422408
+
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_padi2 <- cor(padi_var_sumatera1$Produksi, padi_var_sumatera1$Luas_Panen)
+cat ("Koefisien Korelasi Pearson Luas panen dan Produksi:", kolerasi_padi2)
+```
+Koefisien Korelasi Pearson Luas panen dan Produksi: 0.5004864
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_padi3 <- cor(padi_var_sumatera1$Produksi, padi_var_sumatera1$Kecepatan_Angin)
+cat ("Koefisien Korelasi Pearson Kecepatan Angin dan Produksi:", kolerasi_padi3)
+```
+Koefisien Korelasi Pearson Kecepatan Angin dan Produksi:  -0.1220124
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_padi4 <- cor(data_var_Indonesia1$Produksi, data_var_Indonesia1$Kelembapan)
+cat ("Koefisien Korelasi Pearson Kelembapan dan Produksi:", kolerasi_padi4)
+```
+Koefisien Korelasi Pearson Kelembapan dan Produksi: 0.003511531
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_padi5 <- cor(data_var_Indonesia1$Produksi, data_var_Indonesia1$Penyinaran_Matahari)
+cat ("Koefisien Korelasi Pearson Penyinaran_Matahari dan Produksi:", kolerasi_padi5)
+```
+Koefisien Korelasi Pearson Penyinaran_Matahari dan Produksi: -8.509364e-05
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_padi6 <- cor(data_var_Indonesia1$Produksi, data_var_Indonesia1$Suhu)
+cat ("Koefisien Korelasi Pearson Suhu dan Produksi:", kolerasi_padi6)
+```
+Koefisien Korelasi Pearson Suhu dan Produksi: 0.03617682
+
+
+
+
+## Iklim terhadap Produktivitas Padi Sumatera
+
+```{r}
+# Pilih variabel yang akan diprediksi
+
+padi_var_sumatera2 <- Iklim_padi[, c("Produktivitas", "Luas_Panen", "Kecepatan_Angin", "Kelembapan", "Suhu", "Penyinaran_Matahari", "Curah_hujan")]
+padi_var_sumatera2
+```
+
+Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam
+format time series (ts)
+
+```{r}
+ts_padi_sumatera2 <- ts(padi_var_sumatera2, start = c(2006,1), frequency = 1)
+ts_padi_sumatera2
+```
+
+
+```{r}
+best_lag_padi_sumatera2<- VARselect(ts_padi_sumatera2, lag.max = 5, type = "both")
+best_lag_padi_sumatera2
+```
+### VAR Model Iklim terhadap produktivitas padi sumatera
+```{r}
+
+var_model_Padi_sumatera2 <- VAR(ts_padi_sumatera2, p = best_lag_padi_sumatera2$selection[1], type = "both") # jumlah order dari model VAR
+summary(var_model_Padi_sumatera2)
+```
+
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_padi7 <- cor(padi_var_sumatera2$Produktivitas, padi_var_sumatera2$Curah_hujan)
+cat ("Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi:",kolerasi_padi7)
+```
+Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi: 0.04455614
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_padi8 <- cor(padi_var_sumatera2$Produktivitas, padi_var_sumatera2$Luas_Panen)
+cat ("Koefisien Korelasi Pearson Luas panen dan Produktivitas:", kolerasi_padi8)
+```
+Koefisien Korelasi Pearson Luas panen dan Produktivitas: 0.75
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_padi9 <- cor(padi_var_sumatera2$Produktivitas, padi_var_sumatera2$Kecepatan_Angin)
+cat ("Koefisien Korelasi Pearson Kecepatan Angin dan Produktivitas:", kolerasi_padi9)
+```
+Koefisien Korelasi Pearson Kecepatan Angin dan Produktivitas: -0.51
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_padi10<- cor(padi_var_sumatera2$Produktivitas, padi_var_sumatera2$Kelembapan)
+cat ("Koefisien Korelasi Pearson Kelembapan dan Produktivitas:", kolerasi_padi10)
+```
+Koefisien Korelasi Pearson Kelembapan dan Produktivitas: -0.09
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_padi11 <- cor(padi_var_sumatera2$Produktivitas, padi_var_sumatera2$Penyinaran_Matahari)
+cat ("Koefisien Korelasi Pearson Penyinaran_Matahari dan Produktivitas:", kolerasi_padi11)
+```
+Koefisien Korelasi Pearson Penyinaran_Matahari dan Produktivitas : 0.013
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_padi6 <- cor(padi_var_sumatera2$Produktivitas, padi_var_sumatera2$Suhu)
+cat ("Koefisien Korelasi Pearson Suhu dan Produktivitas:", kolerasi_padi6)
+```
+Koefisien Korelasi Pearson Suhu dan Produktivitas: -0.085
+
+
+## Iklim terhadap Produksi_transformed Padi Sumatera
+
+```{r}
+# Pilih variabel yang akan diprediksi
+
+data_var_sumatera3 <- Iklim_padi[, c("Produksi_transformed", "Luas_Panen", "Kecepatan_Angin", "Kelembapan", "Suhu", "Penyinaran_Matahari", "Curah_hujan")]
+data_var_sumatera3
+```
+
+Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam
+format time series (ts)
+
+```{r}
+ts_data_padi_sumatera3 <- ts(data_var_sumantera3, start = c(2006,1), frequency = 1)
+ts_data_padi_sumatera3
+```
+
+
+```{r}
+best_lag_padi_sumatera3<- VARselect(ts_data_padi_sumatera3, lag.max = 5, type = "both")
+best_lag_padi_sumatera3
+```
+### VAR Model Iklim indonesia terhadap produksi padi Sumatera
+```{r}
+
+var_model_Padi_sumatera3 <- VAR(ts_data_padi_sumatera3, p = best_lag_padi_sumatera3$selection[1], type = "both") # jumlah order dari model VAR
+summary(var_model_Padi_sumatera3)
+```
+
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+Pearson_padi1 <- cor(data_var_sumatera3$Produksi_transformed, data_var_sumatera3$Curah_hujan)
+cat ("Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi transformed:",Pearson_padi1)
+```
+Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi transformed: 0.19
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+Pearson_padi2 <- cor(data_var_sumatera3$Produksi_transformed, data_var_sumatera3$Luas_Panen)
+cat ("Koefisien Korelasi Pearson Luas panen dan Produksi transformed:",Pearson_padi2)
+```
+Koefisien Korelasi Pearson Luas panen dan Produksi transformed: 0.72
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+Pearson_padi3 <- cor(data_var_sumatera3$Produksi_transformed, data_var_sumatera3$Kelembapan)
+cat ("Koefisien Korelasi Pearson Kelembapan dan Produksi transformed:",Pearson_padi3)
+```
+Koefisien Korelasi Pearson Kelembapan dan Produksi transformed: -0.18
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+Pearson_padi4 <- cor(data_var_sumatera3$Produksi_transformed, data_var_sumatera3$Penyinaran_Matahari)
+cat ("Koefisien Korelasi Pearson Penyinaran Matahari dan Produksi transformed:",Pearson_padi4)
+```
+Koefisien Korelasi Pearson Penyinaran Matahari dan Produksi transformed: 0.05
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+Pearson_padi5 <- cor(data_var_sumatera3$Produksi_transformed, data_var_sumatera3$Suhu)
+cat ("Koefisien Korelasi Pearson Suhu dan Produksi transformed:",Pearson_padi5)
+```
+Koefisien Korelasi Pearson Suhu dan Produksi transformed: 0.015
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+Pearson_padi6 <- cor(data_var_sumatera3$Produksi_transformed, data_var_sumatera3$Kecepatan_Angin)
+cat ("Koefisien Korelasi Pearson Kecepatan angin dan Produksi transformed:",Pearson_padi6)
+```
+Koefisien Korelasi Pearson Kecepatan angin dan Produksi transformed: -0.5333232
+
+
+## Analisis Iklim terhadap Jagung di Pulau sumatera 2006-20015 dengan Model VAR
+
+```{r}
+#Mengambil tanaman pangan padi di pulau sumatera
+Iklim_jagung <- Iklim_clean %>%
+  filter(Jenis_Komoditi == "Jagung") 
+
+Iklim_jagung
+```
+
+## Iklim terhadap produksi Jagung Sumatera
+
+```{r}
+# Pilih variabel yang akan diprediksi
+
+jagung_var_sumatera1 <- Iklim_jagung[, c("Produksi", "Luas_Panen", "Kecepatan_Angin", "Kelembapan", "Suhu", "Penyinaran_Matahari", "Curah_hujan")]
+jagung_var_sumatera1
+```
+
+Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam
+format time series (ts)
+
+```{r}
+ts_jagung_sumatera <- ts(jagung_var_sumatera1, start = c(2006,1), frequency = 1)
+ts_jagung_sumatera
+```
+
+
+```{r}
+best_lag_jagung_sumatera<- VARselect(ts_jagung_sumatera, lag.max = 5, type = "both")
+best_lag_jagung_sumatera
+```
+### VAR Model Iklim terhadap produksi Jagung sumatera
+```{r}
+
+var_model_jagung_sumatera <- VAR(ts_jagung_sumatera, p = best_lag_jagung_sumatera$selection[1], type = "both") # jumlah order dari model VAR
+summary(var_model_jagung_sumatera)
+```
+
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_jagung1 <- cor(jagung_var_sumatera1$Produksi, jagung_var_sumatera1$Curah_hujan)
+cat ("Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi:",kolerasi_jagung1)
+```
+Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi: 0.011
+
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_jagung2 <- cor(jagung_var_sumatera1$Produksi, jagung_var_sumatera1$Luas_Panen)
+cat ("Koefisien Korelasi Pearson Luas panen dan Produksi:", kolerasi_jagung2)
+```
+Koefisien Korelasi Pearson Luas panen dan Produksi: 0.95
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_jagung3 <- cor(jagung_var_sumatera1$Produksi, jagung_var_sumatera1$Kecepatan_Angin)
+cat ("Koefisien Korelasi Pearson Kecepatan Angin dan Produksi:", kolerasi_jagung3)
+```
+Koefisien Korelasi Pearson Kecepatan Angin dan Produksi:  -0.35
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_jagung4 <- cor(jagung_var_sumatera1$Produksi, jagung_var_sumatera1$Kelembapan)
+cat ("Koefisien Korelasi Pearson Kelembapan dan Produksi:", kolerasi_jagung4)
+```
+Koefisien Korelasi Pearson Kelembapan dan Produksi: -.19
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_jagung5 <- cor(jagung_var_sumatera1$Produksi, jagung_var_sumatera1$Penyinaran_Matahari)
+cat ("Koefisien Korelasi Pearson Penyinaran_Matahari dan Produksi:", kolerasi_jagung5)
+```
+Koefisien Korelasi Pearson Penyinaran_Matahari dan Produksi: 0.14
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_jagung6 <- cor(jagung_var_sumatera1$Produksi, jagung_var_sumatera1$Suhu)
+cat ("Koefisien Korelasi Pearson Suhu dan Produksi:", kolerasi_jagung6)
+```
+Koefisien Korelasi Pearson Suhu dan Produksi: 0.05
+
+
+
+
+## Iklim terhadap Produktivitas Jagung Sumatera
+
+```{r}
+# Pilih variabel yang akan diprediksi
+
+jagung_var_sumatera2 <- Iklim_jagung[, c("Produktivitas", "Luas_Panen", "Kecepatan_Angin", "Kelembapan", "Suhu", "Penyinaran_Matahari", "Curah_hujan")]
+jagung_var_sumatera2
+```
+
+Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam
+format time series (ts)
+
+```{r}
+ts_jagung_sumatera2 <- ts(jagung_var_sumatera2, start = c(2006,1), frequency = 1)
+ts_jagung_sumatera2
+```
+
+
+```{r}
+best_lag_jagung_sumatera2<- VARselect(ts_jagung_sumatera2, lag.max = 5, type = "both")
+best_lag_jagung_sumatera2
+```
+
+### VAR Model Iklim terhadap produktivitas Jagung sumatera
+```{r}
+
+var_model_jagung_sumatera2 <- VAR(ts_jagung_sumatera2, p = best_lag_jagung_sumatera2$selection[1], type = "both") # jumlah order dari model VAR
+summary(var_model_jagung_sumatera2)
+```
+
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_padi7 <- cor(jagung_var_sumatera2$Produktivitas, jagung_var_sumatera2$Curah_hujan)
+cat ("Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi:",kolerasi_padi7)
+```
+Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi: 0.0405
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_jagung8 <- cor(jagung_var_sumatera2$Produktivitas, jagung_var_sumatera2$Luas_Panen)
+cat ("Koefisien Korelasi Pearson Luas panen dan Produktivitas:", kolerasi_jagung8)
+```
+Koefisien Korelasi Pearson Luas panen dan Produktivitas: 0.42
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_jagung9 <- cor(jagung_var_sumatera2$Produktivitas, jagung_var_sumatera2$Kecepatan_Angin)
+cat ("Koefisien Korelasi Pearson Kecepatan Angin dan Produktivitas:", kolerasi_jagung9)
+```
+Koefisien Korelasi Pearson Kecepatan Angin dan Produktivitas: -0.65
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_jagung10<- cor(jagung_var_sumatera2$Produktivitas, jagung_var_sumatera2$Kelembapan)
+cat ("Koefisien Korelasi Pearson Kelembapan dan Produktivitas:", kolerasi_jagung10)
+```
+Koefisien Korelasi Pearson Kelembapan dan Produktivitas: -0.044
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_jagung11 <- cor(jagung_var_sumatera2$Produktivitas, jagung_var_sumatera2$Penyinaran_Matahari)
+cat ("Koefisien Korelasi Pearson Penyinaran_Matahari dan Produktivitas:", kolerasi_jagung11)
+```
+Koefisien Korelasi Pearson Penyinaran_Matahari dan Produktivitas : -0.074
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_jagung12 <- cor(jagung_var_sumatera2$Produktivitas, jagung_var_sumatera2$Suhu)
+cat ("Koefisien Korelasi Pearson Suhu dan Produktivitas:", kolerasi_jagung12)
+```
+Koefisien Korelasi Pearson Suhu dan Produktivitas: -0.16
+
+
+## Iklim terhadap Produksi_transformed Padi Sumatera
+
+```{r}
+# Pilih variabel yang akan diprediksi
+
+jagung_var_sumatera3 <- Iklim_jagung[, c("Produksi_transformed", "Luas_Panen", "Kecepatan_Angin", "Kelembapan", "Suhu", "Penyinaran_Matahari", "Curah_hujan")]
+jagung_var_sumatera3
+```
+
+Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam
+format time series (ts)
+
+```{r}
+ts_data_jagung_sumatera3 <- ts(jagung_var_sumatera3, start = c(2006,1), frequency = 1)
+ts_data_jagung_sumatera3
+```
+
+
+```{r}
+best_lag_jagung_sumatera3<- VARselect(ts_data_jagung_sumatera3, lag.max = 5, type = "both")
+best_lag_jagung_sumatera3
+```
+### VAR Model Iklim indonesia terhadap produksi padi Sumatera
+```{r}
+
+var_model_jagung_sumatera3 <- VAR(ts_data_jagung_sumatera3, p = best_lag_jagung_sumatera3$selection[1], type = "both") # jumlah order dari model VAR
+summary(var_model_jagung_sumatera3)
+```
+
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+Pearson_jagung1 <- cor(jagung_var_sumatera3$Produksi_transformed, jagung_var_sumatera3$Curah_hujan)
+cat ("Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi transformed:",Pearson_jagung1)
+```
+Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi transformed: 0.16
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+Pearson_jagung2 <- cor(jagung_var_sumatera3$Produksi_transformed, jagung_var_sumatera3$Luas_Panen)
+cat ("Koefisien Korelasi Pearson Luas panen dan Produksi transformed:",Pearson_jagung2)
+```
+Koefisien Korelasi Pearson Luas panen dan Produksi transformed: 0.68
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+Pearson_jagung3 <- cor(jagung_var_sumatera3$Produksi_transformed, jagung_var_sumatera3$Kelembapan)
+cat ("Koefisien Korelasi Pearson Kelembapan dan Produksi transformed:",Pearson_jagung3)
+```
+Koefisien Korelasi Pearson Kelembapan dan Produksi transformed: -0.21
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+Pearson_jagung4 <- cor(jagung_var_sumatera3$Produksi_transformed, jagung_var_sumatera3$Penyinaran_Matahari)
+cat ("Koefisien Korelasi Pearson Penyinaran Matahari dan Produksi transformed:",Pearson_jagung4)
+```
+Koefisien Korelasi Pearson Penyinaran Matahari dan Produksi transformed: 0.076
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+Pearson_jagung5 <- cor(jagung_var_sumatera3$Produksi_transformed, jagung_var_sumatera3$Suhu)
+cat ("Koefisien Korelasi Pearson Suhu dan Produksi transformed:",Pearson_jagung5)
+```
+Koefisien Korelasi Pearson Suhu dan Produksi transformed: -0.03
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+Pearson_jagung6 <- cor(jagung_var_sumatera3$Produksi_transformed, jagung_var_sumatera3$Kecepatan_Angin)
+cat ("Koefisien Korelasi Pearson Kecepatan angin dan Produksi transformed:",Pearson_jagung6)
+```
+Koefisien Korelasi Pearson Kecepatan angin dan Produksi transformed: -0.56
+
+
+
+## Analisis Iklim terhadap Ubi Jalar di Pulau sumatera 2006-20015 dengan Model VAR
+
+```{r}
+#Mengambil tanaman pangan ubi jalar di pulau sumatera
+Iklim_ubi_jalar <- Iklim_clean %>%
+  filter(Jenis_Komoditi == "Ubi Jalar") 
+
+Iklim_ubi_jalar
+```
+
+## Iklim terhadap produksi Ubi Jalar Sumatera
+
+```{r}
+# Pilih variabel yang akan diprediksi
+
+ubi_jalar_var_sumatera1 <- Iklim_ubi_jalar[, c("Produksi", "Luas_Panen", "Kecepatan_Angin", "Kelembapan", "Suhu", "Penyinaran_Matahari", "Curah_hujan")]
+ubi_jalar_var_sumatera1
+```
+
+Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam
+format time series (ts)
+
+```{r}
+ts_ubi_jalar_sumatera <- ts(ubi_jalar_var_sumatera1, start = c(2006,1), frequency = 1)
+ts_ubi_jalar_sumatera
+```
+
+
+```{r}
+lag_ubijalar_sumatera<- VARselect(ts_ubi_jalar_sumatera, lag.max = 5, type = "both")
+lag_ubijalar_sumatera
+```
+### VAR Model Iklim terhadap produksi padi sumatera
+```{r}
+var_model_ubijalar_sumatera <- VAR(ts_ubi_jalar_sumatera, p = lag_ubijalar_sumatera$selection[1], type = "both") # jumlah order dari model VAR
+summary(var_model_ubijalar_sumatera)
+```
+
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_ubi_jalar1 <- cor(ubi_jalar_var_sumatera1$Produksi, ubi_jalar_var_sumatera1$Curah_hujan)
+cat ("Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi:",kolerasi_ubi_jalar1)
+```
+Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi: 0.19
+
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_ubijalar2 <- cor(ubi_jalar_var_sumatera1$Produksi, ubi_jalar_var_sumatera1$Luas_Panen)
+cat ("Koefisien Korelasi Pearson Luas panen dan Produksi:", kolerasi_ubijalar2)
+```
+Koefisien Korelasi Pearson Luas panen dan Produksi: 0.88
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_ubijalar3 <- cor(ubi_jalar_var_sumatera1$Produksi, ubi_jalar_var_sumatera1$Kecepatan_Angin)
+cat ("Koefisien Korelasi Pearson Kecepatan Angin dan Produksi:", kolerasi_ubijalar3)
+```
+Koefisien Korelasi Pearson Kecepatan Angin dan Produksi:  -0.51
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_ubijalar4 <- cor(ubi_jalar_var_sumatera1$Produksi, ubi_jalar_var_sumatera1$Kelembapan)
+cat ("Koefisien Korelasi Pearson Kelembapan dan Produksi:", kolerasi_ubijalar4)
+```
+Koefisien Korelasi Pearson Kelembapan dan Produksi: -0.003
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_ubijalar5 <- cor(ubi_jalar_var_sumatera1$Produksi, ubi_jalar_var_sumatera1$Penyinaran_Matahari)
+cat ("Koefisien Korelasi Pearson Penyinaran_Matahari dan Produksi:", kolerasi_ubijalar5)
+```
+Koefisien Korelasi Pearson Penyinaran_Matahari dan Produksi: -0.24
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_ubijalar6 <- cor(ubi_jalar_var_sumatera1$Produksi, ubi_jalar_var_sumatera1$Suhu)
+cat ("Koefisien Korelasi Pearson Suhu dan Produksi:", kolerasi_ubijalar6)
+```
+Koefisien Korelasi Pearson Suhu dan Produksi: 0.016
+
+
+
+## Iklim terhadap Produktivitas Padi Sumatera
+
+```{r}
+# Pilih variabel yang akan diprediksi
+
+ubijalar_var_sumatera2 <- Iklim_ubi_jalar[, c("Produktivitas", "Luas_Panen", "Kecepatan_Angin", "Kelembapan", "Suhu", "Penyinaran_Matahari", "Curah_hujan")]
+ubijalar_var_sumatera2
+```
+
+Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam
+format time series (ts)
+
+```{r}
+ts_ubijalar_sumatera2 <- ts(ubijalar_var_sumatera2, start = c(2006,1), frequency = 1)
+ts_ubijalar_sumatera2
+```
+
+
+```{r}
+lag_ubijalar_sumatera2<- VARselect(ts_ubijalar_sumatera2, lag.max = 5, type = "both")
+lag_ubijalar_sumatera2
+```
+### VAR Model Iklim terhadap produktivitas Jagung sumatera
+```{r}
+
+var_model_ubijalar_sumatera2 <- VAR(ts_ubijalar_sumatera2, p = lag_ubijalar_sumatera2$selection[1], type = "both") # jumlah order dari model VAR
+summary(var_model_ubijalar_sumatera2)
+```
+
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_ubijalar7 <- cor(ubijalar_var_sumatera2$Produktivitas, ubijalar_var_sumatera2$Curah_hujan)
+cat ("Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi:",kolerasi_ubijalar7)
+```
+Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi: -0.017
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_ubijalar8 <- cor(ubijalar_var_sumatera2$Produktivitas, ubijalar_var_sumatera2$Luas_Panen)
+cat ("Koefisien Korelasi Pearson Luas panen dan Produktivitas:", kolerasi_ubijalar8)
+```
+Koefisien Korelasi Pearson Luas panen dan Produktivitas: 0.22
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_ubijalar9 <- cor(ubijalar_var_sumatera2$Produktivitas, ubijalar_var_sumatera2$Kecepatan_Angin)
+cat ("Koefisien Korelasi Pearson Kecepatan Angin dan Produktivitas:", kolerasi_jagung9)
+```
+Koefisien Korelasi Pearson Kecepatan Angin dan Produktivitas: -0.65
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_ubijalar10<- cor(ubijalar_var_sumatera2$Produktivitas, ubijalar_var_sumatera2$Kelembapan)
+cat ("Koefisien Korelasi Pearson Kelembapan dan Produktivitas:", kolerasi_ubijalar10)
+```
+Koefisien Korelasi Pearson Kelembapan dan Produktivitas: 0.05
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_ubijalar11 <- cor(ubijalar_var_sumatera2$Produktivitas, ubijalar_var_sumatera2$Penyinaran_Matahari)
+cat ("Koefisien Korelasi Pearson Penyinaran_Matahari dan Produktivitas:", kolerasi_ubijalar11)
+```
+Koefisien Korelasi Pearson Penyinaran_Matahari dan Produktivitas : -0.26
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_ubijalar12 <- cor(ubijalar_var_sumatera2$Produktivitas, ubijalar_var_sumatera2$Suhu)
+cat ("Koefisien Korelasi Pearson Suhu dan Produktivitas:", kolerasi_ubijalar12)
+```
+Koefisien Korelasi Pearson Suhu dan Produktivitas: -0.2519937
+
+
+## Melakukan VAR Iklim terhadap tanaman pangan pada provinsi ACEH
+```{r}
+#Mengambil Provinsi Aceh 
+Aceh_iklim <- Iklim_clean %>%
+  filter(Provinsi == "ACEH") 
+
+Aceh_iklim
+```
+
+
+```{r}
+#mengambil data curah hujan, tahun dan provinsi dari dataser sumatera_padi
+Aceh1 <- sumatera_padi[, c("Tahun", "Provinsi", "Curah_hujan")] #subdataset yang hanya berisikan 3 kolom
+Aceh1
+```
+
+
+
+```{r}
+#Mengambil Curah hujan di Provinsi Aceh pada pada dataset Aceh1 karena curah hujan di datasetAceh yg di sumatera_padi bukan untuk padi saja. serta menfilter tahun hanya tahun 2006 sampai tahun 2015
+hujan1_aceh <-Aceh1 %>%
+  mutate(Tahun = year(Tahun)) %>%
+  filter(Tahun >= 2006 & Tahun <= 2015)%>%
+  filter(Provinsi == "Aceh") 
+hujan1_aceh
+```
+
+```{r}
+# Mengabungkan kedua dataset
+merged_Aceh <- merge(hujan1_aceh, Aceh_iklim, by.x = "Tahun", by.y = "Tahun")
+merged_Aceh
+```
+
+
+```{r}
+# Merubah type variabel tahun menjadi Date
+merged_Aceh$Tahun <- make_date(merged_Aceh$Tahun)
+glimpse(merged_Aceh)
+```
+# VAR Padi
+
+```{r}
+padi_aceh <-merged_Aceh %>%
+  filter(Jenis_Komoditi == "Padi") 
+padi_aceh
+```
+
+## VAR iklim terhadap produksi padi Aceh
+```{r}
+# Pilih variabel yang akan diprediksi
+# dalam pengujian ini akan dilihat apakah ada pengaruh curah hujan terhadap peningkatan produksi
+
+Var_padi_aceh <- padi_aceh[, c("Produksi", "Curah_hujan", "Kecepatan_Angin", "Kelembapan", "Suhu", "Penyinaran_Matahari")] #subdataset yang hanya berisikan 6 kolom
+Var_padi_aceh
+```
+
+Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam format time series (ts)
+
+```{r}
+ts_padi_aceh <- ts(Var_padi_aceh, start = c(2006,1), frequency = 1)
+head(ts_padi_aceh)
+```
+
+```{r}
+#menetukan jumlah lag yang optimal dlm Var
+best_lag_padi_aceh <- VARselect(ts_padi_aceh, lag.max = 1, type = "both")
+best_lag_padi_aceh
+
+#akan berisi hasil pemilihan model VAR terbaik berdasarkan perbandingan AIC dan BIC untuk berbagai jumlah lag
+```
+
+```{r}
+# VAR Model
+#var_model_padi_aceh <- VAR(ts_padi_aceh, p = best_lag_padi_aceh$selection[1], type = "both") # jumlah order dari model VAR
+#summary(var_model_padi_aceh)
+
+#Tujuan dari coding ini adalah untuk membangun model VAR yang sesuai dengan jumlah lag terbaik yang telah Anda tentukan sebelumnya dan kemudian menganalisis model tersebut dengan melihat ringkasan yang dihasilkan. 
+```
+
+Kalau dilihat dari hasil model VAR diatas, bahwa variabel yang sangat berdampak pada produksi padi adalah variabel Luas_panen, karena nilai P-Value dari 3 lag yaitu Lag1, Lag2 dan Lag4 lebih rendah dari 0,05. Sementara untuk variabel curah_hujan, kelembapan, suhu_rata_rata pada lag yang diuji tidak tampak signifikan karena nilai P-Value lebih besar dari 0,05
+
+```{r}
+# Melakukan uji Granger Causality
+granger_test_padi_aceh <- causality(var_model_padi_aceh, cause = "Curah_hujan")
+granger_test_padi_aceh
+
+#Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
+```
+
+
