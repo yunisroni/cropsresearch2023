@@ -81,7 +81,7 @@ head(pangan)
 glimpse(pangan)
 colSums(is.na(pangan))
 ```
-Jumlah data : 5,474 Record. Dari 6 variabel terhadap 3 buah variabel dengan data NA'S
+Jumlah data : 6,426 Record. Dari 6 variabel terhadap 3 buah variabel dengan data NA'S
 
 ```{r}
 # Menghapus data NA'S
@@ -94,7 +94,7 @@ yang kosong atau NA'
 ```{r}
 glimpse(pangan_clean)
 ```
-Jumlah data setelah dihapus data NA' menjadi 4,643 baris observasi dengan
+Jumlah data setelah dihapus data NA' menjadi 5,564 baris observasi dengan
 6 variabel.
 
 
@@ -533,7 +533,7 @@ plot_jagung_3 <- ggplot(totproduksi_jagung_provinsi, aes(x = Provinsi, y = Total
 # Rotasi sumbu x agar mudah dibaca
 plot_jagung_3 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
-Perbandingan produksi Jagung dalam kurun waktu 1993 - 2015 adalah dari provinsi Jawa Timur yang terbanyak dengan Jumlah Produksi Jagung sebesar 98164357 Ton.
+Perbandingan produksi Jagung dalam kurun waktu 1993 - 2019 adalah dari provinsi Jawa Timur yang terbanyak dengan Jumlah Produksi Jagung sebesar 120610019 Ton.
 
 
 ### - Perbandingan Produksi Kacang Hijau Per Provinsi
@@ -555,7 +555,7 @@ plot_kacanghijau_3 <- ggplot(totproduksi_kacanghijau_provinsi, aes(x = Provinsi,
 # Rotasi sumbu x agar mudah dibaca
 plot_kacanghijau_3 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
-Perbandingan produksi Kacang Hijau dalam kurun waktu 1993 - 2015 adalah dari provinsi Jawa Tengah yang terbanyak dengan Jumlah Produksi Kacang Hijau sebesar 1549775 Ton.
+Perbandingan produksi Kacang Hijau dalam kurun waktu 1993 - 2019 adalah dari provinsi Jawa Tengah yang terbanyak dengan Jumlah Produksi Kacang Hijau sebesar 1987021 Ton.
 
 
 ### - Perbandingan Produksi Kacang Kedelai Per Provinsi
@@ -577,7 +577,7 @@ plot_kacangkedelai_3 <- ggplot(totproduksi_kacangkedelai_provinsi, aes(x = Provi
 # Rotasi sumbu x agar mudah dibaca
 plot_kacangkedelai_3 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
-Perbandingan produksi Kacang Kedelai dalam kurun waktu 1993 - 2015 adalah dari provinsi Jawa Timur yang terbanyak dengan Jumlah Produksi Kacang Kedelai sebesar 8773308 Ton.
+Perbandingan produksi Kacang Kedelai dalam kurun waktu 1993 - 2019 adalah dari provinsi Jawa Timur yang terbanyak dengan Jumlah Produksi Kacang Kedelai sebesar 9503483 Ton.
 
 
 ### - Perbandingan Produksi Kacang Tanah Per Provinsi
@@ -599,7 +599,7 @@ plot_kacangtanah_3 <- ggplot(totproduksi_kacangtanah_provinsi, aes(x = Provinsi,
 # Rotasi sumbu x agar mudah dibaca
 plot_kacangtanah_3 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
-Perbandingan produksi Kacang Tanah dalam kurun waktu 1993 - 2015 adalah dari provinsi Jawa Timur yang terbanyak dengan Jumlah Produksi Kacang Tanah sebesar 4295694 Ton.
+Perbandingan produksi Kacang Tanah dalam kurun waktu 1993 - 2019 adalah dari provinsi Jawa Timur yang terbanyak dengan Jumlah Produksi Kacang Tanah sebesar 4901935 Ton.
 
 
 ### - Perbandingan Produksi Ubi Jalar Per Provinsi
@@ -621,7 +621,7 @@ plot_ubijalar_3 <- ggplot(totproduksi_ubijalar_provinsi, aes(x = Provinsi, y = T
 # Rotasi sumbu x agar mudah dibaca
 plot_ubijalar_3 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
-Perbandingan produksi Ubi Jalar dalam kurun waktu 1993 - 2015 adalah dari provinsi Jawa Barat yang terbanyak dengan Jumlah Produksi Ubi Jalar sebesar 9548484.00 Ton.
+Perbandingan produksi Ubi Jalar dalam kurun waktu 1993 - 2019 adalah dari provinsi Jawa Barat yang terbanyak dengan Jumlah Produksi Ubi Jalar sebesar 11531604.00 Ton.
 
 
 ### - Perbandingan Produksi Ubi Kayu Per Provinsi
@@ -643,7 +643,7 @@ plot_ubikayu_3 <- ggplot(totproduksi_ubikayu_provinsi, aes(x = Provinsi, y = Tot
 # Rotasi sumbu x agar mudah dibaca
 plot_ubikayu_3 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
-Perbandingan produksi Ubi Kayu dalam kurun waktu 1993 - 2015 adalah dari provinsi Lampung yang terbanyak dengan Jumlah Produksi Ubi Kayu sebesar 118343702 Ton.
+Perbandingan produksi Ubi Kayu dalam kurun waktu 1993 - 2019 adalah dari provinsi Lampung yang terbanyak dengan Jumlah Produksi Ubi Kayu sebesar 139324040 Ton.
 
 
 ### - Perbandingan Produksi Padi Per Provinsi
@@ -665,7 +665,7 @@ plot_padi_3 <- ggplot(totproduksi_padi_provinsi, aes(x = Provinsi, y = TotalProd
 # Rotasi sumbu x agar mudah dibaca
 plot_padi_3 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
-Perbandingan produksi Padi dalam kurun waktu 1993 - 2015 adalah dari provinsi Jawa Barat yang terbanyak dengan Jumlah Produksi Padi sebesar 240124024 Ton.
+Perbandingan produksi Padi dalam kurun waktu 1993 - 2015 adalah dari provinsi Jawa Barat yang terbanyak dengan Jumlah Produksi Padi sebesar 283696591 Ton.
 
 
 
@@ -928,7 +928,7 @@ correlation_jagung <- cor(Jagung$Luas_Panen, Jagung$Produksi)
 cat("Koefisien Korelasi Pearson Luas Panen dan Produksi:", correlation_jagung)
 ```
 
-Berdasarkan grafik diatas bisa lihat bahwa ada korelasi antara luas panen dan produksi. Hubungan korelasi adalah positif dengan nilai korelasi sebesar 0,95; sehingga bisa disimpulkan bahwa jika semakin banyak luas panen maka akan meningkat jumlah produksi jagung.
+Berdasarkan grafik diatas bisa lihat bahwa ada korelasi antara luas panen dan produksi. Hubungan korelasi adalah positif dengan nilai korelasi sebesar 0,94; sehingga bisa disimpulkan bahwa jika semakin banyak luas panen maka akan meningkat jumlah produksi jagung.
 
 ### - Korelasi Luas Panen dan Produksi Kacang Hijau
 ```{r}
@@ -1018,7 +1018,7 @@ correlation_ubijalar <- cor(UbiJalar$Luas_Panen, UbiJalar$Produksi)
 # Nilai correlation coefficient
 cat("Koefisien Korelasi Pearson Luas Panen dan Produksi:", correlation_ubijalar)
 ```
-Berdasarkan grafik diatas bisa lihat bahwa ada korelasi antara luas panen dan produksi. Hubungan korelasi adalah positif dengan nilai korelasi sebesar 0,89; sehingga bisa disimpulkan bahwa jika semakin banyak luas panen maka akan meningkat jumlah produksi ubi jalar.
+Berdasarkan grafik diatas bisa lihat bahwa ada korelasi antara luas panen dan produksi. Hubungan korelasi adalah positif dengan nilai korelasi sebesar 0,87; sehingga bisa disimpulkan bahwa jika semakin banyak luas panen maka akan meningkat jumlah produksi ubi jalar.
 
 
 ### - Korelasi Luas Panen dan Produksi Ubi Kayu
@@ -2389,7 +2389,7 @@ prophet_ts_jg <- prophet(yearly.seasonality = TRUE, seasonality.prior.scale = 0.
 
 ```{r}
 # Melakukan Prediksi untuk produksi 10 tahun ke depan
-future_prophet_ts_jg <- make_future_dataframe(prophet_ts_jg, periods = 365*11)
+future_prophet_ts_jg <- make_future_dataframe(prophet_ts_jg, periods = 365*7)
 tail(future_prophet_ts_jg)
 ```
 ```{r}
@@ -2413,17 +2413,17 @@ plot(prophet_ts_jg, forecast_ts_jg) +
 ```
 ```{r}
 # Membuat subset data untuk tahun 2016-2025
-forecast_subset <- forecast_ts_jg[forecast_ts_jg$ds >= as.Date("2016-01-01") & forecast_ts_jg$ds <= as.Date("2025-01-01"), ]
+forecast_subset <- forecast_ts_jg[forecast_ts_jg$ds >= as.Date("2020-01-01") & forecast_ts_jg$ds <= as.Date("2025-01-01"), ]
 
 # Hanya ambil kolom Tahun dan yhat
-forecast_yhat_2016_2025_pd <- forecast_subset[, c("ds", "yhat")]
+forecast_yhat_2020_2025_pd <- forecast_subset[, c("ds", "yhat")]
 
 # Print hasilnya
-print(forecast_yhat_2016_2025_pd)
+print(forecast_yhat_2020_2025_pd)
 ```
 
 ```{r}
-tail(forecast_yhat_2016_2025_pd,10)
+tail(forecast_yhat_2020_2025_pd,10)
 ```
 ```{r}
 # Mengelompokkan dan Menyiapkan data testing berdasarkan variabel Produksi
@@ -2488,14 +2488,10 @@ cat(paste("MAPE: ", mape_value_prophet_jg, "%\n"))
 Mengambil data Curah Hujan dari hasil prediksi 2021-2024
 ```{r}
 # Filter data untuk tahun 2021-2024
-forecast_subset_jg <- forecast_ts_jg[forecast_ts_jg$ds >= as.Date("2016-01-01") & forecast_ts_pd$ds <= as.Date("2025-01-01"), ]
+forecast_subset_jg <- forecast_ts_jg[forecast_ts_jg$ds >= as.Date("2020-01-01") & forecast_ts_jg$ds <= as.Date("2025-01-01"), ]
 forecast_subset_jg
 
 # Hitung rata-rata yhat per tahun
-average_yhat_2016_jg <- mean(forecast_subset_jg$yhat[forecast_subset_jg$ds == as.Date("2016-01-01")])
-average_yhat_2017_jg <- mean(forecast_subset_jg$yhat[forecast_subset_jg$ds == as.Date("2017-01-01")])
-average_yhat_2018_jg <- mean(forecast_subset_jg$yhat[forecast_subset_jg$ds == as.Date("2018-01-01")])
-average_yhat_2019_jg <- mean(forecast_subset_jg$yhat[forecast_subset_jg$ds == as.Date("2019-01-01")])
 average_yhat_2020_jg <- mean(forecast_subset_jg$yhat[forecast_subset_jg$ds == as.Date("2020-01-01")])
 average_yhat_2021_jg <- mean(forecast_subset_jg$yhat[forecast_subset_jg$ds == as.Date("2021-01-01")])
 average_yhat_2022_jg <- mean(forecast_subset_jg$yhat[forecast_subset_jg$ds == as.Date("2022-01-01")])
@@ -2504,7 +2500,7 @@ average_yhat_2024_jg <- mean(forecast_subset_jg$yhat[forecast_subset_jg$ds == as
 average_yhat_2025_jg <- mean(forecast_subset_jg$yhat[forecast_subset_jg$ds == as.Date("2025-01-01")])
 
 # Buat data frame
-average_jg_df <- data.frame(Tahun = c(2016, 2017, 2018, 2019, 2020,2021,2022,2023, 2024,2025), Produksi = c(average_yhat_2016_jg, average_yhat_2017_jg,average_yhat_2018_jg,average_yhat_2019_jg, average_yhat_2020_jg, average_yhat_2021_jg,average_yhat_2022_jg, average_yhat_2023_jg, average_yhat_2024_jg, average_yhat_2025_jg))
+average_jg_df <- data.frame(Tahun = c(2020,2021,2022,2023, 2024,2025), Produksi = c(average_yhat_2020_jg, average_yhat_2021_jg,average_yhat_2022_jg, average_yhat_2023_jg, average_yhat_2024_jg, average_yhat_2025_jg))
 
 # Tampilkan hasilnya
 average_jg_df

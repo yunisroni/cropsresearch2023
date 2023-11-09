@@ -19,6 +19,7 @@ library(readxl)
 library(randomForest)
 # library untuk model SVR
 library(e1071)
+library(timetk)
 ```
 
 # 2. Obstain - Load Dataset
@@ -26,21 +27,24 @@ library(e1071)
 ```{r}
 Iklim <- read_excel("dataset/Dataset Tanaman Pangan dan Iklim di Indonesia (2006-2015).xlsx")
 Iklim
-CurahHujan <- read.csv("dataset/climateserv-statistical - SUMBAR.csv")
-CurahHujan
+rainfall <- read_excel("dataset/climateserv-statistical - SUMBAR.xlsx")
+rainfall
 ```
 
 ## b.Menampilkan Contoh Data
 ```{r}
 # Menampilkan 6 data teratas
 head(Iklim)
+head(rainfall)
 ```
 ```{r}
 # Menampilkan 6 data terbawah
 tail(Iklim)
+tail(rainfall)
 ```
 ```{r}
 glimpse(Iklim)
+glimpse(rainfall)
 ```
 
 
@@ -55,7 +59,27 @@ head(Iklim)
 ```
 ```{r}
 # Merubah type variabel DateTime menjadi Date
-
+rainfall$Date <- as.Date(rainfall$Date)
+glimpse(rainfall)
+```
+```{r}
+# Merubah nama variabel
+names(rainfall)[names(rainfall) == "Date"] <- "Tanggal"
+names(rainfall)[names(rainfall) == "UCSB CHIRPS Rainfall: avg"] <- "CurahHujan"
+glimpse(rainfall)
+```
+```{r}
+# Mengambil rata-rata curah hujan per tahun
+curahhujan_pertahun <- rainfall %>%
+  mutate(Year = lubridate::year(Tanggal)) %>%
+  group_by(Year) %>%
+  summarise(Avg_Rainfall  = mean(CurahHujan))
+curahhujan_pertahun  
+```
+```{r}
+# Merubah type tahun menjadi date
+curahhujan_pertahun$Year <- make_date(curahhujan_pertahun$Year)
+curahhujan_pertahun
 ```
 
 ## b. Menghapus Data Kosong
@@ -80,41 +104,51 @@ glimpse(iklim_clean)
 Jumlah data setelah dihapus data NA' menjadi 2,026 baris observasi dengan 11 variabel.
 
 ## c. Filter data
+```{r}
+# Filter data for "Sumatera Barat"
+sumbar_data <- iklim_clean %>%
+  filter(Provinsi == "SUMATERA BARAT")
+sumbar_data
+```
+
+```{r}
+# Mengabungkan kedua dataset
+merged_data <- merge(sumbar_data, curahhujan_pertahun, by.x = "Tahun", by.y = "Year")
+merged_data
+```
 ### - Filter data jagung
 ```{r}
-Jagung <- filter(iklim_clean, Jenis_Komoditi == "Jagung", Provinsi == "SUMATERA BARAT")
+Jagung <- filter(merged_data, Jenis_Komoditi == "Jagung")
 Jagung
-
 ```
 ### - Filter data kacang hijau
 ```{r}
-KacangHijau <- filter(iklim_clean, Jenis_Komoditi == "Kacang Hijau", Provinsi == "SUMATERA BARAT")
+KacangHijau <- filter(merged_data, Jenis_Komoditi == "Kacang Hijau")
 KacangHijau
 ```
 ### - Filter data kacang kedelai
 ```{r}
-KacangKedelai <- filter(iklim_clean, Jenis_Komoditi == "Kedelai", Provinsi == "SUMATERA BARAT")
+KacangKedelai <- filter(merged_data, Jenis_Komoditi == "Kedelai")
 KacangKedelai
 ```
 ### - Filter data kacang tanah
 ```{r}
-KacangTanah <- filter(iklim_clean, Jenis_Komoditi == "Kacang Tanah", Provinsi == "SUMATERA BARAT")
+KacangTanah <- filter(merged_data, Jenis_Komoditi == "Kacang Tanah")
 KacangTanah
 ```
 ### - Filter data ubi jalar
 ```{r}
-UbiJalar <- filter(iklim_clean, Jenis_Komoditi == "Ubi Jalar", Provinsi == "SUMATERA BARAT")
+UbiJalar <- filter(merged_data, Jenis_Komoditi == "Ubi Jalar")
 UbiJalar
-
 ```
 ### - Filter data ubi kayu
 ```{r}
-UbiKayu <- filter(iklim_clean, Jenis_Komoditi == "Ubi Kayu", Provinsi == "SUMATERA BARAT")
+UbiKayu <- filter(merged_data, Jenis_Komoditi == "Ubi Kayu")
 UbiKayu
 ```
 ### - Filter data padi
 ```{r}
-Padi <- filter(iklim_clean, Jenis_Komoditi == "Padi", Provinsi == "SUMATERA BARAT")
+Padi <- filter(merged_data, Jenis_Komoditi == "Padi")
 Padi
 ```
 
@@ -184,6 +218,15 @@ correlation_penyinaranmatahari_pd <- cor(Padi$Penyinaran_Matahari, Padi$Produksi
 cat("Koefisien Korelasi Pearson Penyinaran Matahari dan Produksi:", correlation_penyinaranmatahari_pd)
 ```
 Hubungan korelasi adalah kecil dengan nilai korelasi sebesar 0,01. 
+
+```{r}
+# Hitung Pearson correlation coefficient
+correlation_curahhujan_pd <- cor(Padi$Avg_Rainfall, Padi$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson Curah Hujan dan Produksi:", correlation_curahhujan_pd)
+```
+Hubungan korelasi adalah kecil dengan nilai korelasi sebesar -0,24. 
 
 
 ```{r}
@@ -274,6 +317,14 @@ cat("Koefisien Korelasi Pearson Penyinaran Matahari dan Produksi:", correlation_
 ```
 Hubungan korelasi adalah kecil dengan nilai korelasi sebesar -0,28. 
 
+```{r}
+# Hitung Pearson correlation coefficient
+correlation_curahhujan_kh <- cor(KacangHijau$Avg_Rainfall, KacangHijau$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson Curah Hujan dan Produksi:", correlation_curahhujan_kh)
+```
+Hubungan korelasi adalah kecil dengan nilai korelasi sebesar 0,41. 
 
 ```{r}
 # Menghitung total produksi untuk setiap tahun
@@ -282,6 +333,7 @@ summary_kacanghijau <- KacangHijau %>%
   summarise(TotalProduksi = sum(Produksi))
 summary_kacanghijau
 ```
+
 
 ```{r}
 # Visulisasi Produksi Kacang Hijau Sepanjang Tahun 2006-2015
@@ -362,6 +414,14 @@ cat("Koefisien Korelasi Pearson Penyinaran Matahari dan Produksi:", correlation_
 ```
 Hubungan korelasi adalah kecil dengan nilai korelasi sebesar -0,55. 
 
+```{r}
+# Hitung Pearson correlation coefficient
+correlation_curahhujan_kd <- cor(KacangKedelai$Avg_Rainfall, KacangKedelai$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson Curah Hujan dan Produksi:", correlation_curahhujan_kd)
+```
+Hubungan korelasi adalah kecil dengan nilai korelasi sebesar 0,23. 
 
 ```{r}
 # Menghitung total produksi untuk setiap tahun
@@ -372,7 +432,7 @@ summary_kacangkedelai
 ```
 
 ```{r}
-# Visulisasi Produksi Kacang Hijau Sepanjang Tahun 2006-2015
+# Visulisasi Produksi Kacang Kedelai Sepanjang Tahun 2006-2015
 ggplot(summary_kacangkedelai, aes(x = Tahun, y = TotalProduksi)) +
   geom_line() +
   scale_y_continuous(labels = scales::comma) +
@@ -450,6 +510,14 @@ cat("Koefisien Korelasi Pearson Penyinaran Matahari dan Produksi:", correlation_
 ```
 Hubungan korelasi adalah kecil dengan nilai korelasi sebesar -0,62. 
 
+```{r}
+# Hitung Pearson correlation coefficient
+correlation_curahhujan_kt <- cor(KacangTanah$Avg_Rainfall, KacangTanah$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson Curah Hujan dan Produksi:", correlation_curahhujan_kt)
+```
+Hubungan korelasi adalah kecil dengan nilai korelasi sebesar 0,37. 
 
 ```{r}
 # Menghitung total produksi untuk setiap tahun
@@ -539,6 +607,14 @@ cat("Koefisien Korelasi Pearson Penyinaran Matahari dan Produksi:", correlation_
 ```
 Hubungan korelasi adalah kecil dengan nilai korelasi sebesar 0,11. 
 
+```{r}
+# Hitung Pearson correlation coefficient
+correlation_curahhujan_uj <- cor(UbiJalar$Avg_Rainfall, UbiJalar$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson Curah Hujan dan Produksi:", correlation_curahhujan_uj)
+```
+Hubungan korelasi adalah kecil dengan nilai korelasi sebesar -0,26. 
 
 ```{r}
 # Menghitung total produksi untuk setiap tahun
@@ -628,6 +704,14 @@ cat("Koefisien Korelasi Pearson Penyinaran Matahari dan Produksi:", correlation_
 ```
 Hubungan korelasi adalah kecil dengan nilai korelasi sebesar -0,07. 
 
+```{r}
+# Hitung Pearson correlation coefficient
+correlation_curahhujan_uk <- cor(UbiKayu$Avg_Rainfall, UbiKayu$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson Curah Hujan dan Produksi:", correlation_curahhujan_uk)
+```
+Hubungan korelasi adalah kecil dengan nilai korelasi sebesar -0,12. 
 
 ```{r}
 # Menghitung total produksi untuk setiap tahun
@@ -717,6 +801,14 @@ cat("Koefisien Korelasi Pearson Penyinaran Matahari dan Produksi:", correlation_
 ```
 Hubungan korelasi adalah kecil dengan nilai korelasi sebesar -0,02. 
 
+```{r}
+# Hitung Pearson correlation coefficient
+correlation_curahhujan_jg <- cor(Jagung$Avg_Rainfall, Jagung$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson Curah Hujan dan Produksi:", correlation_curahhujan_jg)
+```
+Hubungan korelasi adalah kecil dengan nilai korelasi sebesar -0,26. 
 
 ```{r}
 # Menghitung total produksi untuk setiap tahun
@@ -757,7 +849,7 @@ data_test_Padi
 ####- Model RF 
 ```{r}
 # Membuat model RF
-rf_model_Padi <- randomForest(Produksi ~ Produktivitas + Luas_Panen + Kecepatan_Angin + Kelembapan + Suhu + Tekanan_Udara + Penyinaran_Matahari, data = data_train_Padi, ntree = 1000)
+rf_model_Padi <- randomForest(Produksi ~ Produktivitas + Luas_Panen + Kecepatan_Angin + Kelembapan + Suhu + Tekanan_Udara + Penyinaran_Matahari + Avg_Rainfall, data = data_train_Padi, ntree = 1000)
 rf_model_Padi
 ```
 
@@ -852,7 +944,7 @@ cat(paste("MAPE: ", mape_value_rf_Padi, "%\n"))
 
 ```{r}
 # Membuat model SVR
-svr_model_Padi <- svm(Produksi ~ Produktivitas + Luas_Panen + Kecepatan_Angin + Kelembapan + Suhu + Tekanan_Udara + Penyinaran_Matahari, data = data_train_Padi, kernel = "radial", cost = 1)
+svr_model_Padi <- svm(Produksi ~ Produktivitas + Luas_Panen + Kecepatan_Angin + Kelembapan + Suhu + Tekanan_Udara + Penyinaran_Matahari + Avg_Rainfall, data = data_train_Padi, kernel = "radial", cost = 1)
 svr_model_Padi
 ```
 
@@ -939,7 +1031,7 @@ data_test_KacangHijau
 ####- Model RF 
 ```{r}
 # Membuat model RF
-rf_model_KacangHijau <- randomForest(Produksi ~ Produktivitas + Luas_Panen + Kecepatan_Angin + Kelembapan + Suhu + Tekanan_Udara + Penyinaran_Matahari, data = data_train_KacangHijau, ntree = 1000)
+rf_model_KacangHijau <- randomForest(Produksi ~ Produktivitas + Luas_Panen + Kecepatan_Angin + Kelembapan + Suhu + Tekanan_Udara + Penyinaran_Matahari + Avg_Rainfall, data = data_train_KacangHijau, ntree = 1000)
 rf_model_KacangHijau
 ```
 
@@ -1034,7 +1126,7 @@ cat(paste("MAPE: ", mape_value_rf_KacangHijau, "%\n"))
 
 ```{r}
 # Membuat model SVR
-svr_model_KacangHijau <- svm(Produksi ~ Produktivitas + Luas_Panen + Kecepatan_Angin + Kelembapan + Suhu + Tekanan_Udara + Penyinaran_Matahari, data = data_train_KacangHijau, kernel = "radial", cost = 1)
+svr_model_KacangHijau <- svm(Produksi ~ Produktivitas + Luas_Panen + Kecepatan_Angin + Kelembapan + Suhu + Tekanan_Udara + Penyinaran_Matahari + Avg_Rainfall, data = data_train_KacangHijau, kernel = "radial", cost = 1)
 svr_model_KacangHijau
 ```
 
@@ -1121,7 +1213,7 @@ data_test_KacangKedelai
 ####- Model RF 
 ```{r}
 # Membuat model RF
-rf_model_KacangKedelai <- randomForest(Produksi ~ Produktivitas + Luas_Panen + Kecepatan_Angin + Kelembapan + Suhu + Tekanan_Udara + Penyinaran_Matahari, data = data_train_KacangKedelai, ntree = 1000)
+rf_model_KacangKedelai <- randomForest(Produksi ~ Produktivitas + Luas_Panen + Kecepatan_Angin + Kelembapan + Suhu + Tekanan_Udara + Penyinaran_Matahari + Avg_Rainfall, data = data_train_KacangKedelai, ntree = 1000)
 rf_model_KacangKedelai
 ```
 
@@ -1216,7 +1308,7 @@ cat(paste("MAPE: ", mape_value_rf_KacangKedelai, "%\n"))
 
 ```{r}
 # Membuat model SVR
-svr_model_KacangKedelai <- svm(Produksi ~ Produktivitas + Luas_Panen + Kecepatan_Angin + Kelembapan + Suhu + Tekanan_Udara + Penyinaran_Matahari, data = data_train_KacangKedelai, kernel = "radial", cost = 1)
+svr_model_KacangKedelai <- svm(Produksi ~ Produktivitas + Luas_Panen + Kecepatan_Angin + Kelembapan + Suhu + Tekanan_Udara + Penyinaran_Matahari + Avg_Rainfall, data = data_train_KacangKedelai, kernel = "radial", cost = 1)
 svr_model_KacangKedelai
 ```
 
@@ -1303,7 +1395,7 @@ data_test_KacangTanah
 ####- Model RF 
 ```{r}
 # Membuat model RF
-rf_model_KacangTanah <- randomForest(Produksi ~ Produktivitas + Luas_Panen + Kecepatan_Angin + Kelembapan + Suhu + Tekanan_Udara + Penyinaran_Matahari, data = data_train_KacangTanah, ntree = 1000)
+rf_model_KacangTanah <- randomForest(Produksi ~ Produktivitas + Luas_Panen + Kecepatan_Angin + Kelembapan + Suhu + Tekanan_Udara + Penyinaran_Matahari + Avg_Rainfall, data = data_train_KacangTanah, ntree = 1000)
 rf_model_KacangTanah
 ```
 
@@ -1398,7 +1490,7 @@ cat(paste("MAPE: ", mape_value_rf_KacangTanah, "%\n"))
 
 ```{r}
 # Membuat model SVR
-svr_model_KacangTanah <- svm(Produksi ~ Produktivitas + Luas_Panen + Kecepatan_Angin + Kelembapan + Suhu + Tekanan_Udara + Penyinaran_Matahari, data = data_train_KacangTanah, kernel = "radial", cost = 1)
+svr_model_KacangTanah <- svm(Produksi ~ Produktivitas + Luas_Panen + Kecepatan_Angin + Kelembapan + Suhu + Tekanan_Udara + Penyinaran_Matahari + Avg_Rainfall, data = data_train_KacangTanah, kernel = "radial", cost = 1)
 svr_model_KacangTanah
 ```
 
@@ -1486,7 +1578,7 @@ data_test_UbiJalar
 ####- Model RF 
 ```{r}
 # Membuat model RF
-rf_model_UbiJalar <- randomForest(Produksi ~ Produktivitas + Luas_Panen + Kecepatan_Angin + Kelembapan + Suhu + Tekanan_Udara + Penyinaran_Matahari, data = data_train_UbiJalar, ntree = 1000)
+rf_model_UbiJalar <- randomForest(Produksi ~ Produktivitas + Luas_Panen + Kecepatan_Angin + Kelembapan + Suhu + Tekanan_Udara + Penyinaran_Matahari + Avg_Rainfall, data = data_train_UbiJalar, ntree = 1000)
 rf_model_UbiJalar
 ```
 
@@ -1581,7 +1673,7 @@ cat(paste("MAPE: ", mape_value_rf_UbiJalar, "%\n"))
 
 ```{r}
 # Membuat model SVR
-svr_model_UbiJalar <- svm(Produksi ~ Produktivitas + Luas_Panen + Kecepatan_Angin + Kelembapan + Suhu + Tekanan_Udara + Penyinaran_Matahari, data = data_train_UbiJalar, kernel = "radial", cost = 1)
+svr_model_UbiJalar <- svm(Produksi ~ Produktivitas + Luas_Panen + Kecepatan_Angin + Kelembapan + Suhu + Tekanan_Udara + Penyinaran_Matahari + Avg_Rainfall, data = data_train_UbiJalar, kernel = "radial", cost = 1)
 svr_model_UbiJalar
 ```
 
@@ -1669,7 +1761,7 @@ data_test_UbiKayu
 ####- Model RF 
 ```{r}
 # Membuat model RF
-rf_model_UbiKayu <- randomForest(Produksi ~ Produktivitas + Luas_Panen + Kecepatan_Angin + Kelembapan + Suhu + Tekanan_Udara + Penyinaran_Matahari, data = data_train_UbiKayu, ntree = 1000)
+rf_model_UbiKayu <- randomForest(Produksi ~ Produktivitas + Luas_Panen + Kecepatan_Angin + Kelembapan + Suhu + Tekanan_Udara + Penyinaran_Matahari+ Avg_Rainfall, data = data_train_UbiKayu, ntree = 1000)
 rf_model_UbiKayu
 ```
 
@@ -1764,7 +1856,7 @@ cat(paste("MAPE: ", mape_value_rf_UbiKayu, "%\n"))
 
 ```{r}
 # Membuat model SVR
-svr_model_UbiKayu <- svm(Produksi ~ Produktivitas + Luas_Panen + Kecepatan_Angin + Kelembapan + Suhu + Tekanan_Udara + Penyinaran_Matahari, data = data_train_UbiKayu, kernel = "radial", cost = 1)
+svr_model_UbiKayu <- svm(Produksi ~ Produktivitas + Luas_Panen + Kecepatan_Angin + Kelembapan + Suhu + Tekanan_Udara + Penyinaran_Matahari + Avg_Rainfall, data = data_train_UbiKayu, kernel = "radial", cost = 1)
 svr_model_UbiKayu
 ```
 
@@ -1852,7 +1944,7 @@ data_test_Jagung
 ####- Model RF 
 ```{r}
 # Membuat model RF
-rf_model_Jagung <- randomForest(Produksi ~ Produktivitas + Luas_Panen + Kecepatan_Angin + Kelembapan + Suhu + Tekanan_Udara + Penyinaran_Matahari, data = data_train_Jagung, ntree = 1000)
+rf_model_Jagung <- randomForest(Produksi ~ Produktivitas + Luas_Panen + Kecepatan_Angin + Kelembapan + Suhu + Tekanan_Udara + Penyinaran_Matahari + Avg_Rainfall, data = data_train_Jagung, ntree = 1000)
 rf_model_Jagung
 ```
 
@@ -1947,7 +2039,7 @@ cat(paste("MAPE: ", mape_value_rf_Jagung, "%\n"))
 
 ```{r}
 # Membuat model SVR
-svr_model_Jagung <- svm(Produksi ~ Produktivitas + Luas_Panen + Kecepatan_Angin + Kelembapan + Suhu + Tekanan_Udara + Penyinaran_Matahari, data = data_train_Jagung, kernel = "radial", cost = 1)
+svr_model_Jagung <- svm(Produksi ~ Produktivitas + Luas_Panen + Kecepatan_Angin + Kelembapan + Suhu + Tekanan_Udara + Penyinaran_Matahari + Avg_Rainfall, data = data_train_Jagung, kernel = "radial", cost = 1)
 svr_model_Jagung
 ```
 
