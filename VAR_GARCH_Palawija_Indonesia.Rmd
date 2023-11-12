@@ -1,0 +1,71 @@
+---
+title: "Analisis dampak curah hujan pada produksi Palawija Indonesia dengan VAR dan GARCH"
+author: "Fitria"
+date: "2023-11-09"
+output: pdf_document
+---
+
+
+# Memangil Library
+```{r}
+library(dplyr)
+library(ggplot2)
+library(lubridate)
+library(summarytools)
+library(readxl)
+library(cluster)
+library(scales)
+library(vars)
+library(rugarch)
+```
+
+
+# Load dataset Palawija Indonesia 1993-2022
+```{r}
+indonesia_palawija <- read_excel("D:/Download/Dataset Tanaman Palawija Indonesia (1993-2022).xlsx")
+indonesia_palawija
+```
+
+```{r}
+#Merubah type data dari cdouble menjadi numeric agar mudah di operasikan
+indonesia_palawija$Produksi<-as.numeric(indonesia_palawija$Produksi)
+indonesia_palawija$Produktivitas<-as.numeric(indonesia_palawija$Produktivitas)
+indonesia_palawija$Luas_Panen<-as.numeric(indonesia_palawija$Luas_Panen)
+indonesia_palawija
+```
+
+```{r}
+#merubah type data tahun dari double menjadi date
+indonesia_palawija$Tahun<-make_date(indonesia_palawija$Tahun)
+indonesia_palawija
+```
+
+
+```{r}
+tail(indonesia_palawija)
+```
+```{r}
+head(indonesia_palawija)
+```
+```{r}
+# Menampikan variabel dengan baris kosong
+colSums(is.na(indonesia_palawija))
+```
+### Menghapus Data Kosong
+
+
+```{r}
+# Menghapus data NA's
+palawija_clean <- na.omit(indonesia_palawija)
+summary(palawija_clean)
+```
+
+```{r}
+colSums(is.na(palawija_clean))
+```
+
+# Load dataset Curah hujan Indonesia 1993-2022
+```{r}
+indonesia_hujan <- read_excel("D:/Download/climateserv Indonesia (1993-2022).xlsx")
+indonesia_hujan
+```
