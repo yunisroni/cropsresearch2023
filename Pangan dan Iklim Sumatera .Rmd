@@ -1,5 +1,5 @@
 ---
-title: "Pangan dan Iklim"
+title: "Analisis Iklim terhadap tanaman pangan dengan model VAR dan GLM"
 author: "Fitria"
 date: "2023-10-29"
 output: pdf_document
