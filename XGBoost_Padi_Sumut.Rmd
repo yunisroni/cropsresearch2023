@@ -1,5 +1,5 @@
 ---
-title: "XGBoost_Padi_Sumut"
+title: "Analisis Peramalan Produksi Padi"
 author: "Ardika"
 date: "2023-10-31"
 output: pdf_document
@@ -14,6 +14,13 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r}
 # library manipulasi data
 library(tidyverse)
+library(dplyr)
+# library untuk manipulasi data tanggal
+library(lubridate)
+# library untuk menampilkan hasil statistik deskriptif
+library(summarytools)
+# library untuk membaca data dari file Excel (.xlsx)
+library(readxl)
 # library model VAR
 library(vars)
 # library untuk model Random Forest
@@ -268,7 +275,181 @@ cat(paste("MAPE: ", mape_value_xgb, "%\n"))
 
 Kesimpulan yang dapat diambil adalah bahwa model XGBoost memiliki kesalahan yang signifikan dalam memprediksi data, terutama jika kita melihat nilai MSE dan RMSE yang tinggi. Dengan MAPE sekitar 0.25%, model ini mungkin memiliki kinerja yang lebih baik dalam memprediksi data secara relatif, tetapi kesalahan mutlak rata-rata (MAE) masih cukup tinggi.
 
+## Model XGBoost dengan dataset Dataset Tanaman Pangan Indonesia (1993-2022)
 
+# Obstain - Load Dataset
+
+```{r}
+# Import Data
+padi_lengkap <- read_xlsx("dataset/pangan_Indonesia.xlsx")
+padi_lengkap
+```
+
+```{r}
+# Menampilkan Contoh Data
+## Menampilkan 6 data teratas
+head(padi_lengkap)
+```
+
+```{r}
+## Menampilkan 6 data terbawah
+tail(padi_lengkap)
+```
+
+```{r}
+# Untuk melihat struktur data
+glimpse(padi_lengkap)
+```
+# Scrub Data - membersihkan atau memproses data
+
+```{r}
+# a. Menghapus Data Kosong
+## Menampilkan variabel dengan baris kosong
+glimpse(padi_lengkap)
+colSums(is.na(padi_lengkap))
+```
+Menunjukkan bahwa dataset memiliki 7,140 baris dan 6 kolom. Tahun, Provinsi, dan Jenis_Komoditi tidak memiliki nilai kosong (0). Produksi memiliki 893 nilai kosong. Produktivitas memiliki 899 nilai kosong. Luas_Panen memiliki 884 nilai kosong.
+
+```{r}
+## Menghapus data NA'S
+padi_lengkap_clean <- na.omit(padi_lengkap)
+colSums(is.na(padi_lengkap_clean))
+summary(padi_lengkap_clean)
+```
+Hasil ini menunjukkan bahwa setelah menghapus nilai kosong, tidak ada nilai kosong yang tersisa dalam setiap kolom. Angka 0 menunjukkan bahwa tidak ada nilai kosong yang terdeteksi. Length:6239 menunjukkan bahwa setelah pembersihan, dataset memiliki 6239 baris.
+
+```{r}
+# Melihat struktur data kembali
+glimpse(padi_lengkap_clean)
+```
+
+```{r}
+# b. Merubah type data
+## Merubah type data karakter menjadi numeric
+padi_lengkap_clean$Produksi <- as.numeric(padi_lengkap_clean$Produksi)
+padi_lengkap_clean$Produktivitas <- as.numeric(padi_lengkap_clean$Produktivitas)
+padi_lengkap_clean$Luas_Panen <- as.numeric(padi_lengkap_clean$Luas_Panen)
+glimpse(padi_lengkap_clean)
+```
+```{r}
+## Merubah type Tahun menjadi Date
+padi_lengkap_clean$Tahun <- make_date(padi_lengkap_clean$Tahun)
+glimpse(padi_lengkap_clean)
+```
+```{r}
+head(padi_lengkap_clean)
+```
+```{r}
+tail(padi_lengkap_clean)
+```
+
+# Explore Data Analysis (EDA)
+
+```{r}
+# Tampilkan Dataset
+glimpse(padi_lengkap_clean)
+```
+
+```{r}
+# Menampilkan hasil statistik deskriptif
+descr(padi_lengkap_clean)
+```
+Memberi tahu bahwa variabel non-numerik seperti Tahun, Provinsi, dan Jenis_Komoditi diabaikan dalam perhitungan statistik deskriptif. Yang termasuk perhitungan statistik deskriptif adalah Luas_Panen, Produksi, Produktivitas. Mean: Rata-rata.
+Statistik deskriptif melibatkan beberapa ukuran yang merangkum distribusi dari masing-masing variabel numerik:
+Std.Dev: Deviasi standar.
+Min: Nilai minimum.
+Q1: Kuartil pertama (25%).
+Median: Median (50%).
+Q3: Kuartil ketiga (75%).
+Max: Nilai maksimum.
+MAD: Deviasi absolut median.
+IQR: Rentang antarkuartil.
+CV: Koefisien variasi.
+Skewness: Skewness (ukuran asimetri distribusi).
+SE.Skewness: Standar error dari skewness.
+Kurtosis: Kurtosis (ukuran kekerucutan distribusi).
+N.Valid: Jumlah observasi yang valid.
+Pct.Valid: Persentase observasi yang valid dari total.
+
+```{r}
+# Filter data Padi
+Padi <- filter(padi_lengkap_clean, Jenis_Komoditi == "Padi")
+Padi
+```
+Menunjukkan jumlah baris 930 setelah di filter
+
+```{r}
+# Jumlah Produksi Padi Per Provinsi
+plot_padi_1 <- ggplot(Padi, aes(x = Tahun, y = Produksi, group = Provinsi, color = Provinsi)) +
+  geom_line() +
+  labs(title = "Jumlah Produksi Padi", x = "Tahun", y = "Produksi Padi (Kuintal)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "right")
+plot_padi_1
+```
+
+```{r}
+## Hitung total produksi per provinsi
+totalproduksi_padi <- Padi %>% 
+  #mutate(first_date_month = floor_date(Tahun, unit = "year")) %>% 
+  group_by(Provinsi) %>% 
+  summarise(JumlahProduksi = sum(Produksi)) %>% 
+  arrange(JumlahProduksi)
+totalproduksi_padi
+```
+
+```{r}
+## Turn off dplyr summarise() warning
+options(dplyr.summarise.inform = FALSE)
+
+## Hitung total produksi per provinsi/tahun
+totalproduksi_padi <- Padi %>% 
+  group_by(Tahun, Provinsi, .drop = FALSE) %>%  # Add .drop argument
+  summarise(TotalProduksi = sum(Produksi))
+
+totalproduksi_padi
+```
+
+```{r}
+summary(totalproduksi_padi)
+```
+
+```{r}
+# Tren Produksi Padi Per Provinsi
+## Visualisasi Tren Produksi Padi
+plot_padi_2 <- ggplot(totalproduksi_padi, aes(x = Tahun, y = TotalProduksi, color = Provinsi)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Tren Produksi Padi", x = "Tahun", y = "Total Produksi (Kuintal)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "right")
+plot_padi_2
+```
+
+```{r}
+# Perbandingan Produksi Padi Per Provinsi
+## Hitung total produksi Padi per Provinsi
+totalproduksi_padi_provinsi <- Padi %>% 
+  group_by(Provinsi) %>% 
+  summarise(TotalProduksi = sum(Produksi))
+totalproduksi_padi_provinsi
+
+# Visualisasi dengan barplot
+plot_padi_3 <- ggplot(totalproduksi_padi_provinsi, aes(x = Provinsi, y = TotalProduksi, fill = Provinsi)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Perbandingan Produksi Padi antar Provinsi", x = "Provinsi", y = "Total Produksi (Kuintal)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "none")  # hilangkan legend
+
+# Rotasi sumbu x agar mudah dibaca
+plot_padi_3 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+Perbandingan produksi Padi dalam kurun waktu 1993 - 2022 adalah dari provinsi Jawa Barat yang terbanyak dengan Jumlah Produksi Padi sebesar 311260660 Kuintal.
+
+Di atas masih belum siap
 ## Model Arima
 ```{r}
 # Memuat paket forecast
