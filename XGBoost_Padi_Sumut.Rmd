@@ -449,7 +449,7 @@ plot_padi_3 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 Perbandingan produksi Padi dalam kurun waktu 1993 - 2022 adalah dari provinsi Jawa Barat yang terbanyak dengan Jumlah Produksi Padi sebesar 311260660 Kuintal.
 
-Di atas masih belum siap
+Di atas masih belum siap, segera saya lanjutkan
 ## Model Arima
 ```{r}
 # Memuat paket forecast
