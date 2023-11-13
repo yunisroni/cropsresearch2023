@@ -2525,6 +2525,7 @@ Simalungun_hujan <- Hujan_clean %>%
   filter(Kabupaten_kota == "Simalungun")
 Simalungun_hujan
 ```
+
 ```{r}
 # Filter data for "Simalungun" kabupaten dari dataset Kacang_Kedelai
 Kedelai_simalungun <- Kacang_Kedelai %>%
@@ -2607,3 +2608,7 @@ cat("Koefisien Korelasi Pearson Luas Panen dan Produksi:", pearson_simalungun2)
 ```
 Koefisien Korelasi Pearson Luas Panen dan Produksi: 0.9384474
 
+```{r}
+data_iklim1 <-read_excel("D:/OneDrive - mikroskil.ac.id/Documents/File R skripsi/Dataset Tanaman Pangan dan Iklim Pulau Sumatera 2006-2015.xlsx")
+data_iklim1
+```
