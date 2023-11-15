@@ -161,7 +161,7 @@ indonesia_ubi_jalar
 
 ## Ubi Kayu
 ```{r}
-# Filter data Palawija "Jagung" berdasarkan jenis komonditi
+# Filter data Palawija "ubikayu" berdasarkan jenis komonditi
 indonesia_ubi_kayu<- palawija_clean %>%
   filter(Jenis_Komoditi == "Ubi Kayu")
 indonesia_ubi_kayu
@@ -667,4 +667,34 @@ summary(regresi_ubikayu_indonesia)
 Luas_Panen    1.786e+01  2.032e-01  87.884  < 2e-16 ***
 avg_Rainfall  7.272e+04  1.346e+04   5.403 8.36e-08 ***
 F-statistik p-value: < 2.2e-16
+
+
+# 3. Model  GARCH tanaman pangan
+
+## a. GARCH terhadap jagung Indonesia
+
+```{r}
+# Pilih variabel yang akan diprediksi
+
+data_garch_jagung <- indonesia_jagung[, c("Produksi", "avg_Rainfall")]
+data_garch_jagung
+```
+
+
+Untuk mendukung prediksi dengan Model GARCH, data harus dirubah kedalam format time series (ts)
+
+```{r}
+#Format time series
+ts_jagung_indonesia <- ts(data_garch_jagung, start = c(1993,1), frequency = 1)
+ts_jagung_indonesia
+```
+
+
+```{r}
+# Membangun model GARCH(1,1)
+garch_model1 <- ugarchspec(variance.model = list(model = "sGARCH", garchOrder = c(1,1)),
+                           mean.model = list(armaOrder = c(0,0)),
+                           distribution.model = "norm")
+garch_model1
+```
 
