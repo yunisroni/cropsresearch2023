@@ -713,6 +713,7 @@ Untuk mendukung prediksi dengan Model GARCH, data harus dirubah kedalam format t
 ```{r}
 # Format time series
 ts_jagung_indonesia <- ts(cbind(transformed_dependen_jagung, transformed_independen_jagung), start = c(1993, 1), frequency = 1)
+ts_jagung_indonesia
 
 ```
 
@@ -753,7 +754,6 @@ print(adf_test_result2)
 Hasil uji Augmented Dickey-Fuller (ADF) menunjukkan bahwa p-value adalah 0.01234 dapat menyimpulkan bahwa data variabel avg_Rainfall adalah stasioner.
 
 
-
 ```{r}
 # Plot ACF dan PACF
 par(mfrow=c(1,2))  # Set layout grafik menjadi  baris dan 4 kolom
@@ -782,29 +782,90 @@ spec <- ugarchspec(variance.model = list(model = "sGARCH", garchOrder = c(1, 1))
 ```
 
 ```{r}
+# Spesifikasi model GARCH
+spec2 <- ugarchspec(variance.model = list(model = "sGARCH", garchOrder = c(2, 2)),
+                   mean.model = list(armaOrder = c(0, 0)))
+```
+
+```{r}
 # Estimasi model GARCH
-fit1 <- ugarchfit(spec, data = train_data[, "transformed_independen_jagung"])
-fit2 <- ugarchfit(spec, data = test_data[, "transformed_independen_jagung"])
-fit3 <- ugarchfit(spec, data = train_data[, "transformed_dependen_jagung"])
-fit4 <- ugarchfit(spec, data = test_data[, "transformed_dependen_jagung"])
+fit_train_independen <- ugarchfit(spec, data = train_data[, "transformed_independen_jagung"])
+fit_test_independen <- ugarchfit(spec, data = test_data[, "transformed_independen_jagung"])
+fit_train_dependen <- ugarchfit(spec, data = train_data[, "transformed_dependen_jagung"])
+fit_test_dependen <- ugarchfit(spec, data = test_data[, "transformed_dependen_jagung"])
 
 ```
 
+```{r}
+#Format time series
+ts_garch_jagung <- ts(data_garch_jagung, start = c(1993,1), frequency = 1)
+ts_garch_jagung
+
+```
+
+
+```{r}
+Fit_ts_data <-ugarchfit(spec2, data = ts_garch_jagung)
+Fit_ts_data
+```
 
 ```{r}
 # Menampilkan hasil model
-print(fit1)
+print(fit_train_independen)
 
 ```
 ```{r}
-fit2
+fit_test_independen
 ```
 
 ```{r}
-fit3
+fit_test_dependen
 ```
 
 ```{r}
-fit4
+fit_train_dependen
 ```
 
+```{r}
+# Mengambil perkiraan volatilitas dari model
+volatility_train_independen <- sigma(fit_train_independen)
+volatility_test_independen <- sigma(fit_test_independen)
+volatility_train_dependen <- sigma(fit_train_dependen)
+volatility_test_dependen <- sigma(fit_test_dependen)
+```
+
+
+```{r}
+# Plot time series
+plot(ts_jagung_indonesia[, "transformed_dependen_jagung"], main = "Produksi Jagung", ylab = "Transformed Produksi Jagung", xlab = "Tahun")
+lines(ts_jagung_indonesia[, "transformed_independen_jagung"], col = "red", lty = 2, ylab = "Transformed Curah Hujan", xlab = "Tahun")
+legend("topright", legend = c("Produksi Jagung", "Curah Hujan"), col = c("black", "red"), lty = 1:2)
+
+```
+
+
+kesimpulan yang bisa diperoleh adalah bahwa ada korelasi positif antara Produksi Jagung dan Curah Hujan di Indonesia. Dengan menggunakan transformasi, data Produksi Jagung dan Curah Hujan terlihat lebih stabil.
+
+Di bagian atas grafik, produksi jagung tahun 2000 sampai 2020 ditampilkan. Di bagian bawah, produksi jagung ditampilkan kembali bersamaan dengan curah hujan. Perlu dicatat bahwa setelah menggunakan transformasi, hubungan antara kedua variabel menjadi lebih linear.
+
+
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_jagung_Garch <- cor(data_garch_jagung$Produksi, data_garch_jagung$avg_Rainfall)
+cat ("Koefisien Korelasi Pearson Luas panen dan Produksi:", kolerasi_jagung_Garch)
+```
+Koefisien Korelasi Pearson Luas panen dan Produksi: 0.084
+
+
+
+
+
+### Uji regresi linier jagung
+```{r}
+# Membuat model regresi linier
+regresi_jagung_garch <- lm(Produksi ~ avg_Rainfall , data = data_garch_jagung)
+
+# Ringkasan hasil model
+summary(regresi_jagung_garch)
+```
