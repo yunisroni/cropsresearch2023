@@ -681,18 +681,41 @@ F-statistik p-value: < 2.2e-16
 ```{r}
 # Pilih variabel yang akan diprediksi
 
-data_garch_jagung <- indonesia_jagung[, c("Produksi", "avg_Rainfall")]
-data_garch_jagung
+garch_jagung <- indonesia_jagung[, c("Produksi", "avg_Rainfall")]
+garch_jagung
 ```
 
+
+```{r}
+## Penentuan Variabel Dependensi dan Independensi
+dependen_variable <- garch_jagung$Produksi
+independen_variable <- garch_jagung$avg_Rainfall
+```
+
+```{r}
+# Uji normalitas dengan Shapiro-Wilk
+shapiro.test(garch_jagung$Produksi)
+
+shapiro.test(garch_jagung$avg_Rainfall)
+```
+Produksi p-value < 2.2e-16 dan Rainfall p-value = 6.922e-13
+
+
+```{r}
+transformed_dependen_jagung <- log(dependen_variable)
+transformed_independen_jagung <- sqrt(independen_variable)
+```
 
 Untuk mendukung prediksi dengan Model GARCH, data harus dirubah kedalam format time series (ts)
 
+
+
 ```{r}
-#Format time series
-ts_jagung_indonesia <- ts(data_garch_jagung, start = c(1993,1), frequency = 1)
-ts_jagung_indonesia
+# Format time series
+ts_jagung_indonesia <- ts(cbind(transformed_dependen_jagung, transformed_independen_jagung), start = c(1993, 1), frequency = 1)
+
 ```
+
 
 ```{r}
 plot(ts_jagung_indonesia)
@@ -713,94 +736,75 @@ ts_jagung_indonesia2[, "Produksi"]
 ts_jagung_indonesia[, "avg_Rainfall"]
 ```
 
-
 ```{r}
-# Uji Augmented Dickey-Fuller (ADF) pada variabel avg_Rainfall
-adf_test_result2 <- adf.test(ts_jagung_indonesia[, "avg_Rainfall"])
-print(adf_test_result2)
-
-```
-Hasil uji Augmented Dickey-Fuller (ADF) menunjukkan bahwa p-value adalah 0.01595 dapat menyimpulkan bahwa data variabel avg_Rainfall adalah stasioner.
-
-```{r}
-# Uji Augmented Dickey-Fuller (ADF) pada variabel avg_Rainfall
-adf_test_result1 <- adf.test(data_garch_jagung$"Produksi")
+# Uji Augmented Dickey-Fuller (ADF) pada variabel Produksi
+adf_test_result1 <- adf.test(ts_jagung_indonesia[, "transformed_dependen_jagung"])
 print(adf_test_result1)
 ```
 Hasil uji Augmented Dickey-Fuller (ADF) menunjukkan bahwa p-value adalah 0.01, yang lebih kecil dari tingkat signifikansi umum 0.05.dapat menyimpulkan bahwa data variabel Produksi cenderung stasioner.
 
 ```{r}
+# Uji Augmented Dickey-Fuller (ADF) pada variabel avg_Rainfall
+adf_test_result2 <- adf.test(ts_jagung_indonesia[, "transformed_independen_jagung"])
+print(adf_test_result2)
+```
+
+
+Hasil uji Augmented Dickey-Fuller (ADF) menunjukkan bahwa p-value adalah 0.01234 dapat menyimpulkan bahwa data variabel avg_Rainfall adalah stasioner.
+
+
+
+```{r}
 # Plot ACF dan PACF
 par(mfrow=c(1,2))  # Set layout grafik menjadi  baris dan 4 kolom
-acf(data_garch_jagung$avg_Rainfall, main="Autocorrelation Function 1")
-pacf(data_garch_jagung$avg_Rainfall, main="Partial Autocorrelation Function 1")
 
-acf(data_garch_jagung$Produksi, main="Autocorrelation Function 2")
-pacf(data_garch_jagung$Produksi, main="Partial Autocorrelation Function 2")
-```
+acf(ts_jagung_indonesia[, "transformed_independen_jagung"], main="Autocorrelation Function (Transformed)")
+pacf(ts_jagung_indonesia[, "transformed_independen_jagung"], main="Partial Autocorrelation Function (Transformed)")
 
-```{r}
-# Uji normalitas dengan Shapiro-Wilk
-shapiro.test(data_garch_jagung$Produksi)
-
-shapiro.test(data_garch_jagung$avg_Rainfall)
-```
-```{r}
-transformed_dependen <- log(dependen_variable)
-transformed_independen <- sqrt(independen_variable)
-```
-
-```{r}
-## Penentuan Variabel Dependensi dan Independensi
-dependen_variable <- data_garch_jagung$Produksi
-independen_variable <- data_garch_jagung$avg_Rainfall
+acf(ts_jagung_indonesia[, "transformed_dependen_jagung"], main="Autocorrelation Function (Transformed)")
+pacf(ts_jagung_indonesia[, "transformed_dependen_jagung"], main="Partial Autocorrelation Function (Transformed)")
 ```
 
 
 ```{r}
 set.seed(123) 
-# Menentukan proporsi data yang akan menjadi set pelatihan
-split_ratio <- 0.7  #  70% data pelatihan dan 30% data pengujian
-
-# Membagi data menjadi set pelatihan dan pengujian
-split <- sample.split(data_garch_jagung$avg_Rainfall, SplitRatio = split_ratio)
+split <- sample.split(ts_jagung_indonesia[, "transformed_independen_jagung"], SplitRatio = split_ratio)
 
 # Membuat set pelatihan dan pengujian berdasarkan pembagian di atas
-train_data <- subset(data_garch_jagung, split == TRUE)
-test_data <- subset(data_garch_jagung, split == FALSE)
+train_data <- subset(ts_jagung_indonesia, split == TRUE)
+test_data <- subset(ts_jagung_indonesia, split == FALSE)
 ```
 
 ```{r}
 # Spesifikasi model GARCH
 spec <- ugarchspec(variance.model = list(model = "sGARCH", garchOrder = c(1, 1)),
                    mean.model = list(armaOrder = c(0, 0)))
+```
 
+```{r}
 # Estimasi model GARCH
-fit1 <- ugarchfit(spec, data = train_data[, "avg_Rainfall"])
-summary(fit)
-```
-```{r}
-fit1
+fit1 <- ugarchfit(spec, data = train_data[, "transformed_independen_jagung"])
+fit2 <- ugarchfit(spec, data = test_data[, "transformed_independen_jagung"])
+fit3 <- ugarchfit(spec, data = train_data[, "transformed_dependen_jagung"])
+fit4 <- ugarchfit(spec, data = test_data[, "transformed_dependen_jagung"])
+
 ```
 
 
 ```{r}
-fit2 <- ugarchfit(spec, data = test_data[, "avg_Rainfall"])
+# Menampilkan hasil model
+print(fit1)
+
+```
+```{r}
 fit2
 ```
+
 ```{r}
-fit3 <- ugarchfit(spec, data = train_data[, "Produksi"])
 fit3
 ```
 
 ```{r}
-fit4 <- ugarchfit(spec, data = test_data[, "Produksi"])
 fit4
 ```
-
-
-
-
-
-
 
