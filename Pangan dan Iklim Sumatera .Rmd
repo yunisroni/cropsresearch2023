@@ -107,6 +107,57 @@ colSums(is.na(Iklim_clean))
 tail(Iklim_clean)
 ```
 
+## Eksplorasi Data Analisis (EDA)
+
+### Jumlah Produksi Tanaman Pangan per Provinsi di Pulau Sumatera
+```{r}
+# Hitung total produksi semua tanaman pangan per provinsi di sumatera di setiap tahun
+totproduksi_sumatera <- Iklim_clean %>% 
+  group_by(Tahun, Provinsi, .drop = FALSE) %>%  # Add .drop argument
+  summarise(total_produksi = sum(Produksi)) %>%
+  arrange(desc(total_produksi))
+
+totproduksi_sumatera
+```
+
+```{r}
+# Hitung total produksi semua tanaman pangan per setiap Kabupaten/Kota
+totproduksi_provsumatera <- Iklim_clean %>% 
+  group_by(Provinsi) %>% 
+  summarise(total_produksi = sum(Produksi))%>%
+  arrange(desc(total_produksi))
+  
+totproduksi_provsumatera
+```
+
+### visualisasi Produksi Tanaman Pangan per Provinsi di pulau sumatera
+
+```{r}
+# Visualisasi Tren Produksi tanaman pangan per provinsi di setiap tahun
+plot_sumatera1 <- ggplot(Iklim_clean, aes(x = Tahun, y = total_produksi, color = Provinsi)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Tren Produksi Tanaman Pangan di Pulau Sumatera", x = "Tahun", y = "Total Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "right")
+plot_sumatera1
+```
+
+```{r}
+
+# Visualisasi dengan barplot
+plot_sumatera2 <- ggplot(Iklim_clean, aes(x = Provinsi, y = total_produksi, fill = Provinsi)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Perbandingan Produksi Tanaman pangan antar Provinsi di Sumatera", x = "Provinsi", y = "Total Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "none")  # hilangkan legend
+
+# Rotasi sumbu x agar mudah dibaca
+plot_sumatera2 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+Produksi tanaman pangan terbanyak di pulau sumatera dalam kurun waktu 2006 - 2015 adalah dari provinsi dengan Jumlah Produksi .... Ton
 
 ```{r}
 shapiro.test(Iklim_clean$Produksi)

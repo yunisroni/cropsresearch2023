@@ -118,6 +118,58 @@ palawija_clean <- merge(Palawija_Clean, Rainfall_yearly, by.x = "Tahun", by.y = 
 palawija_clean
 ```
 
+## Eksplorasi Data Analisis (EDA)
+
+### Jumlah Produksi Tanaman Palawija per Provinsi
+```{r}
+# Hitung total produksi semua tanaman palawija per provinsi di setiap tahun
+totproduksi_palawija <- palawija_clean %>% 
+  group_by(Tahun, Provinsi, .drop = FALSE) %>%  # Add .drop argument
+  summarise(total_produksi = sum(Produksi)) %>%
+  arrange(desc(total_produksi))
+
+totproduksi_palawija
+```
+
+```{r}
+# Hitung total produksi semua tanaman pangan per setiap provinsi
+totproduksi_provinsi <- palawija_clean %>% 
+  group_by(Provinsi) %>% 
+  summarise(total_produksi = sum(Produksi))%>%
+  arrange(desc(total_produksi))
+  
+totproduksi_provinsi
+```
+
+### Tren Produksi Tanaman Pangan per Provinsi
+
+
+```{r}
+# Visualisasi Tren Produksi palawija per Provinsi di setiap tahun
+plot_palawija1 <- ggplot(totproduksi_palawija, aes(x = Tahun, y = total_produksi, color = Provinsi)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Tren Produksi Palawija", x = "Tahun", y = "Total Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "right")
+plot_palawija1
+```
+
+```{r}
+
+# Visualisasi dengan barplot
+plot_palawija2 <- ggplot(totproduksi_provinsi, aes(x = Provinsi, y = total_produksi, fill = Provinsi)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Perbandingan Produksi Palawija antara Provinsi di Indonesia", x = "Provinsi", y = "Total Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "none")  # hilangkan legend
+
+# Rotasi sumbu x agar mudah dibaca
+plot_palawija2 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+Perbandingan produksi palawija dalam kurun waktu 1992 - 2020 adalah dari jawa timur yang terbanyak dengan Jumlah Produksi 260033079.0 Ton
 
 ## Jagung
 ```{r}
