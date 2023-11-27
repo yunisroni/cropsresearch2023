@@ -1,0 +1,620 @@
+---
+title: "Prediksi Variabel Yang Mempengaruhi Produksi Kacang Hijau Masa Depan - Maluku
+  Utara"
+author: "Nurul Aina Tasya"
+date: "2023-11-05"
+output: html_document
+---
+
+
+# 1. Load Library/Packages
+```{r}
+# library untuk manipulasi data
+library(dplyr)
+library(tidyverse)
+# library untuk manipulasi data tanggal
+library(lubridate)
+# library untuk menampilkan hasil statistik deskriptif
+library(summarytools)
+# library untuk visualisasi data
+library (ggplot2)
+# library untuk membaca data dari file Excel (.xlsx)
+library(readxl)
+# library untuk model Random Forest
+library(randomForest)
+# library untuk model SVR
+library(e1071)
+# library Untuk partisi dataset
+library(caret)
+# library untuk evaluasi model
+library(Metrics)
+# library untuk model Prophet
+library (prophet)
+```
+
+
+# 2. Obstain Data
+
+## a.Import Data
+```{r}
+pangan <- read_excel("Dataset Kacang Hijau Indonesia/pangan_Indonesia.xlsx")
+```
+
+## b.Menampilkan Contoh Data
+```{r}
+# Menampilkan 6 data teratas
+head(pangan)
+```
+```{r}
+# Menampilkan 6 data terbawah
+tail(pangan)
+```
+```{r}
+glimpse(pangan)
+```
+
+# 3. Scrub Data
+
+## a. Merubah type data
+```{r}
+# Merubah type data karakter menjadi numeric
+pangan$Produksi <- as.numeric(pangan$Produksi)
+pangan$Produktivitas <- as.numeric(pangan$Produktivitas)
+pangan$Luas_Panen <- as.numeric(pangan$Luas_Panen)
+glimpse(pangan)
+```
+```{r}
+# Merubah type Tahun menjadi Date
+pangan$Tahun <- make_date(pangan$Tahun)
+glimpse(pangan)
+```
+```{r}
+tail(pangan)
+```
+```{r}
+head(pangan)
+```
+
+## b. Menghapus Data Kosong
+```{r}
+# Menampilkan variabel dengan baris kosong
+glimpse(pangan)
+colSums(is.na(pangan))
+```
+Jumlah data : 5,474 Record. Dari 6 variabel terhadap 3 buah variabel dengan data NA'S
+
+```{r}
+# Menghapus data NA'S
+pangan_clean <- na.omit(pangan)
+colSums(is.na(pangan_clean))
+summary(pangan_clean)
+```
+Berdasarkan hasil diatas bisa dilihat semua variabel tidak ada lagi data
+yang kosong atau NA'
+```{r}
+glimpse(pangan_clean)
+```
+Jumlah data setelah dihapus data NA' menjadi 4,642 baris observasi dengan
+6 variabel.
+
+
+# 4. Explore Data Analysis (EDA)
+## a.Tampilkan Dataset
+```{r}
+glimpse(pangan_clean)
+```
+## b.Menampilkan hasil statistik deskriptif
+```{r}
+descr(pangan_clean)
+```
+
+
+## c. Jumlah Produksi Kacang Hijau Per Provinsi
+```{r}
+plot_kacanghijau_1 <- ggplot(KacangHijau, aes(x = Tahun, y = Produksi, group = Provinsi, color = Provinsi)) +
+  geom_line() +
+  labs(title = "Jumlah Produksi Kacang Hijau", x = "Tahun", y = "Produksi Kacang Hijau (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "right")
+plot_kacanghijau_1
+
+```
+
+```{r}
+# Hitung total produksi per provinsi
+totproduksi_kacanghijau <- KacangHijau %>% 
+  #mutate(first_date_month = floor_date(Tahun, unit = "year")) %>% 
+  group_by(Provinsi) %>% 
+  summarise(JumlahProduksi = sum(Produksi)) %>% 
+  arrange(JumlahProduksi)
+totproduksi_kacanghijau
+```
+
+```{r}
+# Turn off dplyr summarise() warning
+options(dplyr.summarise.inform = FALSE)
+
+# Hitung total produksi per provinsi/tahun
+totproduksi_kacanghijau <- KacangHijau %>% 
+  group_by(Tahun, Provinsi, .drop = FALSE) %>%  # Add .drop argument
+  summarise(TotalProduksi = sum(Produksi))
+
+totproduksi_kacanghijau
+```
+
+```{r}
+summary(totproduksi_kacanghijau)
+```
+
+## d. Tren Produksi Kacang Hijau Per Provinsi
+```{r}
+# Visualisasi Tren Produksi Kacang Hijau
+plot_kacanghijau_2 <- ggplot(totproduksi_kacanghijau, aes(x = Tahun, y = TotalProduksi, color = Provinsi)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Tren Produksi Kacang Hijau", x = "Tahun", y = "Total Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "right")
+plot_kacanghijau_2
+```
+
+## e. Perbandingan Produksi Kacang Hijau Per Provinsi
+```{r}
+# Hitung total produksi Kacang Hijau per Provinsi
+totproduksi_kacanghijau_provinsi <- KacangHijau %>% 
+  group_by(Provinsi) %>% 
+  summarise(TotalProduksi = sum(Produksi))
+totproduksi_kacanghijau_provinsi
+
+# Visualisasi dengan barplot
+plot_kacanghijau_3 <- ggplot(totproduksi_kacanghijau_provinsi, aes(x = Provinsi, y = TotalProduksi, fill = Provinsi)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Perbandingan Produksi Kacang Hijau antara Provinsi", x = "Provinsi", y = "Total Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "none")  # hilangkan legend
+
+# Rotasi sumbu x agar mudah dibaca
+plot_kacanghijau_3 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+Perbandingan produksi kacang hiaju dalam kurun waktu 1993 - 2015 adalah dari provinsi Jawa Tengah yang terbanyak dengan Jumlah Produksi kacang hiaju sebesar 1549775 Ton.
+
+## f. Perbandingan Produktivitas kacang hiaju Per Provinsi
+```{r}
+# Turn off dplyr summarise() warning
+options(dplyr.summarise.inform = FALSE)
+
+# Melihat tren produktivitas Kacang Hijau
+produktivitas_kacanghijau <- KacangHijau %>% 
+  group_by(Tahun, Provinsi, .drop = FALSE) %>%  # Add .drop argument
+  summarise(Produktivitas = sum(Produktivitas))
+produktivitas_kacanghijau
+```
+
+```{r}
+
+# Hitung total produktivitas Kacang Hijau per provinsi
+totproduktivitas_kacanghijau_provinsi <- KacangHijau %>% 
+  group_by(Provinsi) %>% 
+  summarise(Total_Produktivitas = sum(Produktivitas))
+
+# Visualisasi dengan barplot
+plot_kacanghijau_4 <- ggplot(totproduktivitas_kacanghijau_provinsi, aes(x = Provinsi, y = Total_Produktivitas, fill = Provinsi)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Perbandingan Produktivitas Kacang Hijau antar Provinsi", x = "Provinsi", y = "Produktivitas (Kuintal/Hektar)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "none")  # hilangkan legend
+
+# Rotasi sumbu x agar mudah dibaca
+plot_kacanghijau_4 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+```
+
+
+## g. Korelasi Luas Panen, Produktivitas dengan Produksi Jagung
+```{r}
+# Visualisasi korelasi luas panen dan produksi Kacang Hijau
+plot_kacanghijau_5 <- ggplot(KacangHijau, aes(x = Luas_Panen, y = Produksi, color = Provinsi)) +
+  geom_point() +
+  labs(title = "Korelasi Produksi dan Luas Panen", x = "Luas Panen (Ha)", y = "Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "right")
+plot_kacanghijau_5
+```
+
+```{r}
+# Hitung Pearson correlation coefficient
+correlation_kacanghijau <- cor(KacangHijau$Luas_Panen, KacangHijau$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson Luas Panen dan Produksi:", correlation_kacanghijau)
+```
+Berdasarkan grafik diatas bisa lihat bahwa ada korelasi antara luas panen dan produksi. Hubungan korelasi adalah positif dengan nilai korelasi sebesar 0,96; sehingga bisa disimpulkan bahwa jika semakin banyak luas panen maka akan meningkat jumlah produksi jagung.
+```{r}
+# Visualisasi korelasi produktifitas dan produksi Kacang Hijau
+plot_kacanghijau_6 <- ggplot(KacangHijau, aes(x = Produktivitas, y = Produksi, color = Provinsi)) +
+  geom_point() +
+  labs(title = "Korelasi Produksi dan Produktivitas", x = "Produktivitas (Kuintal/Ha)", y = "Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "right")
+plot_kacanghijau_5
+```
+
+```{r}
+# Hitung Pearson correlation coefficient
+correlation_kacanghijau2 <- cor(KacangHijau$Produktivitas, KacangHijau$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson Produktivitas dan Produksi:", correlation_kacanghijau)
+```
+Berdasarkan grafik diatas bisa lihat bahwa ada korelasi antara produktivitas dan produksi. Hubungan korelasi adalah positif dengan nilai korelasi sebesar 0.96; Nilai korelasi sebesar 0.96 menunjukkan hubungan positif yang relatif kuat. Ini berarti bahwa meskipun ada hubungan antara produktivitas dan produksi, hubungannya sangat kuat.
+
+## h. Filter data Kacang Hijau
+```{r}
+KacangHijauMalukuUtara <- filter(pangan_clean, Jenis_Komoditi == "Kacang Hijau", Provinsi == "MALUKU UTARA")
+KacangHijauMalukuUtara
+
+```
+
+
+
+# 5. Prediksi Luas Panen Jagung di Masa Depan - Model Prophet
+```{r}
+# membagi data berdasarkan variabel Produksi
+train_data_index_lp <- createDataPartition(KacangHijauMalukuUtara$Luas_Panen, p=0.7, list = FALSE)
+train_data_lp <- KacangHijauMalukuUtara[train_data_index_lp,]
+train_data_lp
+test_data_lp <- KacangHijauMalukuUtara[-train_data_index_lp,]
+test_data_lp
+```
+
+```{r}
+# Mengelompokkan dan Menyiapkan data training berdasarkan variabel luas panen
+yearly_lp_train <- train_data_lp %>% 
+  group_by(Tahun) %>% 
+  summarise(
+    LuasPanen = sum(Luas_Panen)
+  )
+yearly_lp_train
+```
+
+```{r}
+# Merubah format data kedalam ds dan y
+train_yearly_lp <- yearly_lp_train %>% 
+  rename(
+    ds = "Tahun",
+    y = "LuasPanen"
+  )
+glimpse(train_yearly_lp)
+```
+```{r}
+# Membuat model Prophet dengan data training
+prophet_ts_lp <- prophet(yearly.seasonality = TRUE, seasonality.prior.scale = 0.1) %>% 
+  fit.prophet(train_yearly_lp)
+
+```
+```{r}
+# Melakukan Prediksi untuk produksi 10 tahun ke depan
+future_prophet_ts_lp <- make_future_dataframe(prophet_ts_lp, periods = 365*13)
+tail(future_prophet_ts_lp)
+```
+```{r}
+# Menampilkan Hasil Prediksi
+forecast_ts_lp <- predict(prophet_ts_lp, future_prophet_ts_lp)
+plot(prophet_ts_lp, forecast_ts_lp)
+```
+```{r}
+# Visualisasi komponen dari model forecast
+prophet_plot_components(prophet_ts_lp, forecast_ts_lp)
+```
+```{r}
+# Melihat komponen forecast
+forecast_ts_lp %>% 
+  dplyr::select(ds, trend, yearly, yhat)
+```
+```{r}
+# Melihat trend luas panen
+plot(prophet_ts_lp, forecast_ts_lp) +
+  add_changepoints_to_plot(prophet_ts_lp, threshold = 0)
+```
+```{r}
+# Membuat subset data untuk tahun 2016-2025
+forecast_subset_lp <- forecast_ts_lp[forecast_ts_lp$ds >= as.Date("2016-01-01") & forecast_ts_lp$ds <= as.Date("2025-12-31"), ]
+
+# Hanya ambil kolom Tahun dan yhat
+forecast_yhat_2016_2025_lp <- forecast_subset_lp[, c("ds", "yhat")]
+
+# Print hasilnya
+print(forecast_yhat_2016_2025_lp)
+```
+```{r}
+tail(forecast_yhat_2016_2025_lp,10)
+```
+
+
+
+```{r}
+yearly_lp_predict <- forecast_yhat_2016_2025_lp %>% 
+  group_by(ds) %>% 
+  summarise(
+    LuasPanen = sum(yhat)
+  )
+yearly_lp_predict
+```
+
+```{r}
+# Mengelompokkan dan Menyiapkan data testing berdasarkan variabel Luas Panen
+yearly_lp_test <- test_data_lp %>% 
+  group_by(Tahun) %>% 
+  summarise(
+    LuasPanen = sum(Luas_Panen)
+  )
+yearly_lp_test
+```
+```{r}
+# Merubah format data kedalam ds dan y
+test_yearly_lp <- yearly_lp_test %>% 
+  rename(
+    ds = "Tahun",
+    y = "LuasPanen"
+    )
+glimpse(test_yearly_lp)
+```
+
+```{r}
+# Model Final
+model_final_lp <- prophet(changepoint.prior.scale = 0.05,
+                          yearly.seasonality = TRUE) %>% 
+  add_seasonality(name = "yearly", period = 365, fourier.order = 5) %>% 
+  fit.prophet(train_yearly_lp)
+future_final_lp <- make_future_dataframe(model_final_lp, periods = nrow(test_yearly_lp) + 1)
+forecast_final_lp <- predict(model_final_lp, future_final_lp)
+plot(model_final_lp, forecast_final_lp)
+```
+
+```{r}
+# Melakukan prediksi dengan data pengujian
+prediction_test_lp <- predict(model_final_lp, test_yearly_lp)
+```
+
+```{r}
+# Visualisasi Komponen dari model forecasting
+prophet_plot_components(model_final_lp, prediction_test_lp)
+```
+```{r}
+# Evaluasi Model
+
+# Hitung MAE
+mae_value_prophet_lp <- mae(test_yearly_lp$y, prediction_test_lp$yhat)
+
+# Hitung MSE
+mse_value_prophet_lp <- mse(test_yearly_lp$y, prediction_test_lp$yhat)
+
+# Hitung RMSE
+rmse_value_prophet_lp <- rmse(test_yearly_lp$y, prediction_test_lp$yhat)
+
+# Hitung MAPE
+mape_value_prophet_lp <- mape(test_yearly_lp$y, prediction_test_lp$yhat)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_value_prophet_lp, "\n"))
+cat(paste("MSE: ", mse_value_prophet_lp, "\n"))
+cat(paste("RMSE: ", rmse_value_prophet_lp, "\n"))
+cat(paste("MAPE: ", mape_value_prophet_lp, "%\n"))
+```
+Mengambil data luas panen dari hasil prediksi 2016-2025
+```{r}
+# Filter data untuk tahun 2021-2024
+forecast_subset_lp <- forecast_ts_lp[forecast_ts_lp$ds >= as.Date("2016-01-01") & forecast_ts_lp$ds <= as.Date("2025-12-31"), ]
+
+# Hitung rata-rata yhat per tahun
+average_yhat_2016_lp <- mean(forecast_subset_lp$yhat[forecast_subset_lp$ds == as.Date("2016-01-01")])
+average_yhat_2017_lp <- mean(forecast_subset_lp$yhat[forecast_subset_lp$ds == as.Date("2017-01-01")])
+average_yhat_2018_lp <- mean(forecast_subset_lp$yhat[forecast_subset_lp$ds == as.Date("2018-01-01")])
+average_yhat_2019_lp <- mean(forecast_subset_lp$yhat[forecast_subset_lp$ds == as.Date("2019-01-01")])
+average_yhat_2020_lp <- mean(forecast_subset_lp$yhat[forecast_subset_lp$ds == as.Date("2020-01-01")])
+average_yhat_2021_lp <- mean(forecast_subset_lp$yhat[forecast_subset_lp$ds == as.Date("2021-01-01")])
+average_yhat_2022_lp <- mean(forecast_subset_lp$yhat[forecast_subset_lp$ds == as.Date("2022-01-01")])
+average_yhat_2023_lp <- mean(forecast_subset_lp$yhat[forecast_subset_lp$ds == as.Date("2023-01-01")])
+average_yhat_2024_lp <- mean(forecast_subset_lp$yhat[forecast_subset_lp$ds == as.Date("2024-01-01")])
+average_yhat_2025_lp <- mean(forecast_subset_lp$yhat[forecast_subset_lp$ds == as.Date("2025-01-01")])
+
+# Buat data frame
+average_lp_df <- data.frame(Tahun = c(2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025), LuasPanen = c(average_yhat_2016_lp, average_yhat_2017_lp,average_yhat_2018_lp,average_yhat_2019_lp, average_yhat_2020_lp, average_yhat_2021_lp, average_yhat_2022_lp, average_yhat_2023_lp, average_yhat_2024_lp, average_yhat_2025_lp))
+
+# Tampilkan hasilnya
+average_lp_df
+
+```
+
+Hasil prediksi luas panen 2016-2025
+```{r}
+average_lp_df$Tahun <- make_date(average_lp_df$Tahun)
+average_lp_df
+```
+
+
+
+
+
+
+# 6. Prediksi Produktivitas di Masa Depan - Model Prophet
+```{r}
+# membagi data berdasarkan variabel Produksi
+train_data_index_pr <- createDataPartition(KacangHijauMalukuUtara$Produktivitas, p=0.7, list = FALSE)
+train_data_pr <- KacangHijauMalukuUtara[train_data_index_pr,]
+train_data_pr
+test_data_pr <- KacangHijauMalukuUtara[-train_data_index_pr,]
+test_data_pr
+```
+
+```{r}
+# Mengelompokkan dan Menyiapkan data training berdasarkan variabel luas panen
+yearly_pr_train <- train_data_pr %>% 
+  group_by(Tahun) %>% 
+  summarise(
+    Produktivitas = sum(Produktivitas)
+  )
+yearly_pr_train
+```
+
+```{r}
+# Merubah format data kedalam ds dan y
+train_yearly_pr <- yearly_pr_train %>% 
+  rename(
+    ds = "Tahun",
+    y = "Produktivitas"
+  )
+glimpse(train_yearly_pr)
+```
+```{r}
+# Membuat model Prophet dengan data training
+prophet_ts_pr <- prophet(yearly.seasonality = TRUE, seasonality.prior.scale = 0.1) %>% 
+  fit.prophet(train_yearly_pr)
+
+```
+```{r}
+# Melakukan Prediksi untuk produksi 10 tahun ke depan
+future_prophet_ts_pr <- make_future_dataframe(prophet_ts_pr, periods = 365*12)
+tail(future_prophet_ts_pr)
+```
+```{r}
+# Menampilkan Hasil Prediksi
+forecast_ts_pr <- predict(prophet_ts_pr, future_prophet_ts_pr)
+plot(prophet_ts_pr, forecast_ts_pr)
+```
+```{r}
+# Visualisasi komponen dari model forecast
+prophet_plot_components(prophet_ts_pr, forecast_ts_pr)
+```
+```{r}
+# Melihat komponen forecast
+forecast_ts_pr %>% 
+  dplyr::select(ds, trend, yearly, yhat)
+```
+```{r}
+# Melihat trend produktivitas
+plot(prophet_ts_pr, forecast_ts_pr) +
+  add_changepoints_to_plot(prophet_ts_pr, threshold = 0)
+```
+```{r}
+# Membuat subset data untuk tahun 2016-2025
+forecast_subset_pr <- forecast_ts_pr[forecast_ts_pr$ds >= as.Date("2016-01-01") & forecast_ts_pr$ds <= as.Date("2025-12-31"), ]
+
+# Hanya ambil kolom Tahun dan yhat
+forecast_yhat_2016_2025_pr <- forecast_subset_pr[, c("ds", "yhat")]
+
+# Print hasilnya
+print(forecast_yhat_2016_2025_pr)
+```
+```{r}
+tail(forecast_yhat_2016_2025_pr,10)
+```
+
+
+
+```{r}
+yearly_pr_predict <- forecast_yhat_2016_2025_pr %>% 
+  group_by(ds) %>% 
+  summarise(
+    Produktivitas = sum(yhat)
+  )
+yearly_pr_predict
+```
+
+```{r}
+# Mengelompokkan dan Menyiapkan data testing berdasarkan variabel Produktivitas
+yearly_pr_test <- test_data_pr %>% 
+  group_by(Tahun) %>% 
+  summarise(
+    Produktivitas = sum(Produktivitas)
+  )
+yearly_pr_test
+```
+```{r}
+# Merubah format data kedalam ds dan y
+test_yearly_pr <- yearly_pr_test %>% 
+  rename(
+    ds = "Tahun",
+    y = "Produktivitas"
+    )
+glimpse(test_yearly_pr)
+```
+
+```{r}
+# Model Final
+model_final_pr <- prophet(changepoint.prior.scale = 0.05,
+                          yearly.seasonality = TRUE) %>% 
+  add_seasonality(name = "yearly", period = 365, fourier.order = 5) %>% 
+  fit.prophet(train_yearly_pr)
+future_final_pr <- make_future_dataframe(model_final_pr, periods = nrow(test_yearly_pr) + 1)
+forecast_final_pr <- predict(model_final_pr, future_final_pr)
+plot(model_final_pr, forecast_final_pr)
+```
+
+```{r}
+# Melakukan prediksi dengan data pengujian
+prediction_test_pr <- predict(model_final_pr, test_yearly_pr)
+```
+
+```{r}
+# Visualisasi Komponen dari model forecasting
+prophet_plot_components(model_final_pr, prediction_test_pr)
+```
+```{r}
+# Evaluasi Model
+
+# Hitung MAE
+mae_value_prophet_pr <- mae(test_yearly_pr$y, prediction_test_pr$yhat)
+
+# Hitung MSE
+mse_value_prophet_pr <- mse(test_yearly_pr$y, prediction_test_pr$yhat)
+
+# Hitung RMSE
+rmse_value_prophet_pr <- rmse(test_yearly_pr$y, prediction_test_pr$yhat)
+
+# Hitung MAPE
+mape_value_prophet_pr <- mape(test_yearly_pr$y, prediction_test_pr$yhat)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_value_prophet_pr, "\n"))
+cat(paste("MSE: ", mse_value_prophet_pr, "\n"))
+cat(paste("RMSE: ", rmse_value_prophet_pr, "\n"))
+cat(paste("MAPE: ", mape_value_prophet_pr, "%\n"))
+```
+Mengambil data produktivitas dari hasil prediksi 2016-2025
+```{r}
+# Filter data untuk tahun 2021-2024
+forecast_subset_pr <- forecast_ts_pr[forecast_ts_pr$ds >= as.Date("2016-01-01") & forecast_ts_pr$ds <= as.Date("2025-12-31"), ]
+
+# Hitung rata-rata yhat per tahun
+average_yhat_2016_pr <- mean(forecast_subset_pr$yhat[forecast_subset_pr$ds == as.Date("2016-01-01")])
+average_yhat_2017_pr <- mean(forecast_subset_pr$yhat[forecast_subset_pr$ds == as.Date("2017-01-01")])
+average_yhat_2018_pr <- mean(forecast_subset_pr$yhat[forecast_subset_pr$ds == as.Date("2018-01-01")])
+average_yhat_2019_pr <- mean(forecast_subset_pr$yhat[forecast_subset_pr$ds == as.Date("2019-01-01")])
+average_yhat_2020_pr <- mean(forecast_subset_pr$yhat[forecast_subset_pr$ds == as.Date("2020-01-01")])
+average_yhat_2021_pr <- mean(forecast_subset_pr$yhat[forecast_subset_pr$ds == as.Date("2021-01-01")])
+average_yhat_2022_pr <- mean(forecast_subset_pr$yhat[forecast_subset_pr$ds == as.Date("2022-01-01")])
+average_yhat_2023_pr <- mean(forecast_subset_pr$yhat[forecast_subset_pr$ds == as.Date("2023-01-01")])
+average_yhat_2024_pr <- mean(forecast_subset_pr$yhat[forecast_subset_pr$ds == as.Date("2024-01-01")])
+average_yhat_2025_pr <- mean(forecast_subset_pr$yhat[forecast_subset_pr$ds == as.Date("2025-01-01")])
+
+# Buat data frame
+average_pr_df <- data.frame(Tahun = c(2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025), Produktivitas = c(average_yhat_2016_pr, average_yhat_2017_pr,average_yhat_2018_pr,average_yhat_2019_pr, average_yhat_2020_pr, average_yhat_2021_pr, average_yhat_2022_pr, average_yhat_2023_pr, average_yhat_2024_pr, average_yhat_2025_pr))
+
+# Tampilkan hasilnya
+average_pr_df
+
+```
+
+Hasil prediksi produktivitas 2016-2025
+```{r}
+average_pr_df$Tahun <- make_date(average_pr_df$Tahun)
+average_pr_df
+```

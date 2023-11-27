@@ -1,0 +1,910 @@
+---
+title: "Analisis dampak curah hujan pada produksi Palawija Indonesia dengan VAR dan GARCH"
+author: "Fitria"
+date: "2023-11-09"
+output: pdf_document
+---
+
+
+# Memangil Library
+```{r}
+library(dplyr)
+library(ggplot2)
+library(lubridate)
+library(summarytools)
+library(readxl)
+library(cluster)
+library(scales)
+library(vars)
+library(rugarch)
+library(caTools)
+library(fGarch)
+library(tseries)
+library(tidyverse)
+```
+
+
+# 1. Load dataset Palawija Indonesia 1993-2022
+```{r}
+indonesia_palawija <- read_excel("D:/Download/Dataset Tanaman Palawija Indonesia (1993-2022).xlsx")
+indonesia_palawija
+```
+
+```{r}
+#Merubah type data dari cdouble menjadi numeric agar mudah di operasikan
+indonesia_palawija$Produksi<-as.numeric(indonesia_palawija$Produksi)
+indonesia_palawija$Produktivitas<-as.numeric(indonesia_palawija$Produktivitas)
+indonesia_palawija$Luas_Panen<-as.numeric(indonesia_palawija$Luas_Panen)
+indonesia_palawija
+```
+
+```{r}
+#merubah type data tahun dari double menjadi date
+indonesia_palawija$Tahun<-make_date(indonesia_palawija$Tahun)
+indonesia_palawija
+```
+
+
+```{r}
+tail(indonesia_palawija)
+```
+```{r}
+head(indonesia_palawija)
+```
+```{r}
+# Menampikan variabel dengan baris kosong
+colSums(is.na(indonesia_palawija))
+```
+## Menghapus Data Kosong
+
+```{r}
+# Menghapus data NA's
+Palawija_Clean <- na.omit(indonesia_palawija)
+summary(Palawija_Clean)
+```
+
+```{r}
+colSums(is.na(Palawija_Clean))
+```
+
+# 2. Load dataset Curah hujan Indonesia 1993-2022
+```{r}
+indonesia_hujan <- read_excel("D:/Download/climateserv Indonesia (1993-2022).xlsx")
+indonesia_hujan
+```
+
+
+## Menghapus Data Kosong
+
+```{r}
+# Menampikan variabel dengan baris kosong
+colSums(is.na(indonesia_hujan))
+```
+
+```{r}
+# Merubah type data variabel tanggal menjadi Date
+indonesia_hujan$Date <- as.Date(indonesia_hujan$Date)
+glimpse(indonesia_hujan)
+```
+
+```{r}
+#Merubah type data rainfallavg menjadi numeric dan
+indonesia_hujan$avg_Rainfall <-as.numeric(indonesia_hujan$avg_Rainfall)
+indonesia_hujan
+```
+
+
+```{r}
+# Mengambil rata-rata curah hujan per tahun
+Rainfall_yearly <- indonesia_hujan %>%
+  mutate(year = lubridate::year(Date)) %>%
+  group_by(year) %>%
+  summarise(avg_Rainfall = mean(avg_Rainfall))
+Rainfall_yearly  
+```
+
+```{r}
+# Merubah type tahun menjadi date
+Rainfall_yearly$year <- as.Date(rainfall_yearly$year)
+Rainfall_yearly
+```
+
+
+### Mengabungkan dataset tanaman palawija dengan dataset curah hujan 
+
+```{r}
+
+palawija_clean <- merge(Palawija_Clean, Rainfall_yearly, by.x = "Tahun", by.y = "year")
+palawija_clean
+```
+
+## Eksplorasi Data Analisis (EDA)
+
+### Jumlah Produksi Tanaman Palawija per Provinsi
+```{r}
+# Hitung total produksi semua tanaman palawija per provinsi di setiap tahun
+totproduksi_palawija <- palawija_clean %>% 
+  group_by(Tahun, Provinsi, .drop = FALSE) %>%  # Add .drop argument
+  summarise(total_produksi = sum(Produksi)) %>%
+  arrange(desc(total_produksi))
+
+totproduksi_palawija
+```
+
+```{r}
+# Hitung total produksi semua tanaman pangan per setiap provinsi
+totproduksi_provinsi <- palawija_clean %>% 
+  group_by(Provinsi) %>% 
+  summarise(total_produksi = sum(Produksi))%>%
+  arrange(desc(total_produksi))
+  
+totproduksi_provinsi
+```
+
+### Tren Produksi Tanaman Pangan per Provinsi
+
+
+```{r}
+# Visualisasi Tren Produksi palawija per Provinsi di setiap tahun
+plot_palawija1 <- ggplot(totproduksi_palawija, aes(x = Tahun, y = total_produksi, color = Provinsi)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Tren Produksi Palawija", x = "Tahun", y = "Total Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "right")
+plot_palawija1
+```
+
+```{r}
+
+# Visualisasi dengan barplot
+plot_palawija2 <- ggplot(totproduksi_provinsi, aes(x = Provinsi, y = total_produksi, fill = Provinsi)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Perbandingan Produksi Palawija antara Provinsi di Indonesia", x = "Provinsi", y = "Total Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "none")  # hilangkan legend
+
+# Rotasi sumbu x agar mudah dibaca
+plot_palawija2 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+Perbandingan produksi palawija dalam kurun waktu 1992 - 2020 adalah dari jawa timur yang terbanyak dengan Jumlah Produksi 260033079.0 Ton
+
+## Jagung
+```{r}
+# Filter data Palawija "Jagung" berdasarkan jenis komonditi
+indonesia_jagung<- palawija_clean %>%
+  filter(Jenis_Komoditi == "Jagung")
+indonesia_jagung
+```
+
+
+## Kacang kedelai
+```{r}
+# Filter data Palawija "Kedelai" berdasarkan jenis komonditi
+indonesia_Kedelai<- palawija_clean %>%
+  filter(Jenis_Komoditi == "Kedelai")
+indonesia_Kedelai
+```
+
+
+## Kacang_hijau
+```{r}
+# Filter data Palawija "Kacang Hijau" berdasarkan jenis komonditi
+indonesia_kacang_hijau<- palawija_clean %>%
+  filter(Jenis_Komoditi == "Kacang Hijau")
+indonesia_kacang_hijau
+```
+
+
+## Kacang Tanah
+```{r}
+# Filter data Palawija "Jagung" berdasarkan jenis komonditi
+indonesia_kacang_tanah<- palawija_clean %>%
+  filter(Jenis_Komoditi == "Kacang Tanah")
+indonesia_kacang_tanah
+```
+
+## Ubi Jalar
+```{r}
+# Filter data Palawija "Jagung" berdasarkan jenis komonditi
+indonesia_ubi_jalar<- palawija_clean %>%
+  filter(Jenis_Komoditi == "Ubi Jalar")
+indonesia_ubi_jalar
+```
+
+
+## Ubi Kayu
+```{r}
+# Filter data Palawija "ubikayu" berdasarkan jenis komonditi
+indonesia_ubi_kayu<- palawija_clean %>%
+  filter(Jenis_Komoditi == "Ubi Kayu")
+indonesia_ubi_kayu
+```
+
+# 3. VAR tanaman palawija
+
+## a. VAR terhadap jagung Indonesia
+
+```{r}
+# Pilih variabel yang akan diprediksi
+
+data_var_jagung <- indonesia_jagung[, c("Produksi", "avg_Rainfall", "Luas_Panen")]
+data_var_jagung
+```
+
+Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam format time series (ts)
+
+```{r}
+#Format time series
+ts_data_jagung_indonesia <- ts(data_var_jagung, start = c(1993,1), frequency = 1)
+ts_data_jagung_indonesia
+```
+
+
+```{r}
+best_lag_jagung_indonesia<- VARselect(ts_data_jagung_indonesia, lag.max = 5, type = "both")
+best_lag_jagung_indonesia
+```
+
+### VAR Model terhadap produksi jagung Indonesia
+```{r}
+
+var_model_jagung_indonesia <- VAR(ts_data_jagung_indonesia, p = best_lag_jagung_indonesia$selection[1], type = "both") # jumlah order dari model VAR
+summary(var_model_jagung_indonesia)
+```
+
+### Uji Kolersi Pearson Jagung
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_jagung_indonesia1 <- cor(data_var_jagung$Produksi, data_var_jagung$avg_Rainfall)
+cat ("Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi:",kolerasi_jagung_indonesia1)
+```
+Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi: 0.084
+
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_jagung_indonesia2 <- cor(data_var_jagung$Produksi, data_var_jagung$Luas_Panen)
+cat ("Koefisien Korelasi Pearson Luas panen dan Produksi:", kolerasi_jagung_indonesia2)
+```
+Koefisien Korelasi Pearson Luas panen dan Produksi: 0.94
+
+
+### Uji Granger Causality Jagung
+```{r}
+# Melakukan uji Granger Causality 
+granger_jagung_indonesia1 <- causality(var_model_jagung_indonesia, cause = "avg_Rainfall")
+granger_jagung_indonesia1
+
+#Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
+```
+
+```{r}
+# Melakukan uji Granger Causality 
+granger_jagung_indonesia2 <- causality(var_model_jagung_indonesia, cause = "Luas_Panen")
+granger_jagung_indonesia2
+
+#Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
+```
+
+### Uji regresi linier jagung
+```{r}
+# Membuat model regresi linier
+regresi_jagung_indonesia <- lm(Produksi ~ Luas_Panen + avg_Rainfall , data = data_var_jagung)
+
+# Ringkasan hasil model
+summary(regresi_jagung_indonesia)
+```
+
+
+
+## b.VAR terhadap Kacang Kedelai Indonesia
+
+```{r}
+# Pilih variabel yang akan diprediksi
+
+data_var_kedelai_indonesia <- indonesia_Kedelai[, c("Produksi", "avg_Rainfall", "Luas_Panen")]
+data_var_kedelai_indonesia
+```
+
+Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam format time series (ts)
+
+```{r}
+#Format time series
+ts_data_kedelai_indonesia <- ts(data_var_kedelai_indonesia, start = c(1993,1), frequency = 1)
+ts_data_kedelai_indonesia
+```
+
+
+```{r}
+best_lag_kedelai_indonesia<- VARselect(ts_data_kedelai_indonesia, lag.max = 5, type = "both")
+best_lag_kedelai_indonesia
+```
+
+### VAR Model terhadap produksi Kacang Kedelai indonesia
+```{r}
+
+var_model_kedelai_indonesia <- VAR(ts_data_kedelai_indonesia, p = best_lag_kedelai_indonesia$selection[1], type = "both") # jumlah order dari model VAR
+summary(var_model_kedelai_indonesia)
+```
+Estimation results for equation Produksi: 
+avg_Rainfall.l3 estimasi = -2.946e+04  p-value = 0.037027 *  
+avg_Rainfall.l4  estimasi = 3.258e+04  p-value = 0.001237 ** 
+Luas_Panen.l4    estimasi = 8.978e-01  p-value = 0.004710 ** 
+
+### Uji Kolersi Pearson Kacang Kedelai
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_kedelai_indonesia1 <- cor(data_var_kedelai_indonesia$Produksi, data_var_kedelai_indonesia$avg_Rainfall)
+cat ("Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi:",kolerasi_kedelai_indonesia1)
+```
+Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi: -0.0802
+
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_kedelai_indonesia2 <- cor(data_var_kedelai_indonesia$Produksi, data_var_kedelai_indonesia$Luas_Panen)
+cat ("Koefisien Korelasi Pearson Luas panen dan Produksi:", kolerasi_kedelai_indonesia2)
+```
+Koefisien Korelasi Pearson Luas panen dan Produksi: 0.99
+
+
+### Uji Granger Causality Kacang Kedelai
+```{r}
+# Melakukan uji Granger Causality 
+granger_kedelai_indonesia1 <- causality(var_model_kedelai_indonesia, cause = "avg_Rainfall")
+granger_kedelai_indonesia1
+
+#Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
+```
+Granger= p-value = 0.1005 dan  instant = p-value = 0.6461
+
+```{r}
+# Melakukan uji Granger Causality 
+granger_kedelai_indonesia2 <- causality(var_model_kedelai_indonesia, cause = "Luas_Panen")
+granger_kedelai_indonesia2
+
+#Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
+```
+Granger p-value = 0.06197 dan nstant= p-value < 2.2e-16
+
+
+### Uji regresi linier kedelai
+```{r}
+# Membuat model regresi linier
+regresi_kedelai_indonesia <- lm(Produksi ~ Luas_Panen + avg_Rainfall , data = data_var_kedelai_indonesia)
+
+# Ringkasan hasil model
+summary(regresi_kedelai_indonesia)
+```
+Luas_Panen    estimate = 1.274e+00  p-value  < 2e-16 ***
+avg_Rainfall  estimate = 1.007e+03  p-value 0.00197 ** 
+F-statistic:  p-value: < 2.2e-16
+
+
+## c.VAR terhadap Produksi Kacang Hijau Indonesia
+
+```{r}
+# Pilih variabel yang akan diprediksi
+
+data_var_kacang_hijau <- indonesia_kacang_hijau[, c("Produksi", "avg_Rainfall", "Luas_Panen")]
+data_var_kacang_hijau
+```
+
+Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam format time series (ts)
+
+```{r}
+#Format time series
+ts_data_kacang_hijau <- ts(data_var_kacang_hijau, start = c(1993,1), frequency = 1)
+ts_data_kacang_hijau
+```
+
+
+```{r}
+best_lag_kacang_hijau <- VARselect(ts_data_kacang_hijau, lag.max = 5, type = "both")
+best_lag_kacang_hijau
+```
+
+### VAR Model terhadap produksi kacang hijau Indonesia
+```{r}
+
+var_model_kacanghijau_indonesia <- VAR(ts_data_kacang_hijau, p = best_lag_kacang_hijau$selection[1], type = "both") # jumlah order dari model VAR
+summary(var_model_kacanghijau_indonesia)
+```
+
+Estimation results for equation Produksi: 
+Luas_Panen.l2 estimasi= 0.3962 dengan p-value= 0.00891** sedangkan nilai p-value pada f-statistik adalah p-value: 0.00233 
+
+
+### Uji Kolersi Pearson kacang hijau
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_kacang_hijau1 <- cor(data_var_kacang_hijau$Produksi, data_var_kacang_hijau$avg_Rainfall)
+cat ("Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi:",kolerasi_kacang_hijau1)
+```
+Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi: -0.026
+
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_kacang_hijau2 <- cor(data_var_kacang_hijau$Produksi, data_var_kacang_hijau$Luas_Panen)
+cat ("Koefisien Korelasi Pearson Luas panen dan Produksi:", kolerasi_kacang_hijau2)
+```
+Koefisien Korelasi Pearson Luas panen dan Produksi: 0.96
+
+
+### Uji Granger Causality kacang hijau
+```{r}
+# Melakukan uji Granger Causality 
+granger_kacang_hijau1 <- causality(var_model_kacanghijau_indonesia, cause = "avg_Rainfall")
+granger_kacang_hijau1
+
+#Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
+```
+Granger dengan p-value = 0.9999 dan Instant dengan p-value = 0.486
+
+```{r}
+# Melakukan uji Granger Causality 
+granger_kacang_hijau2 <- causality(var_model_kacanghijau_indonesia, cause = "Luas_Panen")
+granger_kacang_hijau2
+
+#Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
+```
+Granger dgn p-value = 0.1649 dan Instant dgn p-value < 2.2e-16
+
+### Uji regresi linier kacang hijau
+```{r}
+# Membuat model regresi linier
+regresi_kacang_kedelai <- lm(Produksi ~ Luas_Panen + avg_Rainfall , data = data_var_kacang_hijau)
+
+# Ringkasan hasil model
+summary(regresi_kacang_kedelai)
+```
+Luas_Panen dgn estimasi=1.042e+00 dgn p-value=<2e-16*** terhadap produksi dan f tatistik p-valuenya adalah < 2.2e-16
+
+## d.VAR terhadap produksi kacang Tanah Indonesia
+
+```{r}
+# Pilih variabel yang akan diprediksi
+
+data_var_kacang_tanah <- indonesia_kacang_tanah[, c("Produksi", "avg_Rainfall", "Luas_Panen")]
+data_var_kacang_tanah
+```
+
+Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam format time series (ts)
+
+```{r}
+#Format time series
+ts_data_kacang_tanah <- ts(data_var_kacang_tanah, start = c(1993,1), frequency = 1)
+ts_data_kacang_tanah
+```
+
+
+```{r}
+best_lag_kacang_tanah <- VARselect(ts_data_kacang_tanah, lag.max = 5, type = "both")
+best_lag_kacang_tanah
+```
+
+### VAR Model terhadap produksi kacang tanah Indonesia
+```{r}
+
+var_model_kacangtanah_indonesia <- VAR(ts_data_kacang_tanah, p = best_lag_kacang_tanah$selection[1], type = "both") # jumlah order dari model VAR
+summary(var_model_kacangtanah_indonesia)
+```
+
+Estimation results for equation Produksi: 
+Luas_Panen.l2      -1.4335     0.2874  -4.989 7.29e-07 ***
+Luas_Panen.l3      -1.5796     0.2856  -5.532 4.16e-08 ***
+Luas_Panen.l4       0.9197     0.2371   3.879 0.000112 ***
+F-statistic  p-value: < 2.2e-16 
+
+
+### Uji Kolersi Pearson kacang tanah
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_kacang_tanah1 <- cor(data_var_kacang_tanah$Produksi, data_var_kacang_tanah$avg_Rainfall)
+cat ("Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi:",kolerasi_kacang_tanah1)
+```
+Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi: -0.037
+
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_kacang_tanah2 <- cor(data_var_kacang_tanah$Produksi, data_var_kacang_tanah$Luas_Panen)
+cat ("Koefisien Korelasi Pearson Luas panen dan Produksi:", kolerasi_kacang_tanah2)
+```
+Koefisien Korelasi Pearson Luas panen dan Produksi: 0.99
+
+
+### Uji Granger Causality Kacang Tanah
+```{r}
+# Melakukan uji Granger Causality 
+granger_kacang_tanah1 <- causality(var_model_kacangtanah_indonesia, cause = "avg_Rainfall")
+granger_kacang_tanah1
+
+#Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
+```
+Granger p-value = 0.9999
+Instant p-value = 0.9029
+
+```{r}
+# Melakukan uji Granger Causality 
+granger_kacang_tanah2 <- causality(var_model_kacangtanah_indonesia, cause = "Luas_Panen")
+granger_kacang_tanah2
+
+#Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
+```
+Granger p-value = 2.243e-14
+Instant p-value < 2.2e-16
+
+
+### Uji regresi linier Kacang Tanah
+```{r}
+# Membuat model regresi linier
+regresi_kacang_tanah<- lm(Produksi ~ Luas_Panen + avg_Rainfall , data = data_var_kacang_tanah)
+
+# Ringkasan hasil model
+summary(regresi_kacang_tanah)
+```
+Luas_Panen    1.175e+00  5.169e-03 227.330  < 2e-16 ***
+avg_Rainfall  7.577e+02  1.760e+02   4.305 1.85e-05 ***
+F-statistic p-value: < 2.2e-16
+
+## e. VAR terhadap Ubi Jalar Indonesia
+
+```{r}
+# Pilih variabel yang akan diprediksi
+
+data_var_ubijalar <- indonesia_ubi_jalar[, c("Produksi", "avg_Rainfall", "Luas_Panen")]
+data_var_ubijalar
+```
+
+Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam format time series (ts)
+
+```{r}
+#Format time series
+ts_data_ubijalar_indonesia<- ts(data_var_ubijalar, start = c(1993,1), frequency = 1)
+ts_data_ubijalar_indonesia
+```
+
+
+```{r}
+best_lag_ubijalar_indonesia<- VARselect(ts_data_ubijalar_indonesia, lag.max = 5, type = "both")
+best_lag_ubijalar_indonesia
+```
+
+### VAR Model terhadap produksi Ubi Jalar Indonesia
+```{r}
+
+var_model_ubijalar_indonesia <- VAR(ts_data_ubijalar_indonesia, p = best_lag_ubijalar_indonesia$selection[1], type = "both") # jumlah order dari model VAR
+summary(var_model_ubijalar_indonesia)
+```
+
+Estimation results for equation avg_Rainfall: 
+Produksi.l4     -4.668e-07  1.693e-07  -2.758  0.00594 ** 
+F-statistik p-value: < 2.2e-16 
+
+Estimation results for equation Luas_Panen: 
+Produksi.l2     -1.898e-02  5.875e-03  -3.230  0.00128 **
+Produksi.l3      1.498e-02  5.851e-03   2.560  0.01062 *  
+F-statistik p-value: 4.291e-15 
+
+### Uji Kolersi Pearson Ubi Jalar
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_ubijalar_indonesia1 <- cor(data_var_ubijalar$Produksi, data_var_ubijalar$avg_Rainfall)
+cat ("Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi:",kolerasi_ubijalar_indonesia1)
+```
+Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi: -0.02759157
+
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_ubijalar_indonesia2 <- cor(data_var_ubijalar$Produksi, data_var_ubijalar$Luas_Panen)
+cat ("Koefisien Korelasi Pearson Luas panen dan Produksi:", kolerasi_ubijalar_indonesia2)
+```
+Koefisien Korelasi Pearson Luas panen dan Produksi: 0.87
+
+
+### Uji Granger Causality ubi jalar
+```{r}
+# Melakukan uji Granger Causality 
+granger_ubijalar_indonesia1 <- causality(var_model_ubijalar_indonesia, cause = "avg_Rainfall")
+granger_ubijalar_indonesia1
+
+#Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
+```
+Granger p-value = 0.8087
+Instant  p-value = 0.8101
+
+```{r}
+# Melakukan uji Granger Causality 
+granger_ubijalar_indonesia2 <- causality(var_model_ubijalar_indonesia, cause = "Luas_Panen")
+granger_ubijalar_indonesia2
+
+#Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
+```
+Granger p-value = 0.09945 dan Instant p-value < 2.2e-16
+
+### Uji regresi linier Ubi jalar
+```{r}
+# Membuat model regresi linier
+regresi_ubijalar_indonesia <- lm(Produksi ~ Luas_Panen + avg_Rainfall , data = data_var_ubijalar)
+
+# Ringkasan hasil model
+summary(regresi_ubijalar_indonesia)
+```
+Luas_Panen       10.521      0.196  53.676 p-value=  < 2e-16 ***
+avg_Rainfall   6218.462   1561.643   3.982 p-value= 7.38e-05 ***
+F-statistik p-value: < 2.2e-16
+
+
+## f. VAR terhadap Ubi Kayu Indonesia
+
+```{r}
+# Pilih variabel yang akan diprediksi
+
+data_var_ubikayu <- indonesia_ubi_kayu[, c("Produksi", "avg_Rainfall", "Luas_Panen")]
+data_var_ubikayu
+```
+
+Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam format time series (ts)
+
+```{r}
+#Format time series
+ts_data_ubikayu_indonesia <- ts(data_var_ubikayu, start = c(1993,1), frequency = 1)
+ts_data_ubikayu_indonesia
+```
+
+
+```{r}
+best_lag_ubikayu_indonesia<- VARselect(ts_data_ubikayu_indonesia, lag.max = 5, type = "both")
+best_lag_ubikayu_indonesia
+```
+
+
+### VAR Model terhadap produksi ubi kayu Indonesia
+```{r}
+
+var_model_ubikayu_indonesia <- VAR(ts_data_ubikayu_indonesia, p = best_lag_ubikayu_indonesia$selection[1], type = "both") # jumlah order dari model VAR
+summary(var_model_ubikayu_indonesia)
+```
+
+Estimation results for equation Produksi: 
+avg_Rainfall.l1 estimasi = 1.790e+04 p-value=   0.6930  
+Luas_Panen.l1  estimasi =  3.525e+00 p-value=   0.0905 
+F-statistik p-value: 0.2931 Dapat disimpulkan bahwa tidak terdapat pengaruh curah hujan terhadap produksi dan tidak terdapat pengaruh luas panen terhadap produksi ubi kayu.
+
+### Uji Kolersi Pearson ubikayu
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_ubikayu_indonesia1 <- cor(data_var_ubikayu$Produksi, data_var_ubikayu$avg_Rainfall)
+cat ("Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi:",kolerasi_ubikayu_indonesia1)
+```
+Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi: 0.006
+
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_ubikayu_indonesia2 <- cor(data_var_ubikayu$Produksi, data_var_ubikayu$Luas_Panen)
+cat ("Koefisien Korelasi Pearson Luas panen dan Produksi:", kolerasi_ubikayu_indonesia2)
+```
+Koefisien Korelasi Pearson Luas panen dan Produksi: 0.94
+
+
+### Uji Granger Causality ubikayu
+```{r}
+# Melakukan uji Granger Causality 
+granger_ubikayu_indonesia1 <- causality(var_model_ubikayu_indonesia, cause = "avg_Rainfall")
+granger_ubikayu_indonesia1
+
+#Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
+``` 
+Granger p-value = 0.9044 dan Instant p-value = 0.875
+
+```{r}
+# Melakukan uji Granger Causality 
+granger_ubikayu_indonesia2 <- causality(var_model_ubikayu_indonesia, cause = "Luas_Panen")
+granger_ubikayu_indonesia2
+
+#Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
+```
+Granger p-value = 0.05605 dan Instant p-value < 2.2e-16
+
+### Uji regresi linier ubikayu
+```{r}
+# Membuat model regresi linier
+regresi_ubikayu_indonesia <- lm(Produksi ~ Luas_Panen + avg_Rainfall , data = data_var_ubikayu)
+
+# Ringkasan hasil model
+summary(regresi_ubikayu_indonesia)
+```
+Luas_Panen    1.786e+01  2.032e-01  87.884  < 2e-16 ***
+avg_Rainfall  7.272e+04  1.346e+04   5.403 8.36e-08 ***
+F-statistik p-value: < 2.2e-16
+
+
+# 3. Model  GARCH tanaman pangan
+
+## a. GARCH terhadap produksi jagung Indonesia
+
+```{r}
+# Pilih variabel yang akan diprediksi
+
+garch_jagung <- indonesia_jagung[, c("Produksi", "avg_Rainfall")]
+garch_jagung
+```
+
+
+```{r}
+## Penentuan Variabel Dependensi dan Independensi
+dependen_produksi <- garch_jagung$Produksi
+independen_avgRainfall <- garch_jagung$avg_Rainfall
+```
+
+```{r}
+# Uji normalitas dengan Shapiro-Wilk
+shapiro.test(garch_jagung$Produksi)
+
+shapiro.test(garch_jagung$avg_Rainfall)
+```
+Produksi p-value < 2.2e-16 dan Rainfall p-value = 6.922e-13
+Variabel Produksi jagung dan Curah Hujan Rata-rat tidak terdistribusi normal berdasarkan uji Shapiro-Wilk
+Model GARCH sendiri tidak mensyaratkan distribusi normal untuk data atau residual
+
+
+```{r}
+ts_jagung_garch <- ts(garch_jagung, start = c(1993,1), frequency = 1)
+ts_jagung_garch
+```
+
+```{r}
+plot(ts_jagung_garch)
+```
+
+```{r}
+class(ts_jagung_garch)
+
+```
+
+```{r}
+str(ts_jagung_garch)
+```
+Model GARCH dirancang khusus untuk menangani volatilitas heteroskedastis dalam deret waktu stasioner,lebih baik jika variabel yang di modelkan bersifat stasioner. Deret waktu non-stasioner seringkali sulit untuk dimodelkan secara akurat karena karakteristiknya yang berubah-ubah.
+```{r}
+# Uji Augmented Dickey-Fuller (ADF) pada variabel Produksi
+adf_test_result1 <- adf.test(ts_jagung_garch[, "Produksi"])
+print(adf_test_result1)
+```
+Hasil uji Augmented Dickey-Fuller (ADF) menunjukkan bahwa p-value adalah 0.01, yang lebih kecil dari tingkat signifikansi 0.05.dapat menyimpulkan bahwa data variabel Produksi cenderung stasioner.
+
+
+```{r}
+# Uji Augmented Dickey-Fuller (ADF) pada variabel Produksi
+adf_test_result2 <- adf.test(ts_jagung_garch[, "avg_Rainfall"])
+print(adf_test_result2)
+```
+
+
+Hasil uji Augmented Dickey-Fuller (ADF) menunjukkan bahwa p-value adalah 0.01595 dapat menyimpulkan bahwa data variabel avg_Rainfall adalah stasioner.
+
+
+```{r}
+# Plot ACF dan PACF
+par(mfrow=c(1,2))  # Set layout grafik menjadi  baris dan 4 kolom
+
+acf(ts_jagung_garch[, "avg_Rainfall"], main="Autocorrelation Function Rainfall")
+pacf(ts_jagung_garch[, "avg_Rainfall"], main="Partial Autocorrelation Function Rainfall")
+
+acf(ts_jagung_garch[, "Produksi"], main="Autocorrelation Function Produksi")
+pacf(ts_jagung_garch[, "Produksi"], main="Partial Autocorrelation Function Produksi")
+```
+ACF dan PACF untuk "avg_Rainfall" (Curah Hujan Rata-rata):
+
+ACF (Autocorrelation Function): Memberikan gambaran tentang seberapa kuat hubungan antara curah hujan pada waktu tertentu dengan curah hujan pada waktu sebelumnya.
+PACF (Partial Autocorrelation Function): Menunjukkan hubungan langsung antara curah hujan pada waktu tertentu dengan curah hujan pada waktu sebelumnya, setelah menghilangkan pengaruh waktu-waktu di antaranya.
+
+ACF dan PACF untuk "Produksi" (Produksi Jagung):
+
+ACF (Autocorrelation Function): Memberikan gambaran tentang seberapa kuat hubungan antara produksi jagung pada waktu tertentu dengan produksi jagung pada waktu sebelumnya.
+PACF (Partial Autocorrelation Function): Menunjukkan hubungan langsung antara produksi jagung pada waktu tertentu dengan produksi jagung pada waktu sebelumnya, setelah menghilangkan pengaruh waktu-waktu di antaranya.
+
+```{r}
+set.seed(123) # Set seed agar hasil dapat direproduksi
+
+split_ratio <- 0.7 # Rasio pembagian (70% untuk set pelatihan, 30% untuk set pengujian)
+
+# Menggunakan sample.split untuk membagi data
+split <- sample.split(ts_jagung_garch[, "Produksi"], SplitRatio = split_ratio)
+
+# Membuat set pelatihan dan pengujian berdasarkan pembagian di atas
+train_data <- subset(ts_jagung_garch, split == TRUE)
+test_data <- subset(ts_jagung_garch, split == FALSE)
+
+```
+
+```{r}
+test_data
+```
+
+```{r}
+train_data
+```
+
+```{r}
+# Spesifikasi model GARCH(1.1)
+spec <- ugarchspec(variance.model = list(model = "sGARCH", garchOrder = c(1, 1)),
+                   mean.model = list(armaOrder = c(0, 0)))
+```
+
+```{r}
+# Spesifikasi model GARCH(2.2)
+spec2 <- ugarchspec(variance.model = list(model = "sGARCH", garchOrder = c(2, 2)),
+                   mean.model = list(armaOrder = c(0, 0)))
+```
+
+```{r}
+# Membuat seri waktu dari set pelatihan
+# tujuan untuk Menyiapkan data pelatihan dalam format seri waktu yang diperlukan oleh fungsi ugarchfit.
+ts_train_data <- ts(train_data[, "Produksi"], start = c(1993, 1), frequency = 1)
+
+```
+
+
+```{r}
+
+# Menyesuaikan model GARCH
+# Tujuan untuk Melatih model GARCH pada data produksi jagung dari set pelatihan untuk mengevaluasi dan memodelkan volatilitas.
+garch_model <- ugarchfit(data = ts_train_data, spec = spec) 
+
+# Melihat ringkasan model
+print(garch_model)
+```
+
+Optimal Parameters:
+
+omega: 9.0708e+08
+alpha1: 4.5300e-03
+beta1: 9.9447e-01
+Parameter-parameter ini menggambarkan komponen volatilitas model GARCH. Secara khusus, alpha1 dan beta1 mencerminkan bagaimana volatilitas dipengaruhi oleh informasi volatilitas di periode sebelumnya. tidak terdapat p-valuenya karena hasilnya NA
+
+Weighted ARCH LM Tests:
+
+Uji autoregresif terhadap kuadrat residual.
+Hasil uji ini memberikan informasi tentang adanya struktur autoregresif pada kuadrat residual, yang dapat diartikan sebagai indikator volatilitas kondisional.
+
+```{r}
+# Melakukan perkiraan volatilitas di masa depan. Ini dapat membantu memahami pola volatilitas yang mungkin terjadi.
+forecast_volatility <- ugarchforecast(garch_model, n.ahead = 10)
+print(forecast_volatility)
+```
+### Melakukan uji diagnostik lanjutan pada model untuk memastikan kecocokan model
+```{r}
+# Uji autokorelasi pada residual
+
+acf_test <- acf(residuals(garch_model))
+print(acf_test)
+
+```
+
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_jagung_Garch <- cor(garch_jagung$Produksi, garch_jagung$avg_Rainfall)
+cat ("Koefisien Korelasi Pearson Luas panen dan Produksi:", kolerasi_jagung_Garch)
+```
+Koefisien Korelasi Pearson Luas panen dan Produksi: 0.084
+
+
+### Uji regresi linier jagung
+```{r}
+# Membuat model regresi linier
+regresi_jagung_garch <- lm(Produksi ~ avg_Rainfall , data = garch_jagung)
+
+# Ringkasan hasil model
+summary(regresi_jagung_garch)
+```
+avg_Rainfall nilai estimasinya adalah sedangkan p-valuenya   0.0108 *
+dengan f-statistik p-valuenya adalah 0.01078
