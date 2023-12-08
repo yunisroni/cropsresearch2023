@@ -1,0 +1,1439 @@
+---
+title: "Crop Yields Prediction Using Ensemble Model"
+author: "Roni Yunis"
+date: "2023-11-03"
+output: html_document
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+# Load Library/Packages
+
+```{r}
+# library manipulasi data
+library(tidyverse)
+# library model VAR
+library(vars)
+# library untuk model Random Forest
+library(randomForest)
+# library untuk model SVR
+library(e1071)
+# library Untuk partisi dataset
+library(caret) 
+# library untuk evaluasi model
+library(Metrics)
+# library untuk model XGBoost
+library(xgboost)
+# library untuk model Prophet
+library (prophet)
+```
+
+**Tujuan analisis**: Menghasilkan model ensemble terbaik dengan tingkat
+akurasi yang tinggi untuk memprediksi jumlah produksi tanaman pangan
+berdasarkan pengaruh variabel curah hujan dan variabel yang mempengaruhi
+hasil produksi. Pengujian dilakukan untuk tanaman pangan Padi, dengan
+menggunakan dataset Crop Yield 1997-2020 di India
+<https://www.kaggle.com/datasets/akshatgupta7/crop-yield-in-indian-states-dataset/data>
+
+Keterangan Variabel Dataset:
+
+*Crop*: Nama tanaman yang dibudidayakan
+
+*Crop_Year*: Tahun saat tanaman ditanam
+
+*Season*: Musim tanam tertentu (Misalnya: Kharif, Rabi, Sepanjang Tahun)
+
+*State*: Negara bagian di mana tanaman tersebut dibudidayakan.
+
+*Area*: Total luas lahan (dalam hektar) yang dibudidayakan untuk tanaman
+tertentu
+
+*Production*: Kuantitas produksi tanaman (dalam metrik ton)
+
+*Annual_Rainfall*: Curah hujan tahunan yang diterima di wilayah
+pertumbuhan tanaman (dalam mm)
+
+*Fertilizer*: Jumlah total pupuk yang digunakan untuk tanaman (dalam
+kilogram)
+
+*Pesticide*: Jumlah total pestisida yang digunakan untuk tanaman (dalam
+kilogram)
+
+*Yield*: Hasil panen yang dihitung/luas panen (produksi per unit area)
+
+# Obstain Data
+
+```{r}
+cropyield <- read.csv("dataset/India_dataset/crop_yield_India_1997_2020.csv")
+glimpse(cropyield)
+```
+
+# Scrub Data
+
+```{r}
+# Merubah type data Crop_Year menjadi Date
+cropyield$Crop_Year <- make_date(cropyield$Crop_Year)
+glimpse(cropyield)
+```
+
+```{r}
+# Melihat data kosong/NA's
+colSums(is.na(cropyield))
+```
+
+Dalam dataset tidak ada data yang kosong atau NA's
+
+```{r}
+# Melihat variabel dengan data isian 0
+colnames(cropyield)[colSums(cropyield == 0) > 0]
+```
+```{r}
+cropYield <- cropyield %>% 
+  filter_all(all_vars(. !=0))
+```
+
+```{r}
+colnames(cropYield)[colSums(cropYield == 0) > 0]
+```
+
+
+# Exploration Data Analysis
+
+## Mengambil data padi
+
+```{r}
+table(cropYield$Crop)
+```
+
+```{r}
+# Filter data Padi pada musim Whole Year
+cropRice <- cropYield %>% 
+  group_by(Crop = "Rice") %>% 
+  group_by(Season = "Whole Year")
+
+head(cropRice)
+glimpse(cropRice)
+```
+
+```{r}
+# Visualisasi Produksi Padi
+# Hitung total rata-rata produksi Jagung per State
+meanProductionRice <- cropRice %>% 
+  group_by(State) %>% 
+  summarise(totMeanProductionRice = sum(Production)) %>%
+  arrange(-totMeanProductionRice)
+
+meanProductionRice
+
+# Visualisasi dengan barplot
+plot_1 <- ggplot(meanProductionRice, aes(x = State, y = totMeanProductionRice, fill = State)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Comparison of Average Rice Production between State", x = "State", y = "Production (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "none")  # hilangkan legend
+
+# Rotasi sumbu x agar mudah dibaca
+plot_1 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+```{r}
+library(corrplot)
+
+# Membuat korelasi dengan matrik
+rice_cor <- cor(cropRice[,5:10])
+corrplot(rice_cor, method = "color", addCoef.col = "red")
+```
+
+Dilihat dari korelasi *Annual_Rainfall* tidak berkorelasi atau
+berkolerasi lemah dengan Production. Jadi bisa disimpulkan tinggi atau
+rendahnya curah hujan tidak berdampak terhadap jumlah produksi.
+
+Mengidentifikasi pola dan hubungan antar variabel dalam data dengan
+mengubah variabel asli menjadi kombinasi liner dari komponen utama.
+
+# Model
+
+## VAR Model
+
+```{r}
+VARrice <- cropRice[, c("Production","Annual_Rainfall","Area", "Fertilizer", "Pesticide", "Yield")]
+```
+
+```{r}
+# Merubah data dalam format time series
+tsRice <- ts(VARrice, start = c(1997,1), frequency = 1)
+head(tsRice)
+```
+
+```{r}
+# Memuat library yang diperlukan
+library(urca)
+
+# Mengecek stasioneritas variabel Production
+adf_test <- ur.df(cropRice$Production, lags = 0, type = "drift")
+summary(adf_test)
+
+```
+Kesimpulan dari hasil uji ADF adalah bahwa data produksi cenderung stasioner, dan terdapat tren negatif dalam tingkat pertumbuhan produksi seiring waktu.
+
+
+```{r}
+#menentukan jumlah lag yang optimal dlm Var
+best_lag_rice <- VARselect(tsRice,lag.max = 5, type = "both")
+best_lag_rice
+```
+
+```{r}
+# VAR Model
+VARmodelRice <- VAR(tsRice, p = best_lag_rice$selection[1], type = "both") # jumlah order dari model VAR
+summary(VARmodelRice)
+```
+
+Berdasarkan hasil diatas bisa disimpulkan bahwa tidak ada variabel yang
+berdampak langsung terhadap Produksi padi.
+
+```{r}
+# Melakukan analisis impulse response
+irf_results <- irf(VARmodelRice, impulse = "Annual_Rainfall", response = c("Production"), n.ahead = 12)
+```
+
+```{r}
+irf_results
+```
+
+Interpretasi:
+Analisis impulse response coefficients adalah salah satu metode yang berguna untuk memahami dampak dari perubahan dalam variabel eksogen terhadap variabel endogen dalam model VAR (Vector Autoregression). Ini membantu dalam memahami bagaimana perubahan dalam variabel eksogen akan mempengaruhi variabel endogen dalam jangka waktu tertentu.
+
+Dalam hasil impulse response coefficients sebelumnya, apakah variabel Annual_Rainfall berdampak pada variabel Production. Berikut hal-hal yang bisa disimpulkan:
+
+1. **Interpretasi Periode Pertama**: Pada periode pertama (bulan pertama), koeffisien impulse response adalah 0, yang berarti perubahan dalam Annual_Rainfall pada periode tersebut tidak langsung memengaruhi Production. Ini bisa diartikan bahwa ada penundaan waktu sebelum perubahan dalam curah hujan memengaruhi produksi.
+
+2. **Perubahan Positif dalam Periode Kedua**: Pada periode kedua (bulan kedua), koeffisien impulse response adalah sekitar 752,427.6. Ini berarti bahwa perubahan positif sebesar 752,427.6 dalam curah hujan akan meningkatkan produksi dalam bulan tersebut. Dalam konteks pertanian, ini mungkin mengindikasikan bahwa curah hujan yang lebih tinggi pada bulan kedua meningkatkan produksi tanaman.
+
+3. **Dampak dalam Periode Selanjutnya**: Dalam periode-periode berikutnya, koeffisien impulse response terus meningkat, menunjukkan bahwa perubahan dalam curah hujan memiliki dampak positif yang semakin besar pada produksi. Dalam periode keempat, dampaknya mencapai sekitar 3,521,424.2, yang menunjukkan bahwa peningkatan curah hujan dalam bulan tersebut memiliki dampak yang signifikan pada produksi.
+
+4. **Confidence Intervals**: Output juga mencakup Confidence Intervals (CI) untuk setiap periode. Ini adalah kisaran perkiraan dampak yang dihasilkan dengan tingkat kepercayaan tertentu (dalam contoh ini, 95%). CI ini memberikan informasi tentang sejauh mana perkiraan dampak dapat diandalkan.
+
+5. **Kesimpulan**: Berdasarkan hasil ini, kita dapat menyimpulkan bahwa perubahan dalam curah hujan mempengaruhi produksi tanaman, dan dampaknya positif. Namun, dampaknya mungkin tidak langsung muncul pada periode pertama. Semakin lama setelah perubahan dalam curah hujan terjadi, dampaknya semakin besar. Analisis ini memberikan wawasan tentang hubungan antara curah hujan dan produksi tanaman dalam konteks model VAR.
+
+
+# PCA Model
+
+```{r}
+#Pre-Processing Data
+ricePre <- preProcess(tsRice[,c(1:5)], method = c("center", "scale"))
+
+#Normalisasi 
+VARrice <- predict(ricePre, tsRice[, c(1:5)])
+summary(VARrice)
+```
+
+```{r}
+library(FactoMineR)
+
+#Menjalankan PCA.
+VARrice_pca <- PCA(tsRice, graph = FALSE)
+
+#Ekplorasi PCA()
+
+#Mendapatkan ringkasan PCA
+summary(VARrice_pca)
+
+#Mendapatkan varian dari 4 dimensi baru pertama
+VARrice_pca$eig[,1][2:5]
+
+#Mendapatkan kumulatif varian
+VARrice_pca$eig[,1][2:5]
+
+#Mendapatkan variabel yang berkorelasi
+dimdesc(VARrice_pca, axes = 1:2)
+
+
+#Melacak kontribusi variabel
+VARrice_pca$var$contrib
+```
+
+```{r}
+#Visualisasi PCA
+library(factoextra)
+
+#Membuat peta factor untuk kontribusi variabel
+fviz_pca_var(VARrice_pca, col.var = "contrib", gradient.cols = c("#002bbb", "#bb2e00"), repel = TRUE)
+```
+
+```{r}
+#Visualisasi kontribusi dari variabel
+fviz_contrib(VARrice_pca, choice = "var", axes = 1, top = 3)
+```
+
+Terlihat bahwa variabel yang berkontribusi kuat adalah variabel *Area*,
+*Fertilizer*, dan *Pesticide*. Sementara *Annual_Rainfall* dan *Yield*
+berkontribusi lemah
+
+# Menyiapkan data prediksi
+
+```{r}
+# Partisi dataset
+set.seed(123)
+
+# Membagi data menjadi data pelatihan (70%) dan data pengujian (30%)
+partition <- createDataPartition(cropRice$Production, p = 0.7, list = FALSE)
+data_training <- cropRice[partition, ]
+data_testing <- cropRice[-partition, ]
+
+
+```
+
+```{r}
+# Memeriksa apakah variabel Production dalam data training berdistribusi normal
+
+# Histogram
+hist(data_training$Production, main = "Histogram of Production")
+
+# Q-Q Plot
+qqnorm(data_training$Production)
+qqline(data_training$Production)
+
+```
+Dapat dilihat bahwa dari hasil histogram dan qqline data dalam variabel _Production_ tidak berdistribusi normal
+
+
+```{r}
+# Memeriksa apakah variabel Production dalam data testing berdistribusi normal
+
+# Histogram
+hist(data_testing$Production, main = "Histogram of Production")
+
+# Q-Q Plot
+qqnorm(data_testing$Production)
+qqline(data_testing$Production)
+```
+Dapat dilihat bahwa dari hasil histogram dan qqline data dalam variabel _Production_ tidak berdistribusi normal. Maka langkah selanjutnya adalah melakukan transformasi data untuk membuat data berditribusi normal.
+
+```{r}
+# Melakukan transformasi logaritma natural pada variabel "Production" untuk data training
+data_training$Production_log <- log(data_training$Production)
+
+# Histogram
+hist(data_training$Production_log, main = "Histogram of Production")
+
+# Q-Q Plot
+qqnorm(data_training$Production_log)
+qqline(data_training$Production_log)
+
+```
+
+```{r}
+# Melakukan transformasi logaritma natural pada variabel "Production" untuk data testing
+data_testing$Production_log <- log(data_testing$Production)
+
+# Histogram
+hist(data_testing$Production_log, main = "Histogram of Production")
+
+# Q-Q Plot
+qqnorm(data_testing$Production_log)
+qqline(data_testing$Production_log)
+```
+```{r}
+# Melihat variabel dengan data isian 0
+colnames(data_training)[colSums(data_training == 0) > 0]
+colnames(data_testing)[colSums(data_testing == 0) > 0]
+
+```
+
+```{r}
+data_training <- data_training %>% 
+  filter_all(all_vars(. !=0))
+
+
+data_testing <- data_testing %>% 
+  filter_all(all_vars(. !=0))
+```
+
+```{r}
+data_training
+```
+
+# GLM Model
+
+```{r}
+# library model GLM
+library(glm2)
+
+# model GLM untuk memprediksi variabel Production pada data training
+model_glm <- glm(Production_log ~ Annual_Rainfall + Area + Fertilizer + Pesticide + Yield, data = data_training, family = gaussian())
+
+# melihat hasil model prediksi
+summary(model_glm)
+```
+Interpretasi
+
+untuk menentukan variabel mana yang paling berpengaruh terhadap _Production_, dapat dilihat pada besarnya koefisien masing-masing variabel. Variabel dengan koefisien absolut (nilai mutlak) yang paling tinggi akan memiliki pengaruh terbesar terhadap _Production_.
+
+Dalam kasus ini, variabel _Yield_ memiliki koefisien positif yang sangat besar (1.054e-03). Ini mengindikasikan bahwa _Yield_ adalah variabel yang paling berpengaruh positif terhadap _Production_ Artinya, peningkatan _Yield_ akan mengakibatkan peningkatan produksi yang signifikan.
+
+Di sisi lain, variabel _Pesticide_ memiliki koefisien negatif yang signifikan (-4.775e-06). Ini mengindikasikan bahwa _Pesticide_ adalah variabel yang paling berpengaruh negatif terhadap _Production_. Peningkatan penggunaan _Pesticide_ akan mengakibatkan penurunan produksi.
+
+Dengan demikian, dalam konteks model GLM ini, _Yield_ adalah variabel yang paling berpengaruh positif, dan _Pesticide_ adalah variabel yang paling berpengaruh negatif terhadap produksi _Production_.
+
+```{r}
+# Melakukan prediksi produksi dengan model GLM pada data testing
+predicted_glm <- predict(model_glm, newdata = data_testing, type = "response")
+
+# Menampilkan hasil prediksi
+head(predicted_glm)
+```
+
+```{r}
+# Visualisasi Hasil
+result_data_glm <- data.frame(Production = data_testing$Production_log, Predictions = predicted_glm)
+
+# Visualisasi Perbandingan Produksi Aktual dengan Hasil Prediksi
+ggplot(data = result_data_glm, aes(x = Production, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  labs(x = "Actual Production (Ton)", y = "Predicted Production (Ton)") +
+  ggtitle("Comparison of Actual Production and GLM Model Prediction") +
+  theme_minimal()
+```
+
+
+```{r}
+# Visualisasi Produksi Aktual dengan Hasil Prediksi
+ggplot(data = result_data_glm, aes(x = 1:length(Production))) +
+  geom_line(aes(y = Production, color = "Actual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "GLM Prediction"), size = 1) +
+  labs(x = "Observation", y = "Production (Ton)") +
+  scale_color_manual(values = c("Actual" = "blue", "GLM Prediction" = "red")) +
+  ggtitle("Comparison of Actual Production and GLM Model Prediction") +
+  theme_minimal()
+```
+
+
+```{r}
+# Evaluasi GLM Model
+
+# Hitung MAE
+mae_value_glm <- mae(data_testing$Production_log, predicted_glm)
+
+# Hitung MSE
+mse_value_glm <- mse(data_testing$Production_log, predicted_glm)
+
+# Hitung RMSE
+rmse_value_glm <- rmse(data_testing$Production_log, predicted_glm)
+
+# Hitung MAPE
+mape_value_glm <- mape(data_testing$Production_log, predicted_glm)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_value_glm, "\n"))
+cat(paste("MSE: ", mse_value_glm, "\n"))
+cat(paste("RMSE: ", rmse_value_glm, "\n"))
+cat(paste("MAPE: ", mape_value_glm, "%\n"))
+```
+Berdasarkan hasil evaluasi yang dilakukan dapat disimpulkan bahwa model prediksi memiliki tingkat kesalahan yang rendah, yaitu dengan nilai MAPE sebesar 0,4%. 
+
+
+
+# RF Model
+
+```{r}
+# Membuat model RF
+model_rf <- randomForest(Production_log ~ Annual_Rainfall + Area + Fertilizer + Pesticide + Yield, data = data_training, ntree = 100)
+
+summary(model_rf)
+```
+```{r}
+# Melakukan Prediksi terhadap Data Pengujian
+predictions_rf <- predict(model_rf, data_testing)
+
+head(predictions_rf)
+```
+```{r}
+# Visualisasi Hasil
+result_data_rf <- data.frame(Production = data_testing$Production_log, Predictions = predictions_rf)
+
+# Visualisasi Perbandingan Produksi Aktual dengan Hasil Prediksi
+ggplot(data = result_data_rf, aes(x = Production, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  labs(x = "Actual Production (Ton)", y = "Predicted Production (Ton)") +
+  ggtitle("Comparison of Actual Production and RF Model Prediction") +
+  theme_minimal()
+```
+
+```{r}
+# Visualisasi Produksi Aktual dengan Hasil Prediksi
+ggplot(data = result_data_rf, aes(x = 1:length(Production))) +
+  geom_line(aes(y = Production, color = "Actual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "RF Prediction"), size = 1) +
+  labs(x = "Observation", y = "Production (Ton)") +
+  scale_color_manual(values = c("Actual" = "blue", "RF Prediction" = "red")) +
+  ggtitle("Comparison of Actual Production and RF Model Prediction") +
+  theme_minimal()
+```
+```{r}
+# Ambil variabel yang penting dalam data
+var_importance_rf <- data.frame(Variable = row.names(importance(model_rf)),
+                              Importance = importance(model_rf)[, 1])
+
+# Urutkan data berdasarkan derajat variabel penting
+var_importance_rf <- var_importance_rf[order(var_importance_rf$Importance, decreasing = TRUE), ]
+
+# Visualisasi dengan ggplot
+ggplot(var_importance_rf, aes(x = reorder(Variable, Importance), y = Importance)) +
+  geom_bar(stat = "identity", fill = "blue") +
+  labs(title = "Variable Importance Plot",
+       x = "Variable",
+       y = "Importance") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + # Rotating x-axis menjadi mudah dilihat
+  theme_minimal()
+```
+Berdasarkan hasil diatas dapat disimpulkan bahwa _Annual_Rainfall_ tidak mempengaruhi _Production_.
+
+
+```{r}
+# Evaluasi RF Model
+
+# Hitung MAE
+mae_value_rf <- mae(data_testing$Production_log, predictions_rf)
+
+# Hitung MSE
+mse_value_rf <- mse(data_testing$Production_log, predictions_rf)
+
+# Hitung RMSE
+rmse_value_rf <- rmse(data_testing$Production_log, predictions_rf)
+
+# Hitung MAPE
+mape_value_rf <- mape(data_testing$Production_log, predictions_rf)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_value_rf, "\n"))
+cat(paste("MSE: ", mse_value_rf, "\n"))
+cat(paste("RMSE: ", rmse_value_rf, "\n"))
+cat(paste("MAPE: ", mape_value_rf, "%\n"))
+```
+# SVR Model
+
+```{r}
+# Membuat model SVR
+model_svr <- svm(Production_log ~ Annual_Rainfall + Area + Fertilizer + Pesticide + Yield, data = data_training, kernel = "radial", cost = 1)
+
+model_svr
+```
+
+```{r}
+# Melakukan prediksi dengan Data Testing
+predictions_svr <- predict(model_svr, data_testing)
+
+head(predictions_svr)
+```
+
+```{r}
+# Visualisasi hasil prediksi
+result_data_svr <- data.frame(Production = data_testing$Production_log, Predictions = predictions_svr)
+
+ggplot(data = result_data_svr, aes(x = Production, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  labs(x = "Actual Production (Ton)", y = "Predicted Production (Ton)") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  ggtitle("Comparison of Actual Production and SVR Model Prediction") +
+  theme_minimal()
+```
+```{r}
+# Buat grafik garis dengan ggplot2
+ggplot(data = result_data_svr, aes(x = 1:length(Production))) +
+  geom_line(aes(y = Production, color = "Actual"), size = 1) +
+  geom_line(aes(y = Predictions, color = "SVR Prediction"), size = 1) +
+  labs(x = "Observation", y = "Production (Ton)") +
+  scale_color_manual(values = c("Actual" = "blue", "SVR Prediction" = "red")) +
+  ggtitle("Comparison of Actual Production and SVR Model Prediction") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal()
+```
+```{r}
+# Evaluasi SVR Model
+
+# Hitung MAE
+mae_value_svr <- mae(data_testing$Production_log, predictions_svr)
+
+# Hitung MSE
+mse_value_svr <- mse(data_testing$Production_log, predictions_svr)
+
+# Hitung RMSE
+rmse_value_svr <- rmse(data_testing$Production_log, predictions_svr)
+
+# Hitung MAPE
+mape_value_svr <- mape(data_testing$Production_log, predictions_svr)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_value_svr, "\n"))
+cat(paste("MSE: ", mse_value_svr, "\n"))
+cat(paste("RMSE: ", rmse_value_svr, "\n"))
+cat(paste("MAPE: ", mape_value_svr, "%\n"))
+```
+# XGBoost Model
+
+```{r}
+# Mengonversi data frame ke matriks
+X_train <- data.matrix(data_training[, c("Annual_Rainfall", "Area", "Fertilizer", "Pesticide", "Yield")])
+y_train <- data_training$Production_log
+X_test <- data.matrix(data_testing[, c("Annual_Rainfall", "Area", "Fertilizer", "Pesticide", "Yield")])
+
+```
+
+```{r}
+# Membuat model XGBoost
+xgb_data_train <- xgb.DMatrix(data = X_train, label = y_train)
+model_xgb <- xgboost(data = xgb_data_train, nrounds = 100)
+```
+
+
+```{r}
+# Melakukan prediksi pada data pengujian
+xgb_data_test <- xgb.DMatrix(data = X_test)
+predictions_xgb <- predict(model_xgb, newdata = xgb_data_test)
+```
+
+```{r}
+# Visualisasi hasil prediksi
+result_data_xgb <- data.frame(Production = data_testing$Production_log, Predictions = predictions_xgb)
+
+ggplot(data = result_data_xgb, aes(x = Production, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  labs(x = "Actual Production (Ton)", y = "Predicted Production (Ton)") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  ggtitle("Comparison of Actual Production and XGB Model Prediction") +
+  theme_minimal()
+```
+```{r}
+# Buat grafik garis
+ggplot(data = result_data_xgb, aes(x = 1:length(data_testing$Production_log))) +
+  geom_line(aes(y = data_testing$Production_log, color = "Actual"), size = 1) +
+  geom_line(aes(y = predictions_xgb, color = "XGB Prediction"), size = 1) +
+  labs(x = "Observation", y = "Production (Ton)") +
+  scale_color_manual(values = c("Actual" = "blue", "XGB Prediction" = "red")) +
+  ggtitle("Comparison of Actual Production and XGB Model Prediction") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal()
+```
+```{r}
+# Melihat variabel yang penting
+importance_xgb <- xgb.importance(model = model_xgb)
+importance_xgb
+```
+Berdasarkan hasil tersebut, dapat disimpulkan bahwa variabel _Yield_ yang sangat berpengaruh pada _Production_
+
+```{r}
+# Evaluasi XGBoost Model
+
+# Hitung MAE
+mae_value_xgb <- mae(data_testing$Production_log, predictions_xgb)
+
+# Hitung MSE
+mse_value_xgb <- mse(data_testing$Production_log, predictions_xgb)
+
+# Hitung RMSE
+rmse_value_xgb <- rmse(data_testing$Production_log, predictions_xgb)
+
+# Hitung MAPE
+mape_value_xgb <- mape(data_testing$Production_log, predictions_xgb)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_value_xgb, "\n"))
+cat(paste("MSE: ", mse_value_xgb, "\n"))
+cat(paste("RMSE: ", rmse_value_xgb, "\n"))
+cat(paste("MAPE: ", mape_value_xgb, "%\n"))
+```
+```{r}
+# Menyamakan panjang observasi hasil prediksi dengan 72 pengamatan
+
+long_sort <- min(length(data_testing$Production_log),length(predicted_glm), length(predictions_rf), length(predictions_svr), length(predictions_xgb), 72)
+
+# Memotong data prediksi dari masing-masing model
+data_testing_vis <- data_testing$Production_log[1:long_sort]
+prediksi_mode_glm <- predicted_glm[1:long_sort]
+prediksi_mode_rf <- predictions_rf[1:long_sort]
+prediksi_mode_svr <- predictions_svr[1:long_sort]
+prediksi_mode_xgb <- predictions_xgb[1:long_sort]
+
+```
+
+
+```{r}
+# Visualisasi Model Prediksi
+# Gabungkan hasil prediksi dari keempat model ke dalam satu data frame
+result_data_combined <- data.frame(
+  Production = data_testing_vis,
+  Predictions_GLM = prediksi_mode_glm,
+  Predictions_RF = prediksi_mode_rf,
+  Predictions_SVR = prediksi_mode_svr,
+  Predictions_XGB = prediksi_mode_xgb
+)
+
+ggplot(data = result_data_combined, aes(x = 1:length(Production))) +
+  geom_line(aes(y = Production, color = "Actual"), size = 1) +
+  geom_line(aes(y = Predictions_GLM, color = "GLM"), size = 0.5, linetype = "solid") +
+  geom_line(aes(y = Predictions_RF, color = "RF"), size = 0.5, linetype = "solid") +
+  geom_line(aes(y = Predictions_SVR, color = "SVR"), size = 0.5, linetype = "solid") +
+  geom_line(aes(y = Predictions_XGB, color = "XGB"), size = 0.5, linetype = "solid") +
+  labs(x = "Observation", y = "Production (Ton)") +
+  scale_color_manual(values = c("Actual" = "green","GLM" = "yellow", "RF" = "blue", "SVR" = "red", "XGB" = "brown")) +
+  ggtitle("Comparison of Actual and Predicted from GLM, RF, SVR, and XGB") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal()
+```
+## iNterpret
+```{r}
+model_performance <- data.frame(
+  No = c(1:4),
+  Model = c("GLM","Random Forest", "SVR", "XGBoost"),
+  MSE = c(mse_value_glm, mse_value_rf, mse_value_svr, mse_value_xgb),
+  RMSE = c(rmse_value_glm,rmse_value_rf, rmse_value_svr, mse_value_xgb),
+  MAE = c(mae_value_glm, mae_value_rf, mae_value_svr, mae_value_xgb),
+  MAPE = c(mape_value_glm, mape_value_rf, mape_value_svr, mape_value_xgb),
+  stringsAsFactors = FALSE
+  
+)
+model_performance
+```
+
+Berdasarkan hasil matrik performansi diatas dapat disimpulkan bahwa, model **XGBoost** merupakan model terbaik dengan nilai kesalahan prediksi yang paling rendah dibandingkan dengan model GLM, Random Forest, dan SVR. Model **GLM** memiliki kinerja yang paling buruk dengan tingkat kesalahan yang tinggi. 
+
+```{r}
+cropYield
+```
+```{r}
+glimpse(cropYield)
+```
+# Model Ensemble - 1
+
+Berdasarkan hasil pengujian secara tunggal dari masing-masing model, maka dalam pengujian berikutnya akan dilakukan pengembangan model ensemble dengan menentukan bobot dari masing-masing model. Jadi model ensemble dikembangkan menggunakan persamaan berikut:
+
+_model_ensemble = 1/2(model(a) + model(b))_
+
+## Ensemble Model XGB-GLM
+
+```{r}
+# Model XGB dan GLM
+predictions_ensemble_xgb_glm <- (predictions_xgb + predicted_glm) / 2
+
+```
+
+```{r}
+# Evaluasi Model
+
+# Hitung MAE
+mae_value_xgb_glm <- mae(data_testing$Production_log, predictions_ensemble_xgb_glm)
+
+# Hitung MSE
+mse_value_xgb_glm <- mse(data_testing$Production_log, predictions_ensemble_xgb_glm)
+
+# Hitung RMSE
+rmse_value_xgb_glm <- rmse(data_testing$Production_log, predictions_ensemble_xgb_glm)
+
+# Hitung MAPE
+mape_value_xgb_glm <- mape(data_testing$Production_log, predictions_ensemble_xgb_glm)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_value_xgb_glm, "\n"))
+cat(paste("MSE: ", mse_value_xgb_glm, "\n"))
+cat(paste("RMSE: ", rmse_value_xgb_glm, "\n"))
+cat(paste("MAPE: ", mape_value_xgb_glm, "%\n"))
+```
+
+## Ensemble Model XGB-RF
+
+
+```{r}
+# Model XGB dan RF
+predictions_ensemble_xgb_rf <- (predictions_xgb + predictions_rf) / 2
+
+```
+
+```{r}
+# Evaluasi Model
+
+# Hitung MAE
+mae_value_xgb_rf <- mae(data_testing$Production_log, predictions_ensemble_xgb_rf)
+
+# Hitung MSE
+mse_value_xgb_rf <- mse(data_testing$Production_log, predictions_ensemble_xgb_rf)
+
+# Hitung RMSE
+rmse_value_xgb_rf <- rmse(data_testing$Production_log, predictions_ensemble_xgb_rf)
+
+# Hitung MAPE
+mape_value_xgb_rf <- mape(data_testing$Production_log, predictions_ensemble_xgb_rf)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_value_xgb_rf, "\n"))
+cat(paste("MSE: ", mse_value_xgb_rf, "\n"))
+cat(paste("RMSE: ", rmse_value_xgb_rf, "\n"))
+cat(paste("MAPE: ", mape_value_xgb_rf, "%\n"))
+```
+
+## Ensemble Model XGB-SVR
+
+
+```{r}
+# Model XGB dan SVR
+predictions_ensemble_xgb_svr <- (predictions_xgb + predictions_svr) / 2
+
+```
+
+```{r}
+# Evaluasi Model
+
+# Hitung MAE
+mae_value_xgb_svr <- mae(data_testing$Production_log, predictions_ensemble_xgb_svr)
+
+# Hitung MSE
+mse_value_xgb_svr <- mse(data_testing$Production_log, predictions_ensemble_xgb_svr)
+
+# Hitung RMSE
+rmse_value_xgb_svr <- rmse(data_testing$Production_log, predictions_ensemble_xgb_svr)
+
+# Hitung MAPE
+mape_value_xgb_svr <- mape(data_testing$Production_log, predictions_ensemble_xgb_svr)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_value_xgb_svr, "\n"))
+cat(paste("MSE: ", mse_value_xgb_svr, "\n"))
+cat(paste("RMSE: ", rmse_value_xgb_svr, "\n"))
+cat(paste("MAPE: ", mape_value_xgb_svr, "%\n"))
+```
+
+## Ensemble Model RF-GLM
+
+
+```{r}
+# Model RF dan GLM
+predictions_ensemble_rf_glm <- (predictions_rf + predicted_glm) / 2
+
+```
+
+```{r}
+# Evaluasi Model
+
+# Hitung MAE
+mae_value_rf_glm <- mae(data_testing$Production_log, predictions_ensemble_rf_glm)
+
+# Hitung MSE
+mse_value_rf_glm <- mse(data_testing$Production_log, predictions_ensemble_rf_glm)
+
+# Hitung RMSE
+rmse_value_rf_glm <- rmse(data_testing$Production_log, predictions_ensemble_rf_glm)
+
+# Hitung MAPE
+mape_value_rf_glm <- mape(data_testing$Production_log, predictions_ensemble_rf_glm)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_value_rf_glm, "\n"))
+cat(paste("MSE: ", mse_value_rf_glm, "\n"))
+cat(paste("RMSE: ", rmse_value_rf_glm, "\n"))
+cat(paste("MAPE: ", mape_value_rf_glm, "%\n"))
+```
+
+## Ensemble Model RF-SVR
+
+```{r}
+# Model RF dan SVR
+predictions_ensemble_rf_svr <- (predictions_rf + predictions_svr) / 2
+
+```
+
+```{r}
+# Evaluasi Model
+
+# Hitung MAE
+mae_value_rf_svr <- mae(data_testing$Production_log, predictions_ensemble_rf_svr)
+
+# Hitung MSE
+mse_value_rf_svr <- mse(data_testing$Production_log, predictions_ensemble_rf_svr)
+
+# Hitung RMSE
+rmse_value_rf_svr <- rmse(data_testing$Production_log, predictions_ensemble_rf_svr)
+
+# Hitung MAPE
+mape_value_rf_svr <- mape(data_testing$Production_log, predictions_ensemble_rf_svr)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_value_rf_svr, "\n"))
+cat(paste("MSE: ", mse_value_rf_svr, "\n"))
+cat(paste("RMSE: ", rmse_value_rf_svr, "\n"))
+cat(paste("MAPE: ", mape_value_rf_svr, "%\n"))
+```
+
+## iNterpret
+
+```{r}
+model_performance2 <- data.frame(
+  No = c(1:5),
+  Model = c("XGB-GLM", "XGB-RF", "XGB-SVR", "RF-GLM", "RF-SVR"),
+  MSE = c(mse_value_xgb_glm, mse_value_xgb_rf, mse_value_xgb_svr, mse_value_rf_glm, mse_value_rf_svr),
+  RMSE = c(rmse_value_xgb_glm, rmse_value_xgb_rf, rmse_value_xgb_svr, rmse_value_rf_glm, rmse_value_rf_svr),
+  MAE = c(mae_value_xgb_glm, mae_value_xgb_rf, mae_value_xgb_svr, mae_value_rf_glm, mae_value_rf_svr),
+  MAPE = c(mape_value_xgb_glm, mape_value_xgb_rf, mape_value_xgb_svr, mape_value_rf_glm, mape_value_rf_svr),
+  stringsAsFactors = FALSE
+  
+)
+model_performance2
+```
+
+Hasil model ensemble diatas bisa disimpulkan dengan nilai MAE dan MAPE yang rendah maka model **XGB-RF** merupakan model terbaik dibandingkan 4 model ensemble lainnya.
+
+```{r}
+# Menyamakan panjang observasi hasil prediksi dengan 72 pengamatan
+
+long_sort2 <- min(length(data_testing$Production_log),length(predictions_ensemble_xgb_glm), length(predictions_ensemble_xgb_rf), length(predictions_ensemble_xgb_svr), length(predictions_ensemble_rf_glm), length(predictions_ensemble_rf_svr), 72)
+
+# Memotong data prediksi dari masing-masing model
+data_testing_vis <- data_testing$Production_log[1:long_sort2]
+prediksi_mode_xgb_glm <- predictions_ensemble_xgb_glm[1:long_sort2]
+prediksi_mode_xgb_rf <- predictions_ensemble_xgb_rf[1:long_sort2]
+prediksi_mode_xgb_svr <- predictions_ensemble_xgb_svr[1:long_sort2]
+prediksi_mode_rf_glm <- predictions_ensemble_rf_glm[1:long_sort2]
+prediksi_mode_rf_svr <- predictions_ensemble_rf_svr[1:long_sort2]
+
+```
+
+
+```{r}
+# Visualisasi Model Prediksi
+# Gabungkan hasil prediksi dari keempat model ke dalam satu data frame
+result_data_combined <- data.frame(
+  Production = data_testing_vis,
+  Predictions_XGB_GLM = prediksi_mode_xgb_glm,
+  Predictions_XGB_RF = prediksi_mode_xgb_rf,
+  Predictions_XGB_SVR = prediksi_mode_xgb_svr,
+  Predictions_RF_GLM = prediksi_mode_rf_glm,
+  Predictions_RF_SVR = prediksi_mode_rf_svr
+)
+
+ggplot(data = result_data_combined, aes(x = 1:length(Production))) +
+  geom_line(aes(y = Production, color = "Actual"), size = 1) +
+  geom_line(aes(y = Predictions_XGB_GLM, color = "XGB-GLM"), size = 0.5, linetype = "solid") +
+  geom_line(aes(y = Predictions_XGB_RF, color = "XGB-RF"), size = 0.5, linetype = "solid") +
+  geom_line(aes(y = Predictions_XGB_SVR, color = "XGB-SVR"), size = 0.5, linetype = "solid") +
+  geom_line(aes(y = Predictions_RF_GLM, color = "RF-GLM"), size = 0.5, linetype = "solid") +
+  geom_line(aes(y = Predictions_RF_SVR, color = "RF-SVR"), size = 0.5, linetype = "solid") +
+  labs(x = "Observation", y = "Production (Ton)") +
+  scale_color_manual(values = c("Actual" = "blue","XGB-GLM" = "yellow", "XGB-RF" = "orange", "XGB-SVR" = "red", "RF-GLM" = "brown", "RF-SVR" = "green")) +
+  ggtitle("Comparison of Actual and Predicted from Ensemble Model") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal()
+```
+# 
+
+# Model Ensemble - 2
+
+Berdasarkan hasil pengujian secara tunggal dari masing-masing model, maka dalam pengujian berikutnya akan dilakukan pengembangan model ensemble dengan menentukan bobot dari masing-masing model. Jadi model ensemble dikembangkan menggunakan persamaan berikut:
+
+_model_ensemble = w(model(a) + (1-w)model(b))_
+dimana w = 60%
+
+```{r}
+# Penentuan nilai w
+w = 0.6
+```
+
+
+## Ensemble Model XGB-GLM
+
+```{r}
+# Model XGB dan GLM
+predictions_ensemble_xgb_glm_w <- w*(predictions_xgb) + (1-w)*predicted_glm
+
+```
+
+```{r}
+# Evaluasi Model
+
+# Hitung MAE
+mae_value_xgb_glm_w <- mae(data_testing$Production_log, predictions_ensemble_xgb_glm_w)
+
+# Hitung MSE
+mse_value_xgb_glm_w <- mse(data_testing$Production_log, predictions_ensemble_xgb_glm_w)
+
+# Hitung RMSE
+rmse_value_xgb_glm_w <- rmse(data_testing$Production_log, predictions_ensemble_xgb_glm_w)
+
+# Hitung MAPE
+mape_value_xgb_glm_w <- mape(data_testing$Production_log, predictions_ensemble_xgb_glm_w)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_value_xgb_glm_w, "\n"))
+cat(paste("MSE: ", mse_value_xgb_glm_w, "\n"))
+cat(paste("RMSE: ", rmse_value_xgb_glm_w, "\n"))
+cat(paste("MAPE: ", mape_value_xgb_glm_w, "%\n"))
+```
+
+## Ensemble Model XGB-RF
+
+
+```{r}
+# Model XGB dan RF
+predictions_ensemble_xgb_rf_w <- w*predictions_xgb + (1-w)*predictions_rf
+
+```
+
+```{r}
+# Evaluasi Model
+
+# Hitung MAE
+mae_value_xgb_rf_w <- mae(data_testing$Production_log, predictions_ensemble_xgb_rf_w)
+
+# Hitung MSE
+mse_value_xgb_rf_w <- mse(data_testing$Production_log, predictions_ensemble_xgb_rf_w)
+
+# Hitung RMSE
+rmse_value_xgb_rf_w <- rmse(data_testing$Production_log, predictions_ensemble_xgb_rf_w)
+
+# Hitung MAPE
+mape_value_xgb_rf_w <- mape(data_testing$Production_log, predictions_ensemble_xgb_rf_w)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_value_xgb_rf_w, "\n"))
+cat(paste("MSE: ", mse_value_xgb_rf_w, "\n"))
+cat(paste("RMSE: ", rmse_value_xgb_rf_w, "\n"))
+cat(paste("MAPE: ", mape_value_xgb_rf_w, "%\n"))
+```
+
+## Ensemble Model XGB-SVR
+
+
+```{r}
+# Model XGB dan SVR
+predictions_ensemble_xgb_svr_w <- w*predictions_xgb + (1-w)*predictions_svr
+
+```
+
+```{r}
+# Evaluasi Model
+
+# Hitung MAE
+mae_value_xgb_svr_w <- mae(data_testing$Production_log, predictions_ensemble_xgb_svr_w)
+
+# Hitung MSE
+mse_value_xgb_svr_w <- mse(data_testing$Production_log, predictions_ensemble_xgb_svr_w)
+
+# Hitung RMSE
+rmse_value_xgb_svr_w <- rmse(data_testing$Production_log, predictions_ensemble_xgb_svr_w)
+
+# Hitung MAPE
+mape_value_xgb_svr_w <- mape(data_testing$Production_log, predictions_ensemble_xgb_svr_w)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_value_xgb_svr_w, "\n"))
+cat(paste("MSE: ", mse_value_xgb_svr_w, "\n"))
+cat(paste("RMSE: ", rmse_value_xgb_svr_w, "\n"))
+cat(paste("MAPE: ", mape_value_xgb_svr_w, "%\n"))
+```
+
+## Ensemble Model RF-GLM
+
+
+```{r}
+# Model RF dan GLM
+predictions_ensemble_rf_glm_w <- w*predictions_rf + (1-w)*predicted_glm
+
+```
+
+```{r}
+# Evaluasi Model
+
+# Hitung MAE
+mae_value_rf_glm_w <- mae(data_testing$Production_log, predictions_ensemble_rf_glm_w)
+
+# Hitung MSE
+mse_value_rf_glm_w <- mse(data_testing$Production_log, predictions_ensemble_rf_glm_w)
+
+# Hitung RMSE
+rmse_value_rf_glm_w <- rmse(data_testing$Production_log, predictions_ensemble_rf_glm_w)
+
+# Hitung MAPE
+mape_value_rf_glm_w <- mape(data_testing$Production_log, predictions_ensemble_rf_glm_w)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_value_rf_glm_w, "\n"))
+cat(paste("MSE: ", mse_value_rf_glm_w, "\n"))
+cat(paste("RMSE: ", rmse_value_rf_glm_w, "\n"))
+cat(paste("MAPE: ", mape_value_rf_glm_w, "%\n"))
+```
+
+## Ensemble Model RF-SVR
+
+```{r}
+# Model RF dan SVR
+predictions_ensemble_rf_svr_w <- w*predictions_rf + (1-w)*predictions_svr
+
+```
+
+```{r}
+# Evaluasi Model
+
+# Hitung MAE
+mae_value_rf_svr_w <- mae(data_testing$Production_log, predictions_ensemble_rf_svr_w)
+
+# Hitung MSE
+mse_value_rf_svr_w <- mse(data_testing$Production_log, predictions_ensemble_rf_svr_w)
+
+# Hitung RMSE
+rmse_value_rf_svr_w <- rmse(data_testing$Production_log, predictions_ensemble_rf_svr_w)
+
+# Hitung MAPE
+mape_value_rf_svr_w <- mape(data_testing$Production_log, predictions_ensemble_rf_svr_w)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_value_rf_svr_w, "\n"))
+cat(paste("MSE: ", mse_value_rf_svr_w, "\n"))
+cat(paste("RMSE: ", rmse_value_rf_svr_w, "\n"))
+cat(paste("MAPE: ", mape_value_rf_svr_w, "%\n"))
+```
+
+## iNterpret
+
+```{r}
+model_performance3 <- data.frame(
+  No = c(1:5),
+  Model = c("XGB-GLM", "XGB-RF", "XGB-SVR", "RF-GLM", "RF-SVR"),
+  MSE = c(mse_value_xgb_glm_w, mse_value_xgb_rf_w, mse_value_xgb_svr_w, mse_value_rf_glm_w, mse_value_rf_svr_w),
+  RMSE = c(rmse_value_xgb_glm_w, rmse_value_xgb_rf_w, rmse_value_xgb_svr_w, rmse_value_rf_glm_w, rmse_value_rf_svr_w),
+  MAE = c(mae_value_xgb_glm_w, mae_value_xgb_rf_w, mae_value_xgb_svr_w, mae_value_rf_glm_w, mae_value_rf_svr_w),
+  MAPE = c(mape_value_xgb_glm_w, mape_value_xgb_rf_w, mape_value_xgb_svr_w, mape_value_rf_glm_w, mape_value_rf_svr_w),
+  stringsAsFactors = FALSE
+  
+)
+model_performance3
+```
+
+Hasil model ensemble diatas bisa disimpulkan dengan nilai MAE dan MAPE yang rendah maka model **XGB-RF** merupakan model terbaik dibandingkan 4 model ensemble lainnya.
+
+```{r}
+# Menyamakan panjang observasi hasil prediksi dengan 72 pengamatan
+
+long_sort3 <- min(length(data_testing$Production_log),length(predictions_ensemble_xgb_glm_w), length(predictions_ensemble_xgb_rf_w), length(predictions_ensemble_xgb_svr_w), length(predictions_ensemble_rf_glm_w), length(predictions_ensemble_rf_svr_w), 72)
+
+# Memotong data prediksi dari masing-masing model
+data_testing_vis <- data_testing$Production_log[1:long_sort3]
+prediksi_mode_xgb_glm <- predictions_ensemble_xgb_glm_w[1:long_sort3]
+prediksi_mode_xgb_rf <- predictions_ensemble_xgb_rf_w[1:long_sort3]
+prediksi_mode_xgb_svr <- predictions_ensemble_xgb_svr_w[1:long_sort3]
+prediksi_mode_rf_glm <- predictions_ensemble_rf_glm_w[1:long_sort3]
+prediksi_mode_rf_svr <- predictions_ensemble_rf_svr_w[1:long_sort3]
+
+```
+
+
+```{r}
+# Visualisasi Model Prediksi
+# Gabungkan hasil prediksi dari keempat model ke dalam satu data frame
+result_data_combined <- data.frame(
+  Production = data_testing_vis,
+  Predictions_XGB_GLM = prediksi_mode_xgb_glm,
+  Predictions_XGB_RF = prediksi_mode_xgb_rf,
+  Predictions_XGB_SVR = prediksi_mode_xgb_svr,
+  Predictions_RF_GLM = prediksi_mode_rf_glm,
+  Predictions_RF_SVR = prediksi_mode_rf_svr
+)
+
+ggplot(data = result_data_combined, aes(x = 1:length(Production))) +
+  geom_line(aes(y = Production, color = "Actual"), size = 1) +
+  geom_line(aes(y = Predictions_XGB_GLM, color = "XGB-GLM"), size = 0.5, linetype = "solid") +
+  geom_line(aes(y = Predictions_XGB_RF, color = "XGB-RF"), size = 0.5, linetype = "solid") +
+  geom_line(aes(y = Predictions_XGB_SVR, color = "XGB-SVR"), size = 0.5, linetype = "solid") +
+  geom_line(aes(y = Predictions_RF_GLM, color = "RF-GLM"), size = 0.5, linetype = "solid") +
+  geom_line(aes(y = Predictions_RF_SVR, color = "RF-SVR"), size = 0.5, linetype = "solid") +
+  labs(x = "Observation", y = "Production (Ton)") +
+  scale_color_manual(values = c("Actual" = "blue","XGB-GLM" = "yellow", "XGB-RF" = "orange", "XGB-SVR" = "red", "RF-GLM" = "brown", "RF-SVR" = "green")) +
+  ggtitle("Comparison of Actual and Predicted from Ensemble Model") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal()
+```
+
+Kesimpulan: Berdasarkan hasil pengujian dan evaluasi dari model ensemble dengan pendekatan rata-rata dan penggabungan, didapatkan model terbaik dengan tingkat perfomansi yang paling baik adalah model ensemble **XGB-RF**
+
+
+```{r}
+library(corrplot)
+
+# Membuat korelasi dengan matrik
+yield_cor <- cor(cropYield[,5:10])
+corrplot(yield_cor, method = "color", addCoef.col = "red")
+```
+```{r}
+#Standarisasi
+library(caret)
+
+#Pre-Processing Data
+yield_copy_pre <- preProcess(cropYield[,c(5, 6:10)], method = c("center", "scale"))
+
+#Normalisasi 
+cropYield_copy <- predict(yield_copy_pre, cropYield[, c(5, 6:10)])
+summary(cropYield_copy)
+```
+
+
+
+```{r}
+#Library untuk Elbow Method
+library(purrr)
+
+tot_withinss <- map_dbl(1:10, function(k){
+  model <- kmeans(x = cropYield_copy, centers = k)
+  model$tot.withinss
+})
+
+elbow_df <- data.frame(
+       k = 1:10,
+       tot_withinss = tot_withinss)
+head(elbow_df)
+ 
+#plotting the elbow plot
+ggplot(elbow_df, aes(k, tot_withinss)) + geom_line() + scale_x_continuous(breaks = 1:10)
+```
+```{r}
+# Menggunakan Silhouette method untuk menentukan klaster optimal
+silhouette_scores <- sapply(2:10, function(k) {
+  kmeans_result <- kmeans(cropYield_copy, centers = k)
+  mean_silhouette <- mean(silhouette(kmeans_result$cluster, dist(cropYield_copy)))
+  return(mean_silhouette)
+})
+
+# Plot silhouette scores
+plot(2:10, silhouette_scores, type = "b", pch = 19, xlab = "Number of clusters", ylab = "Mean Silhouette Score")
+
+# Mencari jumlah klaster terbaik dengan melihat nilai silhouette score
+optimal_k <- which.max(silhouette_scores) + 1
+cat("Optimal number of clusters:", optimal_k)
+```
+
+
+```{r}
+set.seed(42)
+
+#Membangun model k-means dengan k sebanyak 2
+cropYield_md <- kmeans(cropYield_copy, center = 2)
+
+#Mengekstrak vektor dari kluster dalam model k-means
+clust_cropYield <- cropYield_md$cluster
+
+#Membangun kerangka data
+segment_cropYield <- mutate(cropYield_copy, cluster = clust_cropYield)
+
+#Menghitung rata-rata untuk setiap kategori
+count(segment_cropYield, cluster)
+
+#Menambahkan variabel kluster ke dalam kerangka data asli
+cropYield <- cropYield %>% 
+  mutate(cluster = segment_cropYield$cluster)
+head(cropYield)
+
+#Melihat jumlah kluster dalam data asli
+count(cropYield, cluster)
+```
+```{r}
+#visualizing Annual_Rainfall
+cropYield %>% 
+  ggplot(aes(Annual_Rainfall)) + geom_histogram(color = "black", fill = "lightblue") +
+  scale_x_continuous(labels = scales::comma) +
+  facet_wrap(vars(cluster))
+
+#visualizing Production
+cropYield %>% 
+  ggplot(aes(Production)) + geom_histogram(color = "black", fill = "lightgreen") +
+  scale_x_continuous(labels = scales::comma) +
+  facet_wrap(vars(cluster)) 
+
+#visualizing Area
+cropYield %>% 
+  ggplot(aes(Area)) + geom_histogram(color = "black", fill = "purple") + 
+  scale_x_continuous(labels = scales::comma) +
+  facet_wrap(vars(cluster))
+
+#visualizing Fertilizer
+cropYield %>% 
+  ggplot(aes(Fertilizer)) + geom_histogram(color = "black", fill = "orange") +
+  scale_x_continuous(labels = scales::comma) +
+  facet_wrap(vars(cluster))
+
+#visualizing Pesticide
+cropYield %>% 
+  ggplot(aes(Pesticide)) + geom_histogram(color = "black", fill = "brown") + 
+  scale_x_continuous(labels = scales::comma) +
+  facet_wrap(vars(cluster))
+
+#visualizing Yield
+cropYield %>% 
+  ggplot(aes(Yield)) + geom_histogram(color = "black", fill = "red") + 
+  scale_x_continuous(labels = scales::comma) +
+  facet_wrap(vars(cluster))
+```
+
+```{r}
+glimpse(cropYield)
+```
+```{r}
+# Melihat hasil Klasterisasi pada Crop Rice
+
+library(rgl)
+Crop_filter <- cropYield %>% 
+  filter(Crop == "Rice")
+
+
+# Visualisasi 3D dengan ggplot2 dan rgl
+plot_3d <- ggplot(Crop_filter, aes(x = Crop, y = State, z = Production, color = cluster)) +
+  geom_point(size = 4) +
+  labs(title = "Rice Cluster Visualization", x = "Crop", y = "State", z = "Production") +
+  theme_minimal()
+
+plot_3d
+
+```
+
+# Model Prediksi Cluster dengan XGBoost
+
+```{r}
+# Persiapkan data training dan testing
+set.seed(123) # Untuk hasil yang reprodusible
+samp <- sample(2, nrow(cropYield), replace = TRUE, prob = c(0.8, 0.2)) 
+data_train_xgb <- cropYield[samp == 1, ]
+data_test_xgb <- cropYield[samp == 2, ]
+
+data_train_xgb$cluster
+data_test_xgb$cluster
+```
+
+
+```{r}
+# Tentukan variabel prediksi
+var_predict <- c("Area", "Production", "Annual_Rainfall", "Fertilizer", "Pesticide", "Yield")
+
+```
+
+```{r}
+# Persiapkan data matriks training dan testing
+data_matrix_train <- xgb.DMatrix(data = as.matrix(data_train_xgb[, var_predict]), label = data_train_xgb$cluster)
+data_matrix_test <- xgb.DMatrix(data = as.matrix(data_test_xgb[, var_predict]))
+
+```
+
+```{r}
+# Bangun model XGBoost
+model_xgb_clust <- xgboost(data = data_matrix_train, nrounds = 100)
+
+```
+```{r}
+# Lakukan prediksi pada data uji
+predictions_xgb_clust <- predict(model_xgb_clust, data_matrix_test)
+
+```
+
+```{r}
+# visualisasi perbandingan hasil prediksi cluster dengan nilai cluster aktual
+
+# Membuat data frame untuk hasil prediksi
+results <- data.frame(Predicted = as.integer(predictions_xgb_clust - 1), Actual = data_test_xgb$cluster)
+
+# Menghitung tabel kontingensi antara hasil prediksi dan cluster aktual
+confusion_matrix <- table(Actual = results$Actual, Predicted = results$Predicted)
+
+# Menampilkan tabel perbandingan
+confusion_matrix
+```
+
+```{r}
+# Parameter tuning with cross-validation
+xgb_params <- list(
+  objective = "binary:logistic",
+  eval_metric = "logloss",
+  nrounds = 100,
+  eta = 0.3,
+  max_depth = 6,
+  subsample = 0.7,
+  colsample_bytree = 0.7,
+  num_class = 2
+)
+
+
+
+```
+
+```{r}
+# Mengubah label dari 1 dan 2 menjadi 0 dan 1
+data_train_xgb$cluster <- data_train_xgb$cluster - 1
+data_test_xgb$cluster <- data_test_xgb$cluster - 1
+
+# Persiapkan data matriks training dan testing
+data_matrix_train <- xgb.DMatrix(data = as.matrix(data_train_xgb[, var_predict]), label = data_train_xgb$cluster)
+data_matrix_test <- xgb.DMatrix(data = as.matrix(data_test_xgb[, var_predict]))
+
+
+```
+
+```{r}
+xgb_cv <- xgb.cv(params = xgb_params, data = data_matrix_train, nfold = 5, nround = 100, verbose = 0)
+
+# Get best number of iterations
+best_nrounds <- which.min(xgb_cv$test_mlogloss_mean)
+
+# Fit the final model
+final_model <- xgboost(params = xgb_params, data = data_matrix_train, nrounds = best_nrounds)
+
+# Make predictions
+predictions <- predict(final_model, data_matrix_test)
+
+# Evaluate the model
+confusion_matrix <- table(Actual = data_test$cluster, Predicted = as.integer(predictions - 1))
+confusion_matrix
+```
+
+
+```{r}
+colSums(is.na(data_train_xgb))
+colSums(is.na(data_test_xgb))
+```
+```{r}
+data_train_xgb$cluster
+data_test_xgb$cluster
+```
+
+```{r}
+# Pengujian prediksi kluster dengan data baru
+new_data <- data.frame(
+  Crop = "Rice",
+  Crop_Year = as.Date("2023-01-01"),
+  Season = "Kharif",
+  State = "Assam",
+  Area = 75000,
+  Production = 55000,
+  Annual_Rainfall = 2000,
+  Fertilizer = 7000000,
+  Pesticide = 22000,
+  Yield = 0.7333  
+)
+
+# Menyiapkan data baru untuk melatih model
+new_data_matrix <- xgb.DMatrix(data = as.matrix(new_data[, var_predict]))
+
+# Melakukan prediksi dengan model XGBoost
+predicted_cluster <- predict(model_xgb_clust, new_data_matrix)
+
+# Hasil prediksi
+predicted_cluster
+
+```
+
+
+
