@@ -1,0 +1,1453 @@
+---
+title: "Analisis dampak curah hujan pada produksi Palawija Sumatera dengan VAR dan GARCH"
+author: "Fitria"
+date: "2023-11-09"
+output: pdf_document
+---
+
+
+# Memangil Library
+```{r}
+library(dplyr)
+library(ggplot2)
+library(lubridate)
+library(summarytools)
+library(readxl)
+library(cluster)
+library(scales)
+library(vars)
+library(rugarch)
+library(caTools)
+library(fGarch)
+library(tseries)
+library(tidyverse)
+```
+
+
+# 1. Load dataset Palawija Sumatera 1993-2022
+```{r}
+Sumatera_palawija <- read_excel("D:/OneDrive - mikroskil.ac.id/Skripsi/dataset penelitian/CURAH HUJAN dan Palawija SUMATERA 1993-2022.xlsx")
+Sumatera_palawija
+```
+
+```{r}
+#Merubah type data dari cdouble menjadi numeric agar mudah di operasikan
+Sumatera_palawija$Produksi<-as.numeric(Sumatera_palawija$Produksi)
+Sumatera_palawija$Produktivitas<-as.numeric(Sumatera_palawija$Produktivitas)
+Sumatera_palawija$Luas_Panen<-as.numeric(Sumatera_palawija$Luas_Panen)
+Sumatera_palawija$avg_rainfall<-as.numeric(Sumatera_palawija$avg_rainfall)
+Sumatera_palawija
+```
+
+```{r}
+#merubah type data tahun dari double menjadi date
+Sumatera_palawija$Tahun<-make_date(Sumatera_palawija$Tahun)
+Sumatera_palawija
+```
+
+
+```{r}
+tail(Sumatera_palawija)
+```
+```{r}
+head(Sumatera_palawija)
+```
+```{r}
+# Menampikan variabel dengan baris kosong
+colSums(is.na(Sumatera_palawija))
+```
+## Menghapus Data Kosong
+
+```{r}
+# Menghapus data NA's
+palawija_clean <- na.omit(Sumatera_palawija)
+summary(palawija_clean)
+```
+
+```{r}
+#menampilkan kembali data yang kosong
+colSums(is.na(palawija_clean))
+```
+
+
+## Eksplorasi Data Analisis (EDA)
+
+### Jumlah Produksi Tanaman Palawija per Provinsi
+```{r}
+# Hitung total produksi semua tanaman palawija per provinsi di setiap tahun
+totproduksi_palawija <- palawija_clean %>% 
+  group_by(Tahun, Provinsi, .drop = FALSE) %>%  # Add .drop argument
+  summarise(total_produksi = sum(Produksi)) %>%
+  arrange(desc(total_produksi))
+
+totproduksi_palawija
+```
+
+```{r}
+# Hitung total produksi semua tanaman pangan per setiap provinsi dan di urutkan dari total produksi terbanyak
+totproduksi_provinsi <- palawija_clean %>% 
+  group_by(Provinsi) %>% 
+  summarise(total_produksi = sum(Produksi))%>%
+  arrange(desc(total_produksi))
+  
+totproduksi_provinsi
+```
+Total Produksi terbanyak ada di Provinsi Lampung sebanyak 205226881
+
+
+### Tren Produksi Tanaman Palawija per Provinsi
+
+
+```{r}
+# Visualisasi Tren Produksi palawija per Provinsi di setiap tahun
+plot_palawija1 <- ggplot(totproduksi_palawija, aes(x = Tahun, y = total_produksi, color = Provinsi)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Tren Produksi Palawija", x = "Tahun", y = "Total Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "right")
+plot_palawija1
+```
+
+```{r}
+
+# Visualisasi dengan barplot
+plot_palawija2 <- ggplot(totproduksi_provinsi, aes(x = Provinsi, y = total_produksi, fill = Provinsi)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Perbandingan Produksi Palawija antara Provinsi di Sumatera", x = "Provinsi", y = "Total Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "none")  # hilangkan legend
+
+# Rotasi sumbu x agar mudah dibaca
+plot_palawija2 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+## Jagung
+```{r}
+# Filter data Palawija "Jagung" berdasarkan jenis komonditi
+Sumatera_jagung<- palawija_clean %>%
+  filter(Jenis_Komoditi == "Jagung")
+Sumatera_jagung
+```
+## EDA Jagung
+
+### Jumlah Produksi Jagung per Provinsi
+```{r}
+# Hitung total produksi Jagung per Provinsi di setiap tahun
+totproduksi_jagung_palawija <-Sumatera_jagung %>% 
+  group_by(Tahun, Provinsi, .drop = FALSE) %>%  # Add .drop argument
+  summarise(total_produksi = sum(Produksi))
+
+totproduksi_jagung_palawija
+```
+
+
+```{r}
+# Hitung total produksi Jagung per setiap Provinsi
+totproduksi_provinsi_Jagung <- Sumatera_jagung %>% 
+  group_by(Provinsi) %>% 
+  summarise(total_produksi = sum(Produksi))%>%
+  arrange(desc(total_produksi))
+  
+totproduksi_provinsi_Jagung
+```
+
+
+### Tren Produksi Jagung per Provinsi
+
+
+```{r}
+# Visualisasi Tren Produksi tanaman pangan per Provinsi di setiap tahun
+plot_Jagung_11 <- ggplot(totproduksi_jagung_palawija, aes(x = Tahun, y = total_produksi, color = Provinsi)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Tren Produksi Jagung", x = "Tahun", y = "Total Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "right")
+plot_Jagung_11
+```
+
+
+```{r}
+
+# Visualisasi dengan barplot total produksi padi di setiap Provinsi
+plot_Jagung_2<- ggplot(totproduksi_provinsi_Jagung, aes(x = Provinsi, y = total_produksi, fill = Provinsi)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Perbandingan Produksi Jagung antara Provinsi", x = "Provinsi", y = "Total Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "none")  # hilangkan legend
+
+# Rotasi sumbu x agar mudah dibaca
+plot_Jagung_2 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+Perbandingan produksi Jagung dalam kurun waktu 1993 - 2022 adalah dari Provinsi Lampung yang terbanyak dengan Jumlah Produksi 45986395 ton
+
+
+## Kacang kedelai
+```{r}
+# Filter data Palawija "Kedelai" berdasarkan jenis komonditi
+Sumatera_Kedelai<- palawija_clean %>%
+  filter(Jenis_Komoditi == "Kedelai")
+Sumatera_Kedelai
+```
+## EDA Kacang Kedelai
+
+### Jumlah Produksi Kacang Kedelai per Provinsi
+```{r}
+# Hitung total produksi Kacang_Kedelai per Provinsi di setiap tahun
+totproduksi_Kedelai <- Sumatera_Kedelai %>% 
+  group_by(Tahun, Provinsi, .drop = FALSE) %>%  # Add .drop argument
+  summarise(total_produksi = sum(Produksi))
+
+totproduksi_Kedelai
+```
+
+
+```{r}
+# Hitung total produksi Kacang Kedelai  per setiap Provinsi
+totproduksi_provinsi_Kedelai <- Sumatera_Kedelai %>% 
+  group_by(Provinsi) %>% 
+  summarise(total_produksi = sum(Produksi))%>%
+  arrange(desc(total_produksi))
+  
+totproduksi_provinsi_Kedelai
+```
+
+
+### Tren Produksi Kacang Kedelai  per Provinsi
+
+
+```{r}
+# Visualisasi Tren Produksi Kacang Kedelai  per Provinsi di setiap tahun
+plot_Kedelai_1 <- ggplot(totproduksi_Kedelai, aes(x = Tahun, y = total_produksi, color = Provinsi)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Tren Produksi Kacang Kedelai ", x = "Tahun", y = "Total Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "right")
+plot_Kedelai_1
+```
+
+
+```{r}
+
+# Visualisasi dengan barplot total produksi Kacang Kedelai  di setiap Provinsi
+plot_Kedelai_2<- ggplot(totproduksi_provinsi_Kedelai, aes(x = Provinsi, y = total_produksi, fill = Provinsi)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Perbandingan Produksi Kacang Kedelai  antara Provinsi", x = "Provinsi", y = "Total Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "none")  # hilangkan legend
+
+# Rotasi sumbu x agar mudah dibaca
+plot_Kedelai_2 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+Perbandingan produksi Kacang Kedelai dalam kurun waktu 1992 - 2022 adalah Provinsi Aceh yang terbanyak dengan Jumlah Produksi 1650031	
+
+
+
+## Kacang_hijau
+```{r}
+# Filter data Palawija "Kacang Hijau" berdasarkan jenis komonditi
+Sumatera_kacang_hijau<- palawija_clean %>%
+  filter(Jenis_Komoditi == "Kacang Hijau")
+Sumatera_kacang_hijau
+```
+## EDA Kacang Hijau
+
+### Jumlah Produksi Kacang Hijau per Provinsi
+```{r}
+# Hitung total produksi Kacang Hijau per Provinsi di setiap tahun
+totproduksi_KacangHijau <- Sumatera_kacang_hijau %>% 
+  group_by(Tahun, Provinsi, .drop = FALSE) %>%  # Add .drop argument
+  summarise(total_produksi = sum(Produksi))
+
+totproduksi_KacangHijau
+```
+
+
+```{r}
+# Hitung total produksi Kacang Hijau per setiap Provinsi
+totproduksi_provinsi_KacangHijau <- Sumatera_kacang_hijau %>% 
+  group_by(Provinsi) %>% 
+  summarise(total_produksi = sum(Produksi))%>%
+  arrange(desc(total_produksi))
+  
+totproduksi_provinsi_KacangHijau
+```
+
+
+### Tren Produksi Kacang Hijau per Provinsi
+
+
+```{r}
+# Visualisasi Tren Produksi Kacang Hijau per Provinsi di setiap tahun
+plot_KacangHijau_1 <- ggplot(totproduksi_KacangHijau, aes(x = Tahun, y = total_produksi, color = Provinsi)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Tren Produksi Kacang Hijau", x = "Tahun", y = "Total Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "right")
+plot_KacangHijau_1
+```
+
+
+```{r}
+
+# Visualisasi dengan barplot total produksi Kacang Hijau di setiap Provinsi
+plot_KacangHijau_2<- ggplot(totproduksi_provinsi_KacangHijau, aes(x = Provinsi, y = total_produksi, fill = Provinsi)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Perbandingan Produksi Kacang Hijau antara Provinsi", x = "Provinsi", y = "Total Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "none")  # hilangkan legend
+
+# Rotasi sumbu x agar mudah dibaca
+plot_KacangHijau_2 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+Perbandingan produksi Kacang Hijau dalam kurun waktu 1993 - 2022 adalah Sumatera Utara yang terbanyak dengan Jumlah Produksi 144423 Ton
+
+## EDA Kacang Tanah
+```{r}
+# Filter data Palawija "Jagung" berdasarkan jenis komonditi
+Sumatera_kacang_tanah<- palawija_clean %>%
+  filter(Jenis_Komoditi == "Kacang Tanah")
+Sumatera_kacang_tanah
+```
+### Jumlah Produksi Kacang Tanah per Provinsi
+```{r}
+# Hitung total produksi Kacang Tanah per Provinsi di setiap tahun
+totproduksi_KacangTanah <- Sumatera_kacang_tanah %>% 
+  group_by(Tahun, Provinsi, .drop = FALSE) %>%  # Add .drop argument
+  summarise(total_produksi = sum(Produksi))
+
+totproduksi_KacangTanah
+```
+
+
+```{r}
+# Hitung total produksi Kacang Tanah per setiap Provinsi
+totproduksi_provinsi_KacangTanah <- Sumatera_kacang_tanah %>% 
+  group_by(Provinsi) %>% 
+  summarise(total_produksi = sum(Produksi))%>%
+  arrange(desc(total_produksi))
+  
+totproduksi_provinsi_KacangTanah
+```
+
+
+### Tren Produksi Kacang Tanah per Provinsi
+
+
+```{r}
+# Visualisasi Tren Produksi Kacang Tanah per Provinsi di setiap tahun
+plot_KacangTanah_1 <- ggplot(totproduksi_KacangTanah, aes(x = Tahun, y = total_produksi, color = Provinsi)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Tren Produksi Kacang Tanah", x = "Tahun", y = "Total Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "right")
+plot_KacangTanah_1
+```
+
+
+```{r}
+
+# Visualisasi dengan barplot total produksi Kacang Tanah di setiap Provinsi
+plot_KacangTanah_2<- ggplot(totproduksi_provinsi_KacangTanah, aes(x = Provinsi, y = total_produksi, fill = Provinsi)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Perbandingan Produksi Kacang Tanah antara Provinsi", x = "Provinsi", y = "Total Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "none")  # hilangkan legend
+
+# Rotasi sumbu x agar mudah dibaca
+plot_KacangTanah_2 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+``` 
+Perbandingan produksi Kacang Tanah dalam kurun waktu 1993 - 2022 adalah dari Sumatera Utara yang terbanyak dengan Jumlah Produksi 518192
+
+
+
+## Ubi Jalar
+```{r}
+# Filter data Palawija "Jagung" berdasarkan jenis komonditi
+Sumatera_ubi_jalar<- palawija_clean %>%
+  filter(Jenis_Komoditi == "Ubi Jalar")
+Sumatera_ubi_jalar
+```
+
+## EDA Ubi Jalar
+
+### Jumlah Produksi Ubi Jalar per Provinsi
+```{r}
+# Hitung total produksi Ubi Jalar per Provinsi di setiap tahun
+totproduksi_UbiJalar <- Sumatera_ubi_jalar %>% 
+  group_by(Tahun, Provinsi, .drop = FALSE) %>%  # Add .drop argument
+  summarise(total_produksi = sum(Produksi))
+
+totproduksi_UbiJalar
+```
+
+
+```{r}
+# Hitung total produksi padi per setiap Provinsi
+totproduksi_provinsi_UbiJalar <- Sumatera_ubi_jalar %>% 
+  group_by(Provinsi) %>% 
+  summarise(total_produksi = sum(Produksi))%>%
+  arrange(desc(total_produksi))
+  
+totproduksi_provinsi_UbiJalar
+```
+
+
+### Tren Produksi Ubi Jalar per Provinsi
+
+
+```{r}
+# Visualisasi Tren Produksi   Ubi Jalar per Provinsi di setiap tahun
+plot_UbiJalar_1 <- ggplot(totproduksi_UbiJalar, aes(x = Tahun, y = total_produksi, color = Provinsi)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Tren Produksi Ubi Jalar", x = "Tahun", y = "Total Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "right")
+plot_UbiJalar_1
+```
+
+
+```{r}
+
+# Visualisasi dengan barplot total produksi Ubi Jalar di setiap Provinsi
+plot_UbiJalar_2<- ggplot(totproduksi_provinsi_UbiJalar, aes(x = Provinsi, y = total_produksi, fill = Provinsi)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Perbandingan Produksi Ubi Jalar antara Provinsi", x = "Provinsi", y = "Total Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "none")  # hilangkan legend
+
+# Rotasi sumbu x agar mudah dibaca
+plot_UbiJalar_2 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+Perbandingan produksi Ubi Jalar dalam kurun waktu 1993 - 2022 adalah dari Sumatera Utara yang terbanyak dengan Jumlah Produksi	3653240 Ton
+
+
+## Ubi Kayu
+```{r}
+# Filter data Palawija "ubikayu" berdasarkan jenis komonditi
+Sumatera_ubi_kayu<- palawija_clean %>%
+  filter(Jenis_Komoditi == "Ubi Kayu")
+Sumatera_ubi_kayu
+```
+## EDA Ubi Kayu
+
+```{r}
+# Turn off dplyr summarise() warning
+options(dplyr.summarise.inform = FALSE)
+```
+
+### Jumlah Produksi Ubi Kayu per Provinsi
+```{r}
+# Hitung total produksi Ubi Kayu per Provinsi di setiap tahun
+totproduksi_UbiKayu <- Sumatera_ubi_kayu %>% 
+  group_by(Tahun, Provinsi, .drop = FALSE) %>%  # Add .drop argument
+  summarise(total_produksi = sum(Produksi))
+
+totproduksi_UbiKayu
+```
+
+
+```{r}
+# Hitung total produksi Ubi Kayu per setiap Provinsi
+totproduksi_provinsi_UbiKayu <- Sumatera_ubi_kayu %>% 
+  group_by(Provinsi) %>% 
+  summarise(total_produksi = sum(Produksi))%>%
+  arrange(desc(total_produksi))
+  
+totproduksi_provinsi_UbiKayu
+```
+
+
+### Tren Produksi Ubi Kayu per Provinsi
+
+
+```{r}
+# Visualisasi Tren Ubi Kayu per Provinsi di setiap tahun
+plot_UbiKayu_1 <- ggplot(totproduksi_UbiKayu, aes(x = Tahun, y = total_produksi, color = Provinsi)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Tren Produksi Ubi Kayu ", x = "Tahun", y = "Total Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "right")
+plot_UbiKayu_1
+```
+
+
+```{r}
+
+# Visualisasi dengan barplot total produksi Ubi Kayu di setiap Provinsi
+plot_UbiKayu_2<- ggplot(totproduksi_provinsi_UbiKayu, aes(x = Provinsi, y = total_produksi, fill = Provinsi)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Perbandingan Produksi Ubi Kayu antara Provinsi", x = "Provinsi", y = "Total Produksi (Ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "none")  # hilangkan legend
+
+# Rotasi sumbu x agar mudah dibaca
+plot_UbiKayu_2 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+Perbandingan produksi Ubi kayu dalam kurun waktu 1993 - 2022 adalah dari Lampung yang terbanyak dengan Jumlah Produksi 156729879	Ton
+
+
+
+
+# 3. VAR tanaman palawija
+
+## a. VAR terhadap jagung Sumatera
+
+```{r}
+# Pilih variabel yang akan diprediksi
+
+data_var_jagung <- Sumatera_jagung[, c("Produksi", "avg_rainfall", "Produktivitas")]
+data_var_jagung
+```
+
+Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam format time series (ts)
+
+```{r}
+#Format time series
+ts_data_jagung_Sumatera <- ts(data_var_jagung, start = c(1993,1), frequency = 1)
+ts_data_jagung_Sumatera
+```
+
+
+```{r}
+best_lag_jagung_Sumatera<- VARselect(ts_data_jagung_Sumatera, lag.max = 5, type = "both")
+best_lag_jagung_Sumatera
+```
+
+### VAR Model terhadap produksi jagung Sumatera
+```{r}
+
+var_model_jagung_Sumatera <- VAR(ts_data_jagung_Sumatera, p = best_lag_jagung_Sumatera$selection[1], type = "both") # jumlah order dari model VAR
+summary(var_model_jagung_Sumatera)
+```
+Estimation results for equation Produksi: 
+avg_rainfall.l1  -3.674e+04  1.162e+04  -3.161  0.00176 ** 
+avg_rainfall.l4   2.745e+04  1.207e+04   2.275  0.02375 * 
+F-statistic: 115.1 on 16 and 258 DF,  p-value: < 2.2e-16 
+
+Estimation results for equation avg_rainfall:
+Produktivitas.l4  3.193e-02  1.174e-02   2.720  0.00697 **
+Produktivitas.l5 -4.793e-02  9.219e-03  -5.199 4.08e-07 ***
+F-statistic:  63.7 on 16 and 258 DF,  p-value: < 2.2e-16 
+
+Estimation results for equation Produktivitas: 
+avg_rainfall.l1  -1.945e+00  4.242e-01  -4.586 7.05e-06 ***
+avg_rainfall.l4   2.014e+00  4.404e-01   4.574 7.44e-06 ***
+F-statistic:  63.7 on 16 and 258 DF,  p-value: < 2.2e-16 
+
+
+### Uji Kolersi Pearson Jagung
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_jagung_Sumatera1 <- cor(data_var_jagung$Produksi, data_var_jagung$avg_rainfall)
+cat ("Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi:",kolerasi_jagung_Sumatera1)
+```
+Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi: 0.05
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_jagung_Sumatera2 <- cor(data_var_jagung$avg_rainfall, data_var_jagung$Produktivitas)
+cat ("Koefisien Korelasi Pearson Rata-rata curah hujan dan Produksi:", kolerasi_jagung_Sumatera2)
+```
+Koefisien Korelasi Pearson Rata-rata curah hujan dan Produksi: 0.1976596
+
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_jagung_Sumatera3 <- cor(data_var_jagung$Produksi, data_var_jagung$Produktivitas)
+cat ("Koefisien Korelasi Pearson Produksi dan Produktivitas:", kolerasi_jagung_Sumatera3)
+```
+Koefisien Korelasi Pearson Produksi dan Produksi: 0.49
+
+
+### Uji Granger Causality Jagung
+```{r}
+# Melakukan uji Granger Causality 
+granger_jagung_Sumatera1 <- causality(var_model_jagung_Sumatera, cause = "avg_rainfall")
+granger_jagung_Sumatera1
+
+#Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
+```
+Granger :p-value = 9.94e-08
+Instant : p-value = 0.1456
+berdarkan p-value Uji Grager dan isntast Jadi dapat disimpulkan bahwa terdapat bukti statisktik bahwa curah hujan memiilki hubungan sebab akibat jangka penjang dengan Produktivitas.
+
+### Uji regresi linier jagung
+```{r}
+# Membuat model regresi linier
+regresi_produksi_jagung <- lm(Produksi ~ avg_rainfall , data = data_var_jagung)
+
+# Ringkasan hasil model
+summary(regresi_produksi_jagung)
+```
+Hasil:
+avg_rainfall p-valuenya adalah 0.398. 
+nilai intercept adalah 166846  
+f-statistik 0.7161 p-valuenya adalah 0.3982
+Multiple R-squared:  0.002569
+Dapat disimpulkan bahwa Rata-rata curah hujan tidak mempergaruhi produksi jagung.
+
+```{r}
+# Membuat model regresi linier
+regresi_produktivitas_jagung<- lm(Produktivitas ~ avg_rainfall , data = data_var_jagung)
+
+# Ringkasan hasil model
+summary(regresi_produktivitas_jagung)
+```
+Hasil analisis regresi linear dari model regresi yang mencoba memprediksi variabel  "Produktivitas" berdasarkan variabel prediktor, yaitu "rata-rata urah_hujan,"  Berikut adalah interpretasi hasil dari model ini:
+*Intercept:*   15.3966 
+*avg_rainfall:* koefisien: 2.8064 dan p-valuenya: 0.000882 ***
+*F-statistic:*  11.3   p-value: 0.0008824
+*Kesimpulan* menunjukan bahwa avg_rainfall secara signifikan mempengaruhi produktivitas Jagung
+
+
+## Interpretasi
+Berdasarkan hasil analisis dengan model VAR, analisis kausalitas, dan regresi linear ini, kita dapat menyimpulkan bahwa:
+
+1. Dalam model VAR, bahwa variabel avg_rainfall berdampak pada produktivitas jagung karena nilai P-Value dari 2 lag yaitu  Lag1 dan lag4lebih rendah dari 0,05. tetapi avg_rainfall tidak berdampak pada produksi jagung karena nilai P-Value lebih besar dari 0,05  
+
+2. Berdasarkan hasil uji Granger Causality dan Instantaneous Causality, ada bukti statistik yang kuat untuk mendukung adanya hubungan sebab-akibat antara "avg_rainfall" dan "Produktivitas" dalam model VAR dalam jangka waktu lag tetapi bukan dalam jangka waktu instan.
+
+3. Berdasarkan hasil analisis regresi didapatkan bahwa variabel "avg_rainfall"memiliki pengaruh yang signifikan terhadap variabel "Produktivitas," 
+
+
+
+
+## b.VAR terhadap Kacang Kedelai Sumatera
+
+```{r}
+# Pilih variabel yang akan diprediksi
+
+data_var_kedelai_Sumatera <- Sumatera_Kedelai[, c("Produksi", "avg_rainfall", "Produktivitas")]
+data_var_kedelai_Sumatera
+```
+
+Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam format time series (ts)
+
+```{r}
+#Format time series
+ts_data_kedelai_Sumatera <- ts(data_var_kedelai_Sumatera, start = c(1993,1), frequency = 1)
+ts_data_kedelai_Sumatera
+```
+
+
+```{r}
+best_lag_kedelai_Sumatera<- VARselect(ts_data_kedelai_Sumatera, lag.max = 5, type = "both")
+best_lag_kedelai_Sumatera
+```
+
+### VAR Model terhadap produksi Kacang Kedelai Sumatera
+```{r}
+
+var_model_kedelai_Sumatera <- VAR(ts_data_kedelai_Sumatera, p = best_lag_kedelai_Sumatera$selection[1], type = "both") # jumlah order dari model VAR
+summary(var_model_kedelai_Sumatera)
+```
+Estimation results for equation Produksi: 
+Produktivitas.l3  1.133e+03  4.960e+02   2.283  0.02329 *
+Multiple R-Squared: 0.6857,	
+F-statistic: 32.99   p-value: < 2.2e-16 
+
+
+Estimation results for equation avg_rainfall: 
+Produktivitas.l1  7.732e-02  3.726e-02   2.075 0.039016 *
+Produksi.l4      -1.369e-05  6.630e-06  -2.065 0.039980 *  
+avg_rainfall.l4   1.732e-01  6.236e-02   2.777 0.005915 **
+Produktivitas.l5 -1.423e-01  3.986e-02  -3.569 0.000432 ***
+Multiple R-Squared: 0.1746,	 
+F-statistic: 3.198 ,  p-value: 5.224e-05 
+
+
+Estimation results for equation Produkivitas: 
+Produktivitas.l1  5.199e-01  6.532e-02   7.960 6.66e-14 ***
+Multiple R-Squared: 0.3855,	
+F-statistic: 9.487,  p-value: < 2.2e-16 
+
+### Uji Kolersi Pearson Kacang Kedelai
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_kedelai_Sumatera1 <- cor(data_var_kedelai_Sumatera$Produksi, data_var_kedelai_Sumatera$avg_rainfall)
+cat ("Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi:",kolerasi_kedelai_Sumatera1)
+```
+Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi: -0.16
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_kedelai_Sumatera2 <- cor(data_var_kedelai_Sumatera$avg_rainfall, data_var_kedelai_Sumatera$Produktivitas)
+cat ("Koefisien Korelasi Pearson Rata-rata curah hujan dan Produktivitas:", kolerasi_kedelai_Sumatera2)
+```
+Koefisien Korelasi Pearson Rata-rata curah hujan dan Produktivitas: 0.1206918
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_kedelai_Sumatera3 <- cor(data_var_kedelai_Sumatera$Produksi, data_var_kedelai_Sumatera$Produktivitas)
+cat ("Koefisien Korelasi Pearson Produksi dan Produksi:", kolerasi_kedelai_Sumatera3)
+```
+Koefisien Korelasi Pearson Luas panen dan Produksi: -0.034
+
+
+### Uji Granger Causality Kacang Kedelai
+```{r}
+# Melakukan uji Granger Causality 
+granger_kedelai_Sumatera1 <- causality(var_model_kedelai_Sumatera, cause = "avg_rainfall")
+granger_kedelai_Sumatera1
+
+#Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
+```
+Granger= p-value = 0.4478 dan  instant = p-value = 0.07575
+*kesimpulan*
+Berdasarkan hasil uji Granger Causality, tidak terdapat bukti yang cukup untuk menyatakan bahwa avg_rainfall secara signifikan menyebabkan Granger untuk Produksi dan Produktivitas.
+
+
+### Uji regresi linier kedelai
+```{r}
+# Membuat model regresi linier
+regresi_kedelai_produktivitas <- lm(Produktivitas ~ avg_rainfall , data = data_var_kedelai_Sumatera)
+
+# Ringkasan hasil model
+summary(regresi_kedelai_produktivitas)
+```
+(Intercept)   10.1633     0.9620  10.565   <2e-16 ***
+avg_rainfall   0.2434     0.1237   1.968   0.0501 . 
+F-statistic: 3.873 ,  p-value: 0.05013
+Multiple R-squared:  0.01457
+*Kesimpulan*
+Terdapat bukti yang cukup (p-value sekitar 0.0501) bahwa curah hujan (avg_rainfall) mungkin memiliki dampak pada Produktivitas. Namun, R-squared yang rendah menunjukkan bahwa model mungkin tidak memberikan penjelasan yang kuat
+
+```{r}
+# Membuat model regresi linier
+regresi_kedelai_produksi <- lm(Produksi ~ avg_rainfall , data = data_var_kedelai_Sumatera)
+
+# Ringkasan hasil model
+summary(regresi_kedelai_produksi)
+```
+Estimate Std. Error t value Pr(>|t|)    
+(Intercept)     46518      11764   3.954 9.88e-05 ***
+avg_rainfall    -4114       1513  -2.720  0.00697 **
+Multiple R-squared:  0.02746
+F-statistic: 7.398  p-value: 0.006966
+*Kesimpulan*
+Terdapat bukti yang cukup (p-value sekitar 0.00697) bahwa curah hujan (avg_rainfall) memiliki dampak yang signifikan pada Produksi. Namun, R-squared yang rendah menunjukkan bahwa model mungkin tidak memberikan penjelasan yang kuat.
+
+## Interpretasi
+Berdasarkan hasil analisis dengan model VAR, analisis kausalitas, dan regresi linear ini, kita dapat menyimpulkan bahwa avg_rainfall tidak mempergaruhi produksi dan produktivitas Kacang Kedelai di Sumatera.
+
+
+## c.VAR terhadap Produksi Kacang Hijau Sumatera
+
+```{r}
+# Pilih variabel yang akan diprediksi
+
+data_var_kacang_hijau <- Sumatera_kacang_hijau[, c("Produksi", "avg_rainfall", "Produktivitas")]
+data_var_kacang_hijau
+```
+
+Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam format time series (ts)
+
+```{r}
+#Format time series
+ts_data_kacang_hijau <- ts(data_var_kacang_hijau, start = c(1993,1), frequency = 1)
+ts_data_kacang_hijau
+```
+
+
+```{r}
+best_lag_kacang_hijau <- VARselect(ts_data_kacang_hijau, lag.max = 5, type = "both")
+best_lag_kacang_hijau
+```
+
+### VAR Model terhadap produksi kacang hijau Sumatera
+```{r}
+
+var_model_kacanghijau_Sumatera <- VAR(ts_data_kacang_hijau, p = best_lag_kacang_hijau$selection[1], type = "both") # jumlah order dari model VAR
+summary(var_model_kacanghijau_Sumatera)
+```
+
+Estimation results for equation Produksi: 
+avg_rainfall.l4  -143.02969   71.42177  -2.003  0.04660 *
+F-statistic: 50.22 on 16 and 195 DF,  p-value: < 2.2e-16 
+
+
+Estimation results for equation avg_raifall: 
+Produktivitas.l4  2.141e-01  4.567e-02   4.687 5.19e-06 ***
+F-statistic:  3.52 on 16 and 195 DF,  p-value: 1.474e-05 
+
+Estimation results for equation Produktivitas: 
+avg_rainfall.l4   3.388e-01  1.292e-01   2.622 0.009439 **
+avg_rainfall.l5   2.879e-01  1.308e-01   2.202 0.028834 * 
+F-statistic: 8.312 on 16 and 195 DF,  p-value: 4.24e-15 
+
+
+### Uji Kolersi Pearson kacang hijau
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_kacang_hijau1 <- cor(data_var_kacang_hijau$Produksi, data_var_kacang_hijau$avg_rainfall)
+cat ("Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi:",kolerasi_kacang_hijau1)
+```
+Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi: -0.13
+
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_kacang_hijau2 <- cor(data_var_kacang_hijau$Produksi, data_var_kacang_hijau$Produktivitas)
+cat ("Koefisien Korelasi Pearson Produksi dan Produktivitas:", kolerasi_kacang_hijau2)
+```
+Koefisien Korelasi Pearson Luas panen dan Produksi: 0.071
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_kacang_hijau3 <- cor(data_var_kacang_hijau$avg_rainfall, data_var_kacang_hijau$Produktivitas)
+cat ("Koefisien Korelasi Pearson rata-rata curah hujan dan Produktivitas:", kolerasi_kacang_hijau3)
+```
+Koefisien Korelasi Pearson rata-rata curah hujan dan Produktivitas: 0.2239226
+
+
+### Uji Granger Causality kacang hijau
+```{r}
+# Melakukan uji Granger Causality 
+granger_kacang_hijau1 <- causality(var_model_kacanghijau_Sumatera, cause = "avg_rainfall")
+granger_kacang_hijau1
+
+#Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
+```
+Granger dengan p-value = 0.009568 dan Instant dengan p-value = 0.01516. Kesimpulan terdapat bukti statistik bahwa avg_rainfaal memiliki hubungan jangka panjang dan jangka pendek terhadap produksi dan produktivitas Kacang Hijau.
+
+```{r}
+# Melakukan uji Granger Causality 
+granger_kacang_hijau2 <- causality(var_model_kacanghijau_Sumatera, cause = "Produksi")
+granger_kacang_hijau2
+
+#Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
+```
+Granger dgn p-value = 0.5597 dan Instant dgn p-value  0.003417
+
+### Uji regresi linier kacang hijau
+```{r}
+# Membuat model regresi linier
+regresi_kacang_hijau_produksi <- lm(Produksi ~ avg_rainfall , data = data_var_kacang_hijau)
+
+# Ringkasan hasil model
+summary(regresi_kacang_hijau_produksi)
+```
+avg_rainfall  setimate: -274.4    p-value: 0.051246 
+Multiple R-squared:  0.01756
+F-statistic: 3.843,  p-value: 0.05125
+*Kesimpulan* terdapat bukti bahwa curah tidak mempergaruhi mempergaruhi produksi kacang hijau
+
+```{r}
+# Membuat model regresi linier
+regresi_kacang_hijau_produktivitas2 <- lm(Produktivitas ~ avg_rainfall , data = data_var_kacang_hijau)
+
+# Ringkasan hasil model
+summary(regresi_kacang_hijau_produktivitas2)
+```
+ Estimate Std. Error t value Pr(>|t|)    
+(Intercept)    6.5065     1.1116   5.853 1.78e-08 ***
+avg_rainfall   0.4755     0.1411   3.369 0.000894 ***
+Multiple R-squared:  0.05014,	Adjusted R-squared:  0.04572 
+F-statistic: 11.35 on 1 and 215 DF,  p-value: 0.0008943
+
+
+## Interpretasi
+Berdasarkan hasil analisis dengan model VAR, analisis kausalitas, dan regresi linear ini, kita dapat menyimpulkan bahwa:
+
+1. Dalam model VAR, bahwa variabel avg_rainfall berdampak pada produktivitas kacang  karena nilai P-Value dari 2 lag yaitu  Lag4 dan lag5 lebih rendah dari 0,05. tetapi avg_rainfall tidak berdampak pada produksi jagung karena nilai P-Value lebih besar dari 0,05  
+
+2. Berdasarkan hasil uji Granger Causality dan Instantaneous Causality, ada bukti statistik yang kuat untuk mendukung adanya hubungan sebab-akibat antara "avg_rainfall" dan "Produktivitas" dalam model VAR dalam jangka waktu lag tetapi bukan dalam jangka waktu instan.
+
+3. Berdasarkan hasil analisis regresi didapatkan bahwa variabel "avg_rainfall"memiliki pengaruh yang signifikan terhadap variabel "Produktivitas," kacang hijau
+
+## d.VAR terhadap produksi kacang Tanah Sumatera
+
+```{r}
+# Pilih variabel yang akan diprediksi
+
+data_var_kacang_tanah <- Sumatera_kacang_tanah[, c("Produksi", "avg_rainfall", "Produktivitas")]
+data_var_kacang_tanah
+```
+
+Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam format time series (ts)
+
+```{r}
+#Format time series
+ts_data_kacang_tanah <- ts(data_var_kacang_tanah, start = c(1993,1), frequency = 1)
+ts_data_kacang_tanah
+```
+
+
+```{r}
+best_lag_kacang_tanah <- VARselect(ts_data_kacang_tanah, lag.max = 5, type = "both")
+best_lag_kacang_tanah
+```
+
+### VAR Model terhadap produksi kacang tanah Sumatera
+```{r}
+
+var_model_kacangtanah_Sumatera <- VAR(ts_data_kacang_tanah, p = best_lag_kacang_tanah$selection[1], type = "both") # jumlah order dari model VAR
+summary(var_model_kacangtanah_Sumatera)
+```
+
+Estimation results for equation Produksi: 
+avg_rainfall.l1   368.63397  153.31163   2.404 0.016904 *
+avg_rainfall.l4  -504.09274  149.84054  -3.364 0.000885 ***
+Multiple R-Squared: 0.8454, F-statistic: 87.82 on 16 and 257 DF,  p-value: < 2.2e-16  
+
+Estimation results for equation avg_rainfall: 
+Produksi.l1      -6.662e-05  2.474e-05  -2.692  0.00756 ** 
+Produktivitas.l3  1.770e-01  5.960e-02   2.969  0.00327 ** 
+Produksi.l4      -7.044e-05  2.895e-05  -2.434  0.01563 *  
+Produksi.l5       6.455e-05  2.245e-05   2.875  0.00437 ** 
+Multiple R-Squared: 0.2155, F-statistic: 4.411 on 16 and 257 DF,  p-value: 1.086e-07
+
+Estimation results for equation Produktivitas: 
+avg_rainfall.l2  -1.734e-01  7.489e-02  -2.315  0.02138 * 
+Multiple R-Squared: 0.6028, F-statistic: 24.38 on 16 and 257 DF,  p-value: < 2.2e-16 
+
+### Uji Kolersi Pearson kacang tanah
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_kacang_tanah1 <- cor(data_var_kacang_tanah$avg_rainfall, data_var_kacang_tanah$Produksi)
+cat ("Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi:",kolerasi_kacang_tanah1)
+```
+Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi: -0.085
+
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_kacang_tanah2 <- cor(data_var_kacang_tanah$avg_rainfall, data_var_kacang_tanah$Produktivitas)
+cat ("Koefisien Korelasi Pearson rata-rata curah hujan dan Produktivitas:", kolerasi_kacang_tanah2)
+```
+Koefisien Korelasi Pearson rata-rata curah hujan dan Produktivitas : 0.13
+
+
+### Uji Granger Causality Kacang Tanah
+```{r}
+# Melakukan uji Granger Causality 
+granger_kacang_tanah1 <- causality(var_model_kacangtanah_Sumatera, cause = "avg_rainfall")
+granger_kacang_tanah1
+
+#Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
+```
+Granger p-value = 0.004093
+Instant p-value = 0.9764
+
+```{r}
+# Melakukan uji Granger Causality 
+granger_kacang_tanah2 <- causality(var_model_kacangtanah_Sumatera, cause = "Produksi")
+granger_kacang_tanah2
+
+#Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
+```
+Granger p-value = 0.007193
+Instant p-value =0.08421
+*Kesimpulan* Terdapat pengaruh jangka panjang produksi terhadap Porduktivitas dan avg_rainfall
+
+
+### Uji regresi linier Kacang Tanah
+```{r}
+# Membuat model regresi linier
+regresi_kacang_tanah_produksi<- lm(Produksi ~ avg_rainfall , data = data_var_kacang_tanah)
+
+# Ringkasan hasil model
+summary(regresi_kacang_tanah_produksi)
+```
+Coefficients:
+             Estimate Std. Error t value Pr(>|t|)    
+(Intercept)   10645.5     2810.6   3.788 0.000187 ***
+avg_rainfall   -513.0      361.1  -1.420 0.156629 
+Multiple R-squared:  0.00723,	Adjusted R-squared:  0.003646 
+F-statistic: 2.017 on 1 and 277 DF,  p-value: 0.1566
+*Kesimpulan* produksi kacang tanah tidak di perngaruhi oleh avg_rainfall. R-squared yang kecil menunjukan model tidak baik menjelaskan hubungan ini.
+
+
+```{r}
+# Membuat model regresi linier
+regresi_kacang_tanah_produktivitas<- lm(Produktivitas ~ avg_rainfall , data = data_var_kacang_tanah)
+
+# Ringkasan hasil model
+summary(regresi_kacang_tanah_produktivitas)
+```
+ Estimate Std. Error t value Pr(>|t|)    
+(Intercept)    9.7845     0.7911   12.37   <2e-16 ***
+avg_rainfall   0.2256     0.1017    2.22   0.0272 *  
+Multiple R-squared:  0.01748,	Adjusted R-squared:  0.01393 
+F-statistic: 4.928 on 1 and 277 DF,  p-value: 0.02724
+*Kesimpulan* Terdapat pengaruh curah hujan terhadap produktivitas kacang tanah.
+
+
+
+## Interpretasi
+Terdapat pengaruh avg_rainfall terhadap produksi dan produktivitasBerdasarkan hasil analisis dengan model VAR, analisis kausalitas, dan regresi linear ini:
+
+1. Dalam model VAR, bahwa variabel avg_rainfall berdampak pada produktivitas kacang tanah  karena nilai P-Value dari lag2 yg lebih rendah dari 0,05. serta avg_rainfall  berdampak pada produksi kacang tanah karena nilai P-Value dari lag1 dan lag4 lebih keceil dari 0,05  dan nilai r-squared yang tinggi.
+
+2. Berdasarkan hasil uji Granger Causality dan Instantaneous Causality, ada bukti statistik yang kuat untuk mendukung adanya hubungan sebab-akibat antara "avg_rainfall"  terhadap "Produksi" dan "Produktivitas" dalam model VAR dalam jangka waktu lag tetapi bukan dalam jangka waktu instan.
+
+3. Berdasarkan hasil analisis regresi didapatkan bahwa variabel "avg_rainfall"memiliki pengaruh yang signifikan terhadap variabel "Produktivitas," dan avg_ranfall tidak signifikan terhadap produksi tetapi memiliki r-squared yang kecil.
+
+
+## e. VAR terhadap Ubi Jalar Sumatera
+
+```{r}
+# Pilih variabel yang akan diprediksi
+
+data_var_ubijalar <- Sumatera_ubi_jalar[, c("Produksi", "avg_rainfall", "Produktivitas")]
+data_var_ubijalar
+```
+
+Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam format time series (ts)
+
+```{r}
+#Format time series
+ts_data_ubijalar_Sumatera<- ts(data_var_ubijalar, start = c(1993,1), frequency = 1)
+ts_data_ubijalar_Sumatera
+```
+
+
+```{r}
+best_lag_ubijalar_Sumatera<- VARselect(ts_data_ubijalar_Sumatera, lag.max = 5, type = "both")
+best_lag_ubijalar_Sumatera
+```
+
+### VAR Model terhadap produksi Ubi Jalar Sumatera
+```{r}
+
+var_model_ubijalar_Sumatera <- VAR(ts_data_ubijalar_Sumatera, p = best_lag_ubijalar_Sumatera$selection[1], type = "both") # jumlah order dari model VAR
+summary(var_model_ubijalar_Sumatera)
+```
+Estimation results for equation Produksi: 
+avg_rainfall.l1   1.814e+03  8.695e+02   2.086   0.0380 * 
+avg_rainfall.l5  -1.897e+03  8.822e+02  -2.151   0.0324 *
+F-statistik p-value: < 2.2e-16 
+
+Estimation results for equation avg_rainfall: 
+Produksi.l1      -1.413e-05  4.270e-06  -3.309 0.001070 **
+Produksi.l2       1.830e-05  5.834e-06   3.136 0.001908 ** 
+Produktivitas.l3 -6.053e-03  2.781e-03  -2.176 0.030453 *  
+Produktivitas.l4  1.063e-02  2.784e-03   3.818 0.000169 ***
+Produksi.l5       1.097e-05  4.361e-06   2.516 0.012485 *  
+Produktivitas.l5 -8.982e-03  1.994e-03  -4.505 1.01e-05 ***
+F-statistik p-value:2.831e-08  
+
+Estimation results for equation produktivitas: 
+avg_rainfall.l1  -4.457e+00  1.832e+00  -2.433 0.015670 * 
+avg_rainfall.l4   6.654e+00  1.825e+00   3.645 0.000323 ***
+F-statistik p-value: < 2.2e-16 
+
+
+### Uji Kolersi Pearson Ubi Jalar
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_ubijalar_Sumatera1 <- cor(data_var_ubijalar$Produksi, data_var_ubijalar$avg_rainfall)
+cat ("Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi:",kolerasi_ubijalar_Sumatera1)
+```
+Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi: 0.1016382
+
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_ubijalar_Sumatera2 <- cor(data_var_ubijalar$avg_rainfall, data_var_ubijalar$Produktivitas)
+cat ("Koefisien Korelasi Pearson Rata-rata curah hujan dan produksi:", kolerasi_ubijalar_Sumatera2)
+```
+Koefisien Korelasi Pearson Rata-rata curah hujan dan produksi: 0.1584551
+
+
+### Uji Granger Causality ubi jalar
+```{r}
+# Melakukan uji Granger Causality 
+granger_ubijalar_Sumatera1 <- causality(var_model_ubijalar_Sumatera, cause = "avg_rainfall")
+granger_ubijalar_Sumatera1
+
+#Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
+```
+Granger p-value = 0.0003156
+Instant  p-value = 0.7472
+terdapat bukti signifikan sebab akibat avg-rainfall terhadap produksi dan produksivitas dalam jangkah panjang tetapi tidak di jangka instant
+
+```{r}
+# Melakukan uji Granger Causality 
+granger_ubijalar_Sumatera2 <- causality(var_model_ubijalar_Sumatera, cause = "Produksi")
+granger_ubijalar_Sumatera2
+
+#Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
+```
+Granger p-value =0.0006602 dan Instant p-value  0.02525
+terdapat bukti signifikan sebab akibat produksi terhadap avg_rainfall dan produksivitas baik jangkah panjang dan di jangka instant
+
+
+### Uji regresi linier Ubi jalar
+```{r}
+# Membuat model regresi linier
+regresi_ubijalar_produktivitas <- lm(Produktivitas ~ avg_rainfall, data = data_var_ubijalar)
+
+# Ringkasan hasil model
+summary(regresi_ubijalar_produktivitas)
+```
+Coefficients:
+             Estimate Std. Error t value Pr(>|t|)   
+(Intercept)    49.338     27.533   1.792   0.0742 . 
+avg_rainfall    9.460      3.536   2.676   0.0079 **
+Multiple R-squared:  0.02511,	Adjusted R-squared:  0.0216 
+F-statistic:  7.16 on 1 and 278 DF,  p-value: 0.007898
+
+
+```{r}
+# Membuat model regresi linier
+regresi_ubijalar_produksi <- lm(Produksi ~ avg_rainfall, data = data_var_ubijalar)
+
+# Ringkasan hasil model
+summary(regresi_ubijalar_produksi)
+```
+oefficients:
+             Estimate Std. Error t value Pr(>|t|)  
+(Intercept)     12092      17239   0.701   0.4836  
+avg_rainfall     3771       2214   1.703   0.0896 .
+Multiple R-squared:  0.01033,	
+F-statistic: 2.902 on 1 and 278 DF,  p-value: 0.0896
+
+
+
+## Interpretasi
+Terdapat dapat avg_Rainfall terhadap produksi dan produktivitas, Berdasarkan hasil analisis dengan model VAR, analisis kausalitas, dan regresi linear ini, kita dapat menyimpulkan bahwa:
+
+1. Dalam model VAR, bahwa variabel avg_rainfall berdampak pada variabel *produksi* karena p-valuen dari 2 lag yaitu lag1 dan lag5 lbih kecil dari 0,05. dan variabel avg_rainfall berdampak pada *produktivitas*  karena nilai p-value di lag berdampak pada produktivitas kacang  karena nilai P-Value dari 2 lag yaitu  Lag1 dan lag4 lebih rendah dari 0,05. 
+
+2. Berdasarkan hasil uji Granger Causality dan Instantaneous Causality, ada bukti statistik yang kuat untuk mendukung adanya hubungan sebab-akibat antara "avg_rainfall" pada "produksi" dan "Produktivitas" dalam model VAR dalam jangka waktu lag tetapi bukan dalam jangka waktu instan.
+
+3. Berdasarkan hasil analisis regresi didapatkan bahwa variabel "avg_rainfall"memiliki pengaruh yang signifikan terhadap variabel "Produktivitas," tetapi avg_rainfall tidak memiliki dampak kepada produksi.
+
+
+## f. VAR terhadap Ubi Kayu Sumatera
+
+```{r}
+# Pilih variabel yang akan diprediksi
+
+data_var_ubikayu <- Sumatera_ubi_kayu[, c("Produksi", "avg_rainfall", "Produktivitas")]
+data_var_ubikayu
+```
+
+Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam format time series (ts)
+
+```{r}
+#Format time series
+ts_data_ubikayu_Sumatera <- ts(data_var_ubikayu, start = c(1993,1), frequency = 1)
+ts_data_ubikayu_Sumatera
+```
+
+
+```{r}
+best_lag_ubikayu_Sumatera<- VARselect(ts_data_ubikayu_Sumatera, lag.max = 5, type = "both")
+best_lag_ubikayu_Sumatera
+```
+
+
+### VAR Model terhadap produksi ubi kayu Sumatera
+```{r}
+
+var_model_ubikayu_Sumatera <- VAR(ts_data_ubikayu_Sumatera, p = best_lag_ubikayu_Sumatera$selection[1], type = "both") # jumlah order dari model VAR
+summary(var_model_ubikayu_Sumatera)
+```
+
+Estimation results for equation avg_rainfall: 
+Produktivitas.l1  4.090e-03  1.371e-03   2.982  0.00314 ** 
+Produksi.l2       4.111e-07  1.843e-07   2.231  0.02657 *  
+Produktivitas.l2 -4.196e-03  1.782e-03  -2.355  0.01927 *  
+Produktivitas.l4  4.892e-03  1.773e-03   2.760  0.00620 ** 
+Produktivitas.l5 -6.183e-03  1.388e-03  -4.454 1.26e-05 ***
+F-statistic: 4.292 on 16 and 258 DF,  p-value: 1.973e-07 
+ 
+Estimation results for equation Produktivitas: 
+avg_rainfall.l1  -1.274e+01  2.695e+00  -4.727 3.75e-06 ***
+avg_rainfall.l4   9.707e+00  2.726e+00   3.560 0.000441 ***
+avg_rainfall.l5   6.822e+00  2.780e+00   2.454 0.014797 * 
+p-value: < 2.2e-16  
+
+### Uji Kolersi Pearson ubikayu
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_ubikayu_Sumatera1 <- cor(data_var_ubikayu$Produksi, data_var_ubikayu$avg_rainfall)
+cat ("Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi:",kolerasi_ubikayu_Sumatera1)
+```
+Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi: -0.04974876
+
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_ubikayu_Sumatera2 <- cor(data_var_ubikayu$avg_rainfall, data_var_ubikayu$Produktivitas)
+cat ("Koefisien Korelasi Pearson rata-rata curah hujan dan Produktivitas:", kolerasi_ubikayu_Sumatera2)
+```
+Koefisien Korelasi Pearson rata-rata curah hujan dan Produktivitas: 0.1527877
+
+
+### Uji Granger Causality ubikayu
+```{r}
+# Melakukan uji Granger Causality 
+granger_ubikayu_Sumatera1 <- causality(var_model_ubikayu_Sumatera, cause = "avg_rainfall")
+granger_ubikayu_Sumatera1
+
+#Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
+``` 
+Granger p-value = 9.184e-07 dan Instant p-value = 0.4729. terdapat bukti statistik hubungan jangka lag maupun instant antara avg_rainfal, produksi, produktivitas.
+
+```{r}
+# Melakukan uji Granger Causality 
+granger_ubikayu_Sumatera2 <- causality(var_model_ubikayu_Sumatera, cause = "Produksi")
+granger_ubikayu_Sumatera2
+
+#Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
+```
+Granger = p-value = 0.6661
+Instant = p-value = 0.5903
+
+
+```{r}
+granger_ubikayu_sumatera3<- causality(var_model_ubikayu_Sumatera, cause = "Produktivitas")
+granger_ubikayu_sumatera3
+```
+
+
+### Uji regresi linier ubikayu
+```{r}
+# Membuat model regresi linier
+regresi_ubikayu_produksi<- lm(Produksi ~ avg_rainfall, data = data_var_ubikayu)
+
+# Ringkasan hasil model
+summary(regresi_ubikayu_produksi)
+```
+Coefficients:
+             Estimate Std. Error t value Pr(>|t|)  
+(Intercept)   1311158     719490   1.822   0.0695 .
+avg_rainfall   -76732      92392  -0.831   0.4070 
+Multiple R-squared:  0.002475,	
+F-statistic: 0.6897 on 1 and 278 DF,  p-value: 0.407
+
+
+
+```{r}
+# Membuat model regresi linier
+regresi_ubikayu_Sumatera_produktivitas <- lm(Produktivitas~ avg_rainfall , data = data_var_ubikayu)
+
+# Ringkasan hasil model
+summary(regresi_ubikayu_Sumatera_produktivitas)
+```
+Coefficients:
+             Estimate Std. Error t value Pr(>|t|)  
+(Intercept)    89.982     40.405   2.227   0.0267 *
+avg_rainfall   13.375      5.188   2.578   0.0105 *
+Multiple R-squared:  0.02334,	
+F-statistic: 6.645 on 1 and 278 DF,  p-value: 0.01046
+
+## Interpretasi
+Berdasarkan hasil analisis dengan model VAR, analisis kausalitas, dan regresi linear ini, kita dapat menyimpulkan bahwa:
+
+1. Dalam model VAR, bahwa variabel avg_rainfall berdampak pada *produktivitas* ubi kayu  karena nilai P-Value dari 3 lag yaitu  Lag1, Lag4 dan lag5 lebih rendah dari 0,05. tetapi avg_rainfall tidak berdampak pada produksi jagung karena nilai P-Value lebih besar dari 0,05  
+
+2. Berdasarkan hasil uji Granger Causality dan Instantaneous Causality, ada bukti statistik yang kuat untuk mendukung adanya hubungan sebab-akibat antara "avg_rainfall" dan "Produktivitas" dalam model VAR dalam jangka waktu lag tetapi bukan dalam jangka waktu instan. dan tidak terdapat sebab-akibat anatar avg_rainfal dan Produksi ubi kayu baik kangak waktu lag maupun isntant
+
+3. Berdasarkan hasil analisis regresi didapatkan bahwa variabel "avg_rainfall"memiliki pengaruh yang signifikan terhadap variabel "Produktivitas," Ubi kayu tetapi avg_rainfall tidak memiliki pengaruh terhadap produksi Ubi kayu.
+
+
+
+
+# 3. Model  GARCH tanaman pangan
+
+## a. GARCH terhadap produksi jagung Sumatera
+
+```{r}
+# Pilih variabel yang akan diprediksi
+
+garch_jagung <- Sumatera_jagung[, c("Produksi", "avg_rainfall")]
+garch_jagung
+```
+
+
+```{r}
+## Penentuan Variabel Dependensi dan Independensi
+dependen_produksi <- garch_jagung$Produksi
+independen_avgRainfall <- garch_jagung$avg_rainfall
+```
+
+```{r}
+# Uji normalitas dengan Shapiro-Wilk
+shapiro.test(garch_jagung$Produksi)
+
+shapiro.test(garch_jagung$avg_rainfall)
+```
+Produksi p-value < 2.2e-16 dan Rainfall p-value = 6.922e-13
+Variabel Produksi jagung dan Curah Hujan Rata-rat tidak terdistribusi normal berdasarkan uji Shapiro-Wilk
+Model GARCH sendiri tidak mensyaratkan distribusi normal untuk data atau residual
+
+
+```{r}
+ts_jagung_garch <- ts(garch_jagung, start = c(1993,1), frequency = 1)
+ts_jagung_garch
+```
+
+```{r}
+plot(ts_jagung_garch)
+```
+
+```{r}
+class(ts_jagung_garch)
+
+```
+
+```{r}
+str(ts_jagung_garch)
+```
+Model GARCH dirancang khusus untuk menangani volatilitas heteroskedastis dalam deret waktu stasioner,lebih baik jika variabel yang di modelkan bersifat stasioner. Deret waktu non-stasioner seringkali sulit untuk dimodelkan secara akurat karena karakteristiknya yang berubah-ubah.
+```{r}
+# Uji Augmented Dickey-Fuller (ADF) pada variabel Produksi
+adf_test_result1 <- adf.test(ts_jagung_garch[, "Produksi"])
+print(adf_test_result1)
+```
+Hasil uji Augmented Dickey-Fuller (ADF) menunjukkan bahwa p-value adalah 0.01, yang lebih kecil dari tingkat signifikansi 0.05.dapat menyimpulkan bahwa data variabel Produksi cenderung stasioner.
+
+
+```{r}
+# Uji Augmented Dickey-Fuller (ADF) pada variabel Produksi
+adf_test_result2 <- adf.test(ts_jagung_garch[, "avg_rainfall"])
+print(adf_test_result2)
+```
+
+
+Hasil uji Augmented Dickey-Fuller (ADF) menunjukkan bahwa p-value adalah 0.01595 dapat menyimpulkan bahwa data variabel avg_rainfall adalah stasioner.
+
+
+```{r}
+# Plot ACF dan PACF
+par(mfrow=c(1,2))  # Set layout grafik menjadi  baris dan 4 kolom
+
+acf(ts_jagung_garch[, "avg_rainfall"], main="Autocorrelation Function Rainfall")
+pacf(ts_jagung_garch[, "avg_rainfall"], main="Partial Autocorrelation Function Rainfall")
+
+acf(ts_jagung_garch[, "Produksi"], main="Autocorrelation Function Produksi")
+pacf(ts_jagung_garch[, "Produksi"], main="Partial Autocorrelation Function Produksi")
+```
+ACF dan PACF untuk "avg_rainfall" (Curah Hujan Rata-rata):
+
+ACF (Autocorrelation Function): Memberikan gambaran tentang seberapa kuat hubungan antara curah hujan pada waktu tertentu dengan curah hujan pada waktu sebelumnya.
+PACF (Partial Autocorrelation Function): Menunjukkan hubungan langsung antara curah hujan pada waktu tertentu dengan curah hujan pada waktu sebelumnya, setelah menghilangkan pengaruh waktu-waktu di antaranya.
+
+ACF dan PACF untuk "Produksi" (Produksi Jagung):
+
+ACF (Autocorrelation Function): Memberikan gambaran tentang seberapa kuat hubungan antara produksi jagung pada waktu tertentu dengan produksi jagung pada waktu sebelumnya.
+PACF (Partial Autocorrelation Function): Menunjukkan hubungan langsung antara produksi jagung pada waktu tertentu dengan produksi jagung pada waktu sebelumnya, setelah menghilangkan pengaruh waktu-waktu di antaranya.
+
+```{r}
+set.seed(123) # Set seed agar hasil dapat direproduksi
+
+split_ratio <- 0.7 # Rasio pembagian (70% untuk set pelatihan, 30% untuk set pengujian)
+
+# Menggunakan sample.split untuk membagi data
+split <- sample.split(ts_jagung_garch[, "Produksi"], SplitRatio = split_ratio)
+
+# Membuat set pelatihan dan pengujian berdasarkan pembagian di atas
+train_data <- subset(ts_jagung_garch, split == TRUE)
+test_data <- subset(ts_jagung_garch, split == FALSE)
+
+```
+
+```{r}
+test_data
+```
+
+```{r}
+train_data
+```
+
+```{r}
+# Spesifikasi model GARCH(1.1)
+spec <- ugarchspec(variance.model = list(model = "sGARCH", garchOrder = c(1, 1)),
+                   mean.model = list(armaOrder = c(0, 0)))
+```
+
+```{r}
+# Spesifikasi model GARCH(2.2)
+spec2 <- ugarchspec(variance.model = list(model = "sGARCH", garchOrder = c(2, 2)),
+                   mean.model = list(armaOrder = c(0, 0)))
+```
+
+```{r}
+# Membuat seri waktu dari set pelatihan
+# tujuan untuk Menyiapkan data pelatihan dalam format seri waktu yang diperlukan oleh fungsi ugarchfit.
+ts_train_data <- ts(train_data[, "Produksi"], start = c(1993, 1), frequency = 1)
+
+```
+
+
+```{r}
+
+# Menyesuaikan model GARCH
+# Tujuan untuk Melatih model GARCH pada data produksi jagung dari set pelatihan untuk mengevaluasi dan memodelkan volatilitas.
+garch_model <- ugarchfit(data = ts_train_data, spec = spec) 
+
+# Melihat ringkasan model
+print(garch_model)
+```
+
+Optimal Parameters:
+
+omega: 9.0708e+08
+alpha1: 4.5300e-03
+beta1: 9.9447e-01
+Parameter-parameter ini menggambarkan komponen volatilitas model GARCH. Secara khusus, alpha1 dan beta1 mencerminkan bagaimana volatilitas dipengaruhi oleh informasi volatilitas di periode sebelumnya. tidak terdapat p-valuenya karena hasilnya NA
+
+Weighted ARCH LM Tests:
+
+Uji autoregresif terhadap kuadrat residual.
+Hasil uji ini memberikan informasi tentang adanya struktur autoregresif pada kuadrat residual, yang dapat diartikan sebagai indikator volatilitas kondisional.
+
+```{r}
+# Melakukan perkiraan volatilitas di masa depan. Ini dapat membantu memahami pola volatilitas yang mungkin terjadi.
+forecast_volatility <- ugarchforecast(garch_model, n.ahead = 10)
+print(forecast_volatility)
+```
+### Melakukan uji diagnostik lanjutan pada model untuk memastikan kecocokan model
+```{r}
+# Uji autokorelasi pada residual
+
+acf_test <- acf(residuals(garch_model))
+print(acf_test)
+
+```
+
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_jagung_Garch <- cor(garch_jagung$Produksi, garch_jagung$avg_rainfall)
+cat ("Koefisien Korelasi Pearson Luas panen dan Produksi:", kolerasi_jagung_Garch)
+```
+Koefisien Korelasi Pearson Luas panen dan Produksi: 0.084
+
+
+### Uji regresi linier jagung
+```{r}
+# Membuat model regresi linier
+regresi_jagung_garch <- lm(Produksi ~ avg_rainfall , data = garch_jagung)
+
+# Ringkasan hasil model
+summary(regresi_jagung_garch)
+```
+avg_rainfall nilai estimasinya adalah sedangkan p-valuenya   0.0108 *
+dengan f-statistik p-valuenya adalah 0.01078
