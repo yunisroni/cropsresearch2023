@@ -61,7 +61,7 @@ glimpse(padi_sumut)
 padi_sumut$`Rata-rata produksi` <- as.numeric(padi_sumut$`Rata-rata produksi`)
 padi_sumut$Produksi <- as.numeric(padi_sumut$Produksi)
 padi_sumut$`Luas Panen` <- as.numeric(padi_sumut$`Luas Panen`)
-padi_sumut
+glimpse(padi_sumut)
 ```
 ```{r}
 # Merubah type Tahun menjadi Date
@@ -106,6 +106,10 @@ Jumlah data setelah dihapus data NA' menjadi 428 baris observasi dengan 5 variab
 ```{r}
 padisumutfilter <- padisumut_clean[padisumut_clean$Kabupaten_kota != "Sumatera Utara",]
 padisumutfilter
+```
+
+```{r}
+descr(padisumutfilter)
 ```
 
 
@@ -207,6 +211,7 @@ rataproduksi
 totrataproduksi_kabkota <- padisumutfilter %>% 
   group_by(Kabupaten_kota) %>% 
   summarise(total_rataproduksi = sum(Rata_rata_produksi))
+totrataproduksi_kabkota
 
 # Visualisasi dengan barplot
 plot_4 <- ggplot(totrataproduksi_kabkota, aes(x = Kabupaten_kota, y = total_rataproduksi, fill = Kabupaten_kota)) +

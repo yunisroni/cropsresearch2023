@@ -891,6 +891,7 @@ produktivitas_padi
 totproduktivitas_padi_provinsi <- Padi %>% 
   group_by(Provinsi) %>% 
   summarise(Total_Produktivitas = sum(Produktivitas))
+totproduktivitas_padi_provinsi
 
 # Visualisasi dengan barplot
 plot_padi_4 <- ggplot(totproduktivitas_padi_provinsi, aes(x = Provinsi, y = Total_Produktivitas, fill = Provinsi)) +
@@ -1600,8 +1601,8 @@ ggplot(data = result_dataubikayu_rf, aes(x = Produksi, y = Predictions)) +
   geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
   scale_x_continuous(labels = scales::comma) +
   scale_y_continuous(labels = scales::comma) +
-  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
-  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
+  labs(x = "Actual Production (Ton)", y = "Production Prediction (Ton)") +
+  ggtitle("Comparison of Actual Production and RF Model Prediction") +
   theme_minimal()
 ```
 ```{r}
@@ -1611,7 +1612,7 @@ ggplot(data = result_dataubikayu_rf, aes(x = 1:length(Produksi))) +
   geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
   labs(x = "Observasi", y = "Produksi (Ton)") +
   scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
-  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
+  ggtitle("Comparison of Actual Production and RF Model Prediction") +
   theme_minimal()
 ```
 
@@ -1670,8 +1671,8 @@ ggplot(data = result_datapadi_rf, aes(x = Produksi, y = Predictions)) +
   geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
   scale_x_continuous(labels = scales::comma) +
   scale_y_continuous(labels = scales::comma) +
-  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
-  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
+  labs(x = "Actual Production (Ton)", y = "Production Prediction (Ton)") +
+  ggtitle("Comparison of Actual Production and RF Model Prediction") +
   theme_minimal()
 ```
 ```{r}
@@ -2188,10 +2189,10 @@ result_datapadi_svr <- data.frame(Produksi = datapadi_test$Produksi, Predictions
 ggplot(data = result_datapadi_svr, aes(x = Produksi, y = Predictions)) +
   geom_point() +
   geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
-  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  labs(x = "Actual Production (Ton)", y = "Production Prediction (Ton)") +
   scale_x_continuous(labels = scales::comma) +
   scale_y_continuous(labels = scales::comma) +
-  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
+  ggtitle("Comparison of Actual and Predicted Production of SVR Model") +
   theme_minimal()
 ```
 
