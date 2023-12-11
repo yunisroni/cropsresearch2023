@@ -611,6 +611,16 @@ avg_rainfall.l1  -1.945e+00  4.242e-01  -4.586 7.05e-06 ***
 avg_rainfall.l4   2.014e+00  4.404e-01   4.574 7.44e-06 ***
 F-statistic:  63.7 on 16 and 258 DF,  p-value: < 2.2e-16 
 
+```{r}
+irf_plot_jagung1 <- irf(var_model_jagung_Sumatera, impulse = "avg_rainfall", response = c("Produktivitas"), n.ahead = 15)
+plot(irf_plot_jagung1)
+```
+
+```{r}
+irf_plot_jagung2 <- irf(var_model_jagung_Sumatera, impulse = "avg_rainfall", response = c("Produksi"), n.ahead = 15)
+plot(irf_plot_jagung2)
+```
+
 
 ### Uji Kolersi Pearson Jagung
 ```{r}
@@ -1176,6 +1186,16 @@ avg_rainfall.l4   6.654e+00  1.825e+00   3.645 0.000323 ***
 F-statistik p-value: < 2.2e-16 
 
 
+```{r}
+irf_plot2 <- irf(var_model_ubijalar_Sumatera, impulse = "avg_rainfall", response = c("Produktivitas"), n.ahead = 15)
+plot(irf_plot2)
+```
+
+```{r}
+irf_plot2 <- irf(var_model_ubijalar_Sumatera, impulse = "avg_rainfall", response = c("Produksi"), n.ahead = 15)
+plot(irf_plot2)
+```
+
 ### Uji Kolersi Pearson Ubi Jalar
 ```{r}
 # Menghitung koefisien korelasi Pearson
@@ -1440,6 +1460,7 @@ summary(var_model_jagung_sumut)
 Estimation results for equation produktivitas: 
 avg_rainfall.l1  -1.371e+00  2.921e-01  -4.693 0.001555 **
 avg_rainfall.l3   6.605e-01  2.427e-01   2.722 0.026188 * 
+Produksi.l4       4.916e-06  2.039e-06   2.411 0.042429 *
 F-statistik p-value:6.623e-10 
 
 
