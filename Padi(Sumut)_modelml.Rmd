@@ -282,10 +282,12 @@ dim(datapadisumut_test)
 ```{r}
 # Membuat model RF
 padisumut_rf_model <- randomForest(Produksi ~ Rata_rata_produksi + Luas_panen, data = datapadisumut_train, ntree = 1000)
+padisumut_rf_model
 ```
 ```{r}
 # Melakukan Prediksi terhadap Data Pengujian
 predictions_rf_padisumut <- predict(padisumut_rf_model, datapadisumut_test)
+predictions_rf_padisumut
 ```
 ```{r}
 # Visualisasi Hasil
@@ -352,11 +354,13 @@ cat(paste("MAPE: ", mape_value_rf_padisumut, "%\n"))
 ```{r}
 # Membuat model SVR
 padisumut_svr_model <- svm(Produksi ~ Rata_rata_produksi + Luas_panen, data = datapadisumut_train, kernel = "radial", cost = 1)
+padisumut_svr_model
 ```
 
 ```{r}
 # Melakukan prediksi dengan Data Testing
 predictions_svr_padisumut <- predict(padisumut_svr_model, datapadisumut_test)
+predictions_svr_padisumut
 ```
 
 ```{r}

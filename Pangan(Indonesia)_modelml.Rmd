@@ -1656,10 +1656,12 @@ cat(paste("MAPE: ", mape_value_rf_ubikayu, "%\n"))
 ```{r}
 # Membuat model RF
 padi_rf_model <- randomForest(Produksi ~ Produktivitas + Luas_Panen, data = datapadi_train, ntree = 1000)
+padi_rf_model
 ```
 ```{r}
 # Melakukan Prediksi terhadap Data Pengujian
 predictions_rf_padi <- predict(padi_rf_model, datapadi_test)
+predictions_rf_padi
 ```
 ```{r}
 # Visualisasi Hasil
@@ -1671,8 +1673,8 @@ ggplot(data = result_datapadi_rf, aes(x = Produksi, y = Predictions)) +
   geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
   scale_x_continuous(labels = scales::comma) +
   scale_y_continuous(labels = scales::comma) +
-  labs(x = "Actual Production (Ton)", y = "Production Prediction (Ton)") +
-  ggtitle("Comparison of Actual Production and RF Model Prediction") +
+  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
   theme_minimal()
 ```
 ```{r}
@@ -2175,11 +2177,13 @@ cat(paste("MAPE: ", mape_value_svr_ubikayu, "%\n"))
 ```{r}
 # Membuat model SVR
 padi_svr_model <- svm(Produksi ~ Produktivitas + Luas_Panen, data = datapadi_train, kernel = "radial", cost = 1)
+padi_svr_model
 ```
 
 ```{r}
 # Melakukan prediksi dengan Data Testing
 predictions_svr_padi <- predict(padi_svr_model, datapadi_test)
+predictions_svr_padi
 ```
 
 ```{r}
@@ -2189,10 +2193,10 @@ result_datapadi_svr <- data.frame(Produksi = datapadi_test$Produksi, Predictions
 ggplot(data = result_datapadi_svr, aes(x = Produksi, y = Predictions)) +
   geom_point() +
   geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
-  labs(x = "Actual Production (Ton)", y = "Production Prediction (Ton)") +
+  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
   scale_x_continuous(labels = scales::comma) +
   scale_y_continuous(labels = scales::comma) +
-  ggtitle("Comparison of Actual and Predicted Production of SVR Model") +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
   theme_minimal()
 ```
 
