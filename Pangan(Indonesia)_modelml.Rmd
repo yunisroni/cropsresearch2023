@@ -1314,6 +1314,7 @@ kacanghijau_rf_model <- randomForest(Produksi ~ Produktivitas + Luas_Panen, data
 ```{r}
 # Melakukan Prediksi terhadap Data Pengujian
 predictions_rf_kacanghijau <- predict(kacanghijau_rf_model, datakacanghijau_test)
+predictions_rf_kacanghijau
 ```
 ```{r}
 # Visualisasi Hasil
