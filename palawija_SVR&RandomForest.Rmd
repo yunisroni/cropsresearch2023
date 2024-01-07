@@ -1088,7 +1088,7 @@ dim(dataubikayu_test)
 #### a. Grid Search
 ```{r}
 set.seed(123)
-control <- trainControl(method="cv", number=10, search="grid")
+controlGS <- trainControl(method="cv", number=10, search="grid")
 tunegrid <- expand.grid(.mtry=c(1,2))
 ```
 
@@ -1100,7 +1100,7 @@ gs_jagung_rf <- train(
   data = datajagung_train,
   method = "rf",
   tuneGrid=tunegrid, 
-  trControl=control
+  trControl=controlGS
 )
 
 # Menampilkan hasil
@@ -1161,7 +1161,7 @@ gs_kacanghijau_rf <- train(
   data = datakacanghijau_train,
   method = "rf",
   tuneGrid=tunegrid, 
-  trControl=control
+  trControl=controlGS
 )
 
 # Menampilkan hasil
@@ -1224,7 +1224,7 @@ gs_kacangkedelai_rf <- train(
   data = datakacangkedelai_train,
   method = "rf",
    tuneGrid=tunegrid, 
-  trControl=control
+  trControl=controlGS
 )
 
 # Menampilkan hasil
@@ -1287,7 +1287,7 @@ gs_kacangtanah_rf <- train(
   data = datakacangtanah_train,
   method = "rf",
    tuneGrid=tunegrid, 
-  trControl=control
+  trControl=controlGS
 )
 
 # Menampilkan hasil
@@ -1350,7 +1350,7 @@ gs_ubijalar_rf <- train(
   data = dataubijalar_train,
   method = "rf",
    tuneGrid=tunegrid, 
-  trControl=control
+  trControl=controlGS
 )
 
 # Menampilkan hasil
@@ -1413,7 +1413,7 @@ gs_ubikayu_rf <- train(
   data = dataubikayu_train,
   method = "rf",
   tuneGrid=tunegrid, 
-  trControl=control
+  trControl=controlGS
 )
 
 # Menampilkan hasil
@@ -1470,6 +1470,75 @@ cat(paste("MAPE: ", gs_mape_value_rf_ubikayu, "%\n"))
 
 
 #### b. Random Search
+```{r}
+# Random Search
+set.seed(123)
+controlRS <- trainControl(method="cv", number=10, search="random")
+```
+#####- Jagung
+```{r}
+mtry_jagung <- sqrt(ncol(datajagung_train)-1)
+
+rs_jagung_rf <- train(Produksi ~ Produktivitas + Luas_Panen, data=datajagung_train, method="rf", tuneLength=5, trControl=controlRS)
+
+print(rs_jagung_rf)
+```
+The final value used for the model was mtry = 2.
+```{r}
+rs_jagung_rf_model <- randomForest(Produksi ~ Produktivitas + Luas_Panen, data = datajagung_train, ntree = 1000,mtry=2 )
+rs_jagung_rf_model
+```
+```{r}
+# Melakukan Prediksi terhadap Data Pengujian
+rs_predictions_rf_jagung <- predict(rs_jagung_rf_model, datajagung_test)
+rs_predictions_rf_jagung
+```
+```{r}
+# Visualisasi Hasil
+rs_result_datajagung_rf <- data.frame(Produksi = datajagung_test$Produksi, Predictions = rs_predictions_rf_jagung)
+
+# Visualisasi Perbandingan Produksi Aktual dengan Hasil Prediksi
+ggplot(data = rs_result_datajagung_rf, aes(x = Produksi, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
+  theme_minimal()
+```
+```{r}
+# Evaluasi RF Model
+
+# Hitung MAE
+rs_mae_value_rf_jagung <- mae(datajagung_test$Produksi, rs_predictions_rf_jagung)
+
+# Hitung MSE
+rs_mse_value_rf_jagung <- mse(datajagung_test$Produksi, rs_predictions_rf_jagung)
+
+# Hitung RMSE
+rs_rmse_value_rf_jagung <- rmse(datajagung_test$Produksi, rs_predictions_rf_jagung)
+
+# Hitung MAPE
+rs_mape_value_rf_jagung <- mape(datajagung_test$Produksi, rs_predictions_rf_jagung)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", rs_mae_value_rf_jagung, "\n"))
+cat(paste("MSE: ", rs_mse_value_rf_jagung, "\n"))
+cat(paste("RMSE: ", rs_rmse_value_rf_jagung, "\n"))
+cat(paste("MAPE: ", rs_mape_value_rf_jagung, "%\n"))
+```
+
+
+#####- Kacang Hijau
+
+#####- Kacang Kedelai
+
+#####- Kacang Tanah
+
+#####- Ubi Jalar
+
+#####- Ubi Kayu
 ```{r}
 library(caret)
 
