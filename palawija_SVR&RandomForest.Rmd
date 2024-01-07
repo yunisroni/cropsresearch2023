@@ -1086,23 +1086,26 @@ dim(dataubikayu_test)
 ##b. Model Random Forest
 ### 1. Membuat Model Random Forest
 #### a. Grid Search
+```{r}
+set.seed(123)
+control <- trainControl(method="repeatedcv", number=10, repeats=3, search="grid")
+tunegrid <- expand.grid(.mtry=c(1,2))
+```
+
+
 ##### - Jagung
 ```{r}
-# Membuat grid untuk mtry
-mtryGrid <- expand.grid(mtry = c(1,2))  # Ganti dengan nilai mtry yang ingin diuji
-
-# Melakukan grid search
-set.seed(123)
 gs_jagung_rf <- train(
   Produksi ~ Produktivitas + Luas_Panen,
   data = datajagung_train,
   method = "rf",
-  trControl = trainControl(method = "cv"),
-  tuneGrid = mtryGrid
+  tuneGrid=tunegrid, 
+  trControl=control
 )
 
 # Menampilkan hasil
-gs_jagung_rf
+print(gs_jagung_rf)
+plot(gs_jagung_rf)
 
 ```
 
