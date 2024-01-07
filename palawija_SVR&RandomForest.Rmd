@@ -1088,7 +1088,7 @@ dim(dataubikayu_test)
 #### a. Grid Search
 ```{r}
 set.seed(123)
-control <- trainControl(method="repeatedcv", number=10, repeats=3, search="grid")
+control <- trainControl(method="cv", number=10, search="grid")
 tunegrid <- expand.grid(.mtry=c(1,2))
 ```
 
@@ -1105,10 +1105,8 @@ gs_jagung_rf <- train(
 
 # Menampilkan hasil
 print(gs_jagung_rf)
-plot(gs_jagung_rf)
-
 ```
-
+The final value used for the model was mtry = 2.
 ```{r}
 gs_jagung_rf_model <- randomForest(Produksi ~ Produktivitas + Luas_Panen, data = datajagung_train, ntree = 1000,mtry=2 )
 gs_jagung_rf_model
@@ -1158,24 +1156,19 @@ cat(paste("MAPE: ", gs_mape_value_rf_jagung, "%\n"))
 
 ##### - Kacang Hijau
 ```{r}
-# Membuat grid untuk mtry
-mtryGrid <- expand.grid(mtry = c(1,2))  # Ganti dengan nilai mtry yang ingin diuji
-
-# Melakukan grid search
-set.seed(123)
 gs_kacanghijau_rf <- train(
   Produksi ~ Produktivitas + Luas_Panen,
   data = datakacanghijau_train,
   method = "rf",
-  trControl = trainControl(method = "cv"),
-  tuneGrid = mtryGrid
+  tuneGrid=tunegrid, 
+  trControl=control
 )
 
 # Menampilkan hasil
-gs_kacanghijau_rf
+print(gs_kacanghijau_rf)
 
 ```
-
+The final value used for the model was mtry = 2.
 ```{r}
 gs_kacanghijau_rf_model <- randomForest(Produksi ~ Produktivitas + Luas_Panen, data = datakacanghijau_train, ntree = 1000,mtry=2 )
 gs_kacanghijau_rf_model
@@ -1226,24 +1219,19 @@ cat(paste("MAPE: ", gs_mape_value_rf_kacanghijau, "%\n"))
 
 ##### - Kacang Kedelai
 ```{r}
-# Membuat grid untuk mtry
-mtryGrid <- expand.grid(mtry = c(1,2))  # Ganti dengan nilai mtry yang ingin diuji
-
-# Melakukan grid search
-set.seed(123)
 gs_kacangkedelai_rf <- train(
   Produksi ~ Produktivitas + Luas_Panen,
   data = datakacangkedelai_train,
   method = "rf",
-  trControl = trainControl(method = "cv"),
-  tuneGrid = mtryGrid
+   tuneGrid=tunegrid, 
+  trControl=control
 )
 
 # Menampilkan hasil
-gs_kacangkedelai_rf
+print(gs_kacangkedelai_rf)
 
 ```
-
+The final value used for the model was mtry = 2
 ```{r}
 gs_kacangkedelai_rf_model <- randomForest(Produksi ~ Produktivitas + Luas_Panen, data = datakacangkedelai_train, ntree = 1000,mtry=2 )
 gs_kacangkedelai_rf_model
@@ -1294,24 +1282,19 @@ cat(paste("MAPE: ", gs_mape_value_rf_kacangkedelai, "%\n"))
 
 ##### - Kacang Tanah
 ```{r}
-# Membuat grid untuk mtry
-mtryGrid <- expand.grid(mtry = c(1,2))  # Ganti dengan nilai mtry yang ingin diuji
-
-# Melakukan grid search
-set.seed(123)
 gs_kacangtanah_rf <- train(
   Produksi ~ Produktivitas + Luas_Panen,
   data = datakacangtanah_train,
   method = "rf",
-  trControl = trainControl(method = "cv"),
-  tuneGrid = mtryGrid
+   tuneGrid=tunegrid, 
+  trControl=control
 )
 
 # Menampilkan hasil
-gs_kacangtanah_rf
+print(gs_kacangtanah_rf)
 
 ```
-
+The final value used for the model was mtry = 2.
 ```{r}
 gs_kacangtanah_rf_model <- randomForest(Produksi ~ Produktivitas + Luas_Panen, data = datakacangtanah_train, ntree = 1000,mtry=2 )
 gs_kacangtanah_rf_model
@@ -1362,24 +1345,19 @@ cat(paste("MAPE: ", gs_mape_value_rf_kacangtanah, "%\n"))
 
 ##### - Ubi Jalar
 ```{r}
-# Membuat grid untuk mtry
-mtryGrid <- expand.grid(mtry = c(1,2))  # Ganti dengan nilai mtry yang ingin diuji
-
-# Melakukan grid search
-set.seed(123)
 gs_ubijalar_rf <- train(
   Produksi ~ Produktivitas + Luas_Panen,
   data = dataubijalar_train,
   method = "rf",
-  trControl = trainControl(method = "cv"),
-  tuneGrid = mtryGrid
+   tuneGrid=tunegrid, 
+  trControl=control
 )
 
 # Menampilkan hasil
-gs_ubijalar_rf
+print(gs_ubijalar_rf)
 
 ```
-
+The final value used for the model was mtry = 2.
 ```{r}
 gs_ubijalar_rf_model <- randomForest(Produksi ~ Produktivitas + Luas_Panen, data = dataubijalar_train, ntree = 1000,mtry=2 )
 gs_ubijalar_rf_model
@@ -1430,26 +1408,21 @@ cat(paste("MAPE: ", gs_mape_value_rf_ubijalar, "%\n"))
 
 ##### - Ubi Kayu
 ```{r}
-# Membuat grid untuk mtry
-mtryGrid <- expand.grid(mtry = c(1,2))  # Ganti dengan nilai mtry yang ingin diuji
-
-# Melakukan grid search
-set.seed(123)
 gs_ubikayu_rf <- train(
   Produksi ~ Produktivitas + Luas_Panen,
   data = dataubikayu_train,
   method = "rf",
-  trControl = trainControl(method = "cv"),
-  tuneGrid = mtryGrid
+  tuneGrid=tunegrid, 
+  trControl=control
 )
 
 # Menampilkan hasil
-gs_ubikayu_rf
+print(gs_ubikayu_rf)
 
 ```
-
+The final value used for the model was mtry = 1.
 ```{r}
-gs_ubikayu_rf_model <- randomForest(Produksi ~ Produktivitas + Luas_Panen, data = dataubikayu_train, ntree = 1000,mtry=1 )
+gs_ubikayu_rf_model <- randomForest(Produksi ~ Produktivitas + Luas_Panen, data = dataubikayu_train, ntree = 1000,mtry=2 )
 gs_ubikayu_rf_model
 ```
 
@@ -1494,65 +1467,6 @@ cat(paste("MSE: ", gs_mse_value_rf_ubikayu, "\n"))
 cat(paste("RMSE: ", gs_rmse_value_rf_ubikayu, "\n"))
 cat(paste("MAPE: ", gs_mape_value_rf_ubikayu, "%\n"))
 ```
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 #### b. Random Search
