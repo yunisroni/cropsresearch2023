@@ -1529,64 +1529,30 @@ cat(paste("RMSE: ", rs_rmse_value_rf_jagung, "\n"))
 cat(paste("MAPE: ", rs_mape_value_rf_jagung, "%\n"))
 ```
 
-
 #####- Kacang Hijau
-
-#####- Kacang Kedelai
-
-#####- Kacang Tanah
-
-#####- Ubi Jalar
-
-#####- Ubi Kayu
 ```{r}
-library(caret)
+mtry_kacanghijau <- sqrt(ncol(datakacanghijau_train)-1)
 
-# Tentukan grid dari hiperparameter yang ingin dioptimalkan
-grid <- expand.grid(mtry = seq(1, 2, by = 1))
+rs_kacanghijau_rf <- train(Produksi ~ Produktivitas + Luas_Panen, data=datakacanghijau_train, method="rf", tuneLength=5, trControl=controlRS)
 
-# Membuat kontrol untuk validasi silang
-control <- trainControl(method = "cv", number = 5)
-
-# Melakukan train dengan fungsi train
-set.seed(123)
-jagung_rf_model <- train(
-  Produksi ~ Produktivitas + Luas_Panen,
-  data = datajagung_train,
-  method = "rf",
-  trControl = control,
-  tuneGrid = grid
-)
-
-# Melihat hasil optimalisasi
-print(jagung_rf_model)
-
+print(rs_kacanghijau_rf)
 ```
-
-
-
-
-
-
-
-
-
+The final value used for the model was mtry = 2.
 ```{r}
-# Membuat model RF
-jagung_rf_model <- randomForest(Produksi ~ Produktivitas + Luas_Panen, data = datajagung_train, ntree = 1000)
-jagung_rf_model
+rs_kacanghijau_rf_model <- randomForest(Produksi ~ Produktivitas + Luas_Panen, data = datakacanghijau_train, ntree = 1000,mtry=2 )
+rs_kacanghijau_rf_model
 ```
 ```{r}
 # Melakukan Prediksi terhadap Data Pengujian
-predictions_rf_jagung <- predict(jagung_rf_model, datajagung_test)
-predictions_rf_jagung
+rs_predictions_rf_kacanghijau <- predict(rs_kacanghijau_rf_model, datakacanghijau_test)
+rs_predictions_rf_kacanghijau
 ```
 ```{r}
 # Visualisasi Hasil
-result_datajagung_rf <- data.frame(Produksi = datajagung_test$Produksi, Predictions = predictions_rf_jagung)
+rs_result_datakacanghijau_rf <- data.frame(Produksi = datakacanghijau_test$Produksi, Predictions = rs_predictions_rf_kacanghijau)
 
 # Visualisasi Perbandingan Produksi Aktual dengan Hasil Prediksi
-ggplot(data = result_datajagung_rf, aes(x = Produksi, y = Predictions)) +
+ggplot(data = rs_result_datakacanghijau_rf, aes(x = Produksi, y = Predictions)) +
   geom_point() +
   geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
   scale_x_continuous(labels = scales::comma) +
@@ -1596,52 +1562,342 @@ ggplot(data = result_datajagung_rf, aes(x = Produksi, y = Predictions)) +
   theme_minimal()
 ```
 ```{r}
-# Visualisasi Produksi Aktual dengan Hasil Prediksi
-ggplot(data = result_datajagung_rf, aes(x = 1:length(Produksi))) +
-  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
-  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
-  labs(x = "Observasi", y = "Produksi (Ton)") +
-  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
-  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
-  theme_minimal()
+# Evaluasi RF Model
+
+# Hitung MAE
+rs_mae_value_rf_kacanghijau <- mae(datakacanghijau_test$Produksi, rs_predictions_rf_kacanghijau)
+
+# Hitung MSE
+rs_mse_value_rf_kacanghijau <- mse(datakacanghijau_test$Produksi, rs_predictions_rf_kacanghijau)
+
+# Hitung RMSE
+rs_rmse_value_rf_kacanghijau <- rmse(datakacanghijau_test$Produksi, rs_predictions_rf_kacanghijau)
+
+# Hitung MAPE
+rs_mape_value_rf_kacanghijau <- mape(datakacanghijau_test$Produksi, rs_predictions_rf_kacanghijau)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", rs_mae_value_rf_kacanghijau, "\n"))
+cat(paste("MSE: ", rs_mse_value_rf_kacanghijau, "\n"))
+cat(paste("RMSE: ", rs_rmse_value_rf_kacanghijau, "\n"))
+cat(paste("MAPE: ", rs_mape_value_rf_kacanghijau, "%\n"))
 ```
 
-```{r}
-# Visualisasi hasil prediksi dengan sumbu x adalah tahun
-result_datajagung_rf2 <- data.frame(Tahun = datajagung_test$Tahun, Produksi = datajagung_test$Produksi, Predictions = predictions_rf_jagung)
 
-ggplot(data = result_datajagung_rf2, aes(x = Tahun)) +
-  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
-  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
-  labs(x = "Tahun", y = "Produksi (Ton)") +
-  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
-  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
+#####- Kacang Kedelai
+```{r}
+mtry_kacangkedelai <- sqrt(ncol(datakacangkedelai_train)-1)
+
+rs_kacangkedelai_rf <- train(Produksi ~ Produktivitas + Luas_Panen, data=datakacangkedelai_train, method="rf", tuneLength=5, trControl=controlRS)
+
+print(rs_kacangkedelai_rf)
+```
+The final value used for the model was mtry = 2.
+```{r}
+rs_kacangkedelai_rf_model <- randomForest(Produksi ~ Produktivitas + Luas_Panen, data = datakacangkedelai_train, ntree = 1000,mtry=2 )
+rs_kacangkedelai_rf_model
+```
+```{r}
+# Melakukan Prediksi terhadap Data Pengujian
+rs_predictions_rf_kacangkedelai <- predict(rs_kacangkedelai_rf_model, datakacangkedelai_test)
+rs_predictions_rf_kacangkedelai
+```
+```{r}
+# Visualisasi Hasil
+rs_result_datakacangkedelai_rf <- data.frame(Produksi = datakacangkedelai_test$Produksi, Predictions = rs_predictions_rf_kacangkedelai)
+
+# Visualisasi Perbandingan Produksi Aktual dengan Hasil Prediksi
+ggplot(data = rs_result_datakacangkedelai_rf, aes(x = Produksi, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  scale_x_continuous(labels = scales::comma) +
   scale_y_continuous(labels = scales::comma) +
+  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
   theme_minimal()
 ```
 ```{r}
 # Evaluasi RF Model
 
 # Hitung MAE
-mae_value_rf_jagung <- mae(datajagung_test$Produksi, predictions_rf_jagung)
+rs_mae_value_rf_kacangkedelai <- mae(datakacangkedelai_test$Produksi, rs_predictions_rf_kacangkedelai)
 
 # Hitung MSE
-mse_value_rf_jagung <- mse(datajagung_test$Produksi, predictions_rf_jagung)
+rs_mse_value_rf_kacangkedelai <- mse(datakacangkedelai_test$Produksi, rs_predictions_rf_kacangkedelai)
 
 # Hitung RMSE
-rmse_value_rf_jagung <- rmse(datajagung_test$Produksi, predictions_rf_jagung)
+rs_rmse_value_rf_kacangkedelai <- rmse(datakacangkedelai_test$Produksi, rs_predictions_rf_kacangkedelai)
 
 # Hitung MAPE
-mape_value_rf_jagung <- mape(datajagung_test$Produksi, predictions_rf_jagung)
+rs_mape_value_rf_kacangkedelai <- mape(datakacangkedelai_test$Produksi, rs_predictions_rf_kacangkedelai)
 
 # Tampilkan hasil evaluasi
-cat(paste("MAE: ", mae_value_rf_jagung, "\n"))
-cat(paste("MSE: ", mse_value_rf_jagung, "\n"))
-cat(paste("RMSE: ", rmse_value_rf_jagung, "\n"))
-cat(paste("MAPE: ", mape_value_rf_jagung, "%\n"))
+cat(paste("MAE: ", rs_mae_value_rf_kacangkedelai, "\n"))
+cat(paste("MSE: ", rs_mse_value_rf_kacangkedelai, "\n"))
+cat(paste("RMSE: ", rs_rmse_value_rf_kacangkedelai, "\n"))
+cat(paste("MAPE: ", rs_mape_value_rf_kacangkedelai, "%\n"))
+```
+
+#####- Kacang Tanah
+```{r}
+mtry_kacangtanah <- sqrt(ncol(datakacangtanah_train)-1)
+
+rs_kacangtanah_rf <- train(Produksi ~ Produktivitas + Luas_Panen, data=datakacangtanah_train, method="rf", tuneLength=5, trControl=controlRS)
+
+print(rs_kacangtanah_rf)
+```
+The final value used for the model was mtry = 2.
+```{r}
+rs_kacangtanah_rf_model <- randomForest(Produksi ~ Produktivitas + Luas_Panen, data = datakacangtanah_train, ntree = 1000,mtry=2 )
+rs_kacangtanah_rf_model
+```
+```{r}
+# Melakukan Prediksi terhadap Data Pengujian
+rs_predictions_rf_kacangtanah <- predict(rs_kacangtanah_rf_model, datakacangtanah_test)
+rs_predictions_rf_kacangtanah
+```
+```{r}
+# Visualisasi Hasil
+rs_result_datakacangtanah_rf <- data.frame(Produksi = datakacangtanah_test$Produksi, Predictions = rs_predictions_rf_kacangtanah)
+
+# Visualisasi Perbandingan Produksi Aktual dengan Hasil Prediksi
+ggplot(data = rs_result_datakacangtanah_rf, aes(x = Produksi, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
+  theme_minimal()
+```
+```{r}
+# Evaluasi RF Model
+
+# Hitung MAE
+rs_mae_value_rf_kacangtanah <- mae(datakacangtanah_test$Produksi, rs_predictions_rf_kacangtanah)
+
+# Hitung MSE
+rs_mse_value_rf_kacangtanah <- mse(datakacangtanah_test$Produksi, rs_predictions_rf_kacangtanah)
+
+# Hitung RMSE
+rs_rmse_value_rf_kacangtanah <- rmse(datakacangtanah_test$Produksi, rs_predictions_rf_kacangtanah)
+
+# Hitung MAPE
+rs_mape_value_rf_kacangtanah <- mape(datakacangtanah_test$Produksi, rs_predictions_rf_kacangtanah)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", rs_mae_value_rf_kacangtanah, "\n"))
+cat(paste("MSE: ", rs_mse_value_rf_kacangtanah, "\n"))
+cat(paste("RMSE: ", rs_rmse_value_rf_kacangtanah, "\n"))
+cat(paste("MAPE: ", rs_mape_value_rf_kacangtanah, "%\n"))
+```
+
+#####- Ubi Jalar
+```{r}
+mtry_ubijalar <- sqrt(ncol(dataubijalar_train)-1)
+
+rs_ubijalar_rf <- train(Produksi ~ Produktivitas + Luas_Panen, data=dataubijalar_train, method="rf", tuneLength=5, trControl=controlRS)
+
+print(rs_ubijalar_rf)
+```
+The final value used for the model was mtry = 1.
+```{r}
+# Melakukan Prediksi terhadap Data Pengujian
+rs_ubijalar_rf_model <- randomForest(Produksi ~ Produktivitas + Luas_Panen, data = dataubijalar_train, ntree = 1000,mtry=2 )
+rs_ubijalar_rf_model
+```
+```{r}
+# Melakukan Prediksi terhadap Data Pengujian
+rs_predictions_rf_ubijalar <- predict(rs_ubijalar_rf_model, dataubijalar_test)
+rs_predictions_rf_ubijalar
+```
+```{r}
+# Visualisasi Hasil
+rs_result_dataubijalar_rf <- data.frame(Produksi = dataubijalar_test$Produksi, Predictions = rs_predictions_rf_ubijalar)
+
+# Visualisasi Perbandingan Produksi Aktual dengan Hasil Prediksi
+ggplot(data = rs_result_dataubijalar_rf, aes(x = Produksi, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
+  theme_minimal()
+```
+```{r}
+# Evaluasi RF Model
+
+# Hitung MAE
+rs_mae_value_rf_ubijalar <- mae(dataubijalar_test$Produksi, rs_predictions_rf_ubijalar)
+
+# Hitung MSE
+rs_mse_value_rf_ubijalar <- mse(dataubijalar_test$Produksi, rs_predictions_rf_ubijalar)
+
+# Hitung RMSE
+rs_rmse_value_rf_ubijalar <- rmse(dataubijalar_test$Produksi, rs_predictions_rf_ubijalar)
+
+# Hitung MAPE
+rs_mape_value_rf_ubijalar <- mape(dataubijalar_test$Produksi, rs_predictions_rf_ubijalar)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", rs_mae_value_rf_ubijalar, "\n"))
+cat(paste("MSE: ", rs_mse_value_rf_ubijalar, "\n"))
+cat(paste("RMSE: ", rs_rmse_value_rf_ubijalar, "\n"))
+cat(paste("MAPE: ", rs_mape_value_rf_ubijalar, "%\n"))
 ```
 
 
+#####- Ubi Kayu
+```{r}
+mtry_ubikayu <- sqrt(ncol(dataubikayu_train)-1)
+
+rs_ubikayu_rf <- train(Produksi ~ Produktivitas + Luas_Panen, data=datakacanghijau_train, method="rf", tuneLength=5, trControl=controlRS)
+
+print(rs_ubikayu_rf)
+```
+The final value used for the model was mtry = 2.
+```{r}
+rs_ubikayu_rf_model <- randomForest(Produksi ~ Produktivitas + Luas_Panen, data = dataubikayu_train, ntree = 1000,mtry=2 )
+rs_ubikayu_rf_model
+```
+```{r}
+# Melakukan Prediksi terhadap Data Pengujian
+rs_predictions_rf_ubikayu <- predict(rs_ubikayu_rf_model, dataubikayu_test)
+rs_predictions_rf_ubikayu
+```
+```{r}
+# Visualisasi Hasil
+rs_result_dataubikayu_rf <- data.frame(Produksi = dataubikayu_test$Produksi, Predictions = rs_predictions_rf_ubikayu)
+
+# Visualisasi Perbandingan Produksi Aktual dengan Hasil Prediksi
+ggplot(data = rs_result_dataubikayu_rf, aes(x = Produksi, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
+  theme_minimal()
+```
+```{r}
+# Evaluasi RF Model
+
+# Hitung MAE
+rs_mae_value_rf_ubikayu <- mae(dataubikayu_test$Produksi, rs_predictions_rf_ubikayu)
+
+# Hitung MSE
+rs_mse_value_rf_ubikayu <- mse(dataubikayu_test$Produksi, rs_predictions_rf_ubikayu)
+
+# Hitung RMSE
+rs_rmse_value_rf_ubikayu <- rmse(dataubikayu_test$Produksi, rs_predictions_rf_ubikayu)
+
+# Hitung MAPE
+rs_mape_value_rf_ubikayu <- mape(dataubikayu_test$Produksi, rs_predictions_rf_ubikayu)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", rs_mae_value_rf_ubikayu, "\n"))
+cat(paste("MSE: ", rs_mse_value_rf_ubikayu, "\n"))
+cat(paste("RMSE: ", rs_rmse_value_rf_ubikayu, "\n"))
+cat(paste("MAPE: ", rs_mape_value_rf_ubikayu, "%\n"))
+```
+
+####d. Intepretasikan dan Membandingkan Model Random Forest dan SVR
+##### - Intepretasikan dan Membandingkan Model Random Forest dengan Grid Search dan Random Search- Jagung
+```{r}
+model_performance_jagung_rf <- data.frame(
+  No = c(1:2),
+  Model = c("Grid Search", "Random Search"),
+  MSE = c(gs_mse_value_rf_jagung, rs_mse_value_rf_jagung),
+  RSME = c(gs_rmse_value_rf_jagung, rs_rmse_value_rf_jagung),
+  MAE = c(gs_mae_value_rf_jagung, rs_mae_value_rf_jagung),
+  MAPE = c(gs_mape_value_rf_jagung, rs_mape_value_rf_jagung),
+  stringsAsFactors = FALSE
+  
+)
+model_performance_jagung_rf
+```
+Berdasarkan hasil diatas, kalau dilihat dari performance matrik tingkat kesalahan yang paling rendah (MAE), maka model **Random Forest dengan Grid Search** yang dianggap sebagai model terbaik dalam hal akurasi prediksi produksi jagung.
+
+### - Intepretasikan dan Membandingkan Model Random Forest dengan Grid Search dan Random Search - Kacang Hijau
+```{r}
+model_performance_kacanghijau_rf <- data.frame(
+  No = c(1:2),
+  Model = c("Grid Search", "Random Search"),
+  MSE = c(gs_mse_value_rf_kacanghijau, rs_mse_value_rf_kacanghijau),
+  RSME = c(gs_rmse_value_rf_kacanghijau, rs_rmse_value_rf_kacanghijau),
+  MAE = c(gs_mae_value_rf_kacanghijau, rs_mae_value_rf_kacanghijau),
+  MAPE = c(gs_mape_value_rf_kacanghijau, rs_mape_value_rf_kacanghijau),
+  stringsAsFactors = FALSE
+  
+)
+model_performance_kacanghijau_rf
+```
+Berdasarkan hasil diatas, kalau dilihat dari performance matrik tingkat kesalahan yang paling rendah (MAE), maka model **Random Forest dengan Grid Search** yang dianggap sebagai model terbaik dalam hal akurasi prediksi produksi kacang hijau.
+
+### - Intepretasikan dan Membandingkan Model Random Forest dengan Grid Search dan Random Search - Kacang Kedelai
+```{r}
+model_performance_kacangkedelai_rf <- data.frame(
+  No = c(1:2),
+  Model = c("Grid Search", "Random Search"),
+  MSE = c(gs_mse_value_rf_kacangkedelai, rs_mse_value_rf_kacangkedelai),
+  RSME = c(gs_rmse_value_rf_kacangkedelai, rs_rmse_value_rf_kacangkedelai),
+  MAE = c(gs_mae_value_rf_kacangkedelai, rs_mae_value_rf_kacangkedelai),
+  MAPE = c(gs_mape_value_rf_kacangkedelai, rs_mape_value_rf_kacangkedelai),
+  stringsAsFactors = FALSE
+  
+)
+model_performance_kacangkedelai_rf
+```
+Berdasarkan hasil diatas, kalau dilihat dari performance matrik tingkat kesalahan yang paling rendah (MAE), maka model **Random Forest dengan Grid Search** yang dianggap sebagai model terbaik dalam hal akurasi prediksi produksi kacang kedelai
+
+### - Intepretasikan dan Membandingkan Model Random Forest dengan Grid Search dan Random Search - Kacang Tanah
+```{r}
+model_performance_kacangtanah_rf <- data.frame(
+  No = c(1:2),
+  Model = c("Grid Search", "Random Search"),
+  MSE = c(gs_mse_value_rf_kacangtanah, rs_mse_value_rf_kacangtanah),
+  RSME = c(gs_rmse_value_rf_kacangtanah, rs_rmse_value_rf_kacangtanah),
+  MAE = c(gs_mae_value_rf_kacangtanah, rs_mae_value_rf_kacangtanah),
+  MAPE = c(gs_mape_value_rf_kacangtanah, rs_mape_value_rf_kacangtanah),
+  stringsAsFactors = FALSE
+  
+)
+model_performance_kacangtanah_rf
+```
+Berdasarkan hasil diatas, kalau dilihat dari performance matrik tingkat kesalahan yang paling rendah (MAE), maka model **Random Forest dengan Grid Search** yang dianggap sebagai model terbaik dalam hal akurasi prediksi produksi kacang tanah
+
+### - Intepretasikan dan Membandingkan Model Random Forest dengan Grid Search dan Random Search - Ubi Jalar
+```{r}
+model_performance_ubijalar_rf <- data.frame(
+  No = c(1:2),
+  Model = c("Grid Search", "Random Search"),
+  MSE = c(gs_mse_value_rf_ubijalar, rs_mse_value_rf_ubijalar),
+  RSME = c(gs_rmse_value_rf_ubijalar, rs_rmse_value_rf_ubijalar),
+  MAE = c(gs_mae_value_rf_ubijalar, rs_mae_value_rf_ubijalar),
+  MAPE = c(gs_mape_value_rf_ubijalar, rs_mape_value_rf_ubijalar),
+  stringsAsFactors = FALSE
+  
+)
+model_performance_ubijalar_rf
+```
+Berdasarkan hasil diatas, kalau dilihat dari performance matrik tingkat kesalahan yang paling rendah (MAE), maka model **Random Forest dengan Grid Search** yang dianggap sebagai model terbaik dalam hal akurasi prediksi produksi ubi jalar
+
+### - Intepretasikan dan Membandingkan Model Random Forest dengan Grid Search dan Random Search - Ubi Kayu
+```{r}
+model_performance_ubikayu_rf <- data.frame(
+  No = c(1:2),
+  Model = c("Grid Search", "Random Search"),
+  MSE = c(gs_mse_value_rf_ubikayu, rs_mse_value_rf_ubikayu),
+  RSME = c(gs_rmse_value_rf_ubikayu, rs_rmse_value_rf_ubikayu),
+  MAE = c(gs_mae_value_rf_ubikayu, rs_mae_value_rf_ubikayu),
+  MAPE = c(gs_mape_value_rf_ubikayu, rs_mape_value_rf_ubikayu),
+  stringsAsFactors = FALSE
+  
+)
+model_performance_ubikayu_rf
+```
+Berdasarkan hasil diatas, kalau dilihat dari performance matrik tingkat kesalahan yang paling rendah (MAE), maka model **Random Forest dengan Grid Search** yang dianggap sebagai model terbaik dalam hal akurasi prediksi produksi ubi kayu
 
 
 ##c. Model SVR
