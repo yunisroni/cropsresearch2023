@@ -2778,62 +2778,16 @@ Berdasarkan hasil diatas, kalau dilihat dari performance matrik tingkat kesalaha
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 ##d. Intepretasikan dan Membandingkan Model Random Forest dan SVR
 ### - Intepretasikan dan Membandingkan Model Random Forest dan SVR - Jagung
 ```{r}
 model_performance_jagung <- data.frame(
   No = c(1:2),
   Model = c("Random Forest", "SVR"),
-  MSE = c(mse_value_rf_jagung, mse_value_svr_jagung),
-  RSME = c(rmse_value_rf_jagung, rmse_value_svr_jagung),
-  MAE = c(mae_value_rf_jagung, mae_value_svr_jagung),
-  MAPE = c(mape_value_rf_jagung, mape_value_svr_jagung),
+  MSE = c(gs_mse_value_rf_jagung, gs_mse_value_svr_jagung),
+  RSME = c(gs_rmse_value_rf_jagung, gs_rmse_value_svr_jagung),
+  MAE = c(gs_mae_value_rf_jagung, gs_mae_value_svr_jagung),
+  MAPE = c(gs_mape_value_rf_jagung, gs_mape_value_svr_jagung),
   stringsAsFactors = FALSE
   
 )
@@ -2846,10 +2800,10 @@ Berdasarkan hasil diatas, kalau dilihat dari performance matrik tingkat kesalaha
 model_performance_kacanghijau <- data.frame(
   No = c(1:2),
   Model = c("Random Forest", "SVR"),
-  MSE = c(mse_value_rf_kacanghijau, mse_value_svr_kacanghijau),
-  RSME = c(rmse_value_rf_kacanghijau, rmse_value_svr_kacanghijau),
-  MAE = c(mae_value_rf_kacanghijau, mae_value_svr_kacanghijau),
-  MAPE = c(mape_value_rf_kacanghijau, mape_value_svr_kacanghijau),
+  MSE = c(gs_mse_value_rf_kacanghijau, gs_mse_value_svr_kacanghijau),
+  RSME = c(gs_rmse_value_rf_kacanghijau, gs_rmse_value_svr_kacanghijau),
+  MAE = c(gs_mae_value_rf_kacanghijau, gs_mae_value_svr_kacanghijau),
+  MAPE = c(gs_mape_value_rf_kacanghijau, gs_mape_value_svr_kacanghijau),
   stringsAsFactors = FALSE
   
 )
@@ -2862,10 +2816,10 @@ Berdasarkan hasil diatas, kalau dilihat dari performance matrik tingkat kesalaha
 model_performance_kacangkedelai <- data.frame(
   No = c(1:2),
   Model = c("Random Forest", "SVR"),
-  MSE = c(mse_value_rf_kacangkedelai, mse_value_svr_kacangkedelai),
-  RSME = c(rmse_value_rf_kacangkedelai, rmse_value_svr_kacangkedelai),
-  MAE = c(mae_value_rf_kacangkedelai, mae_value_svr_kacangkedelai),
-  MAPE = c(mape_value_rf_kacangkedelai, mape_value_svr_kacangkedelai),
+  MSE = c(gs_mse_value_rf_kacangkedelai, gs_mse_value_svr_kacangkedelai),
+  RSME = c(gs_rmse_value_rf_kacangkedelai, gs_rmse_value_svr_kacangkedelai),
+  MAE = c(gs_mae_value_rf_kacangkedelai, gs_mae_value_svr_kacangkedelai),
+  MAPE = c(gs_mape_value_rf_kacangkedelai, gs_mape_value_svr_kacangkedelai),
   stringsAsFactors = FALSE
   
 )
@@ -2878,10 +2832,10 @@ Berdasarkan hasil diatas, kalau dilihat dari performance matrik tingkat kesalaha
 model_performance_kacangtanah <- data.frame(
   No = c(1:2),
   Model = c("Random Forest", "SVR"),
-  MSE = c(mse_value_rf_kacangtanah, mse_value_svr_kacangtanah),
-  RSME = c(rmse_value_rf_kacangtanah, rmse_value_svr_kacangtanah),
-  MAE = c(mae_value_rf_kacangtanah, mae_value_svr_kacangtanah),
-  MAPE = c(mape_value_rf_kacangtanah, mape_value_svr_kacangtanah),
+  MSE = c(gs_mse_value_rf_kacangtanah, gs_mse_value_svr_kacangtanah),
+  RSME = c(gs_rmse_value_rf_kacangtanah, gs_rmse_value_svr_kacangtanah),
+  MAE = c(gs_mae_value_rf_kacangtanah, gs_mae_value_svr_kacangtanah),
+  MAPE = c(gs_mape_value_rf_kacangtanah, gs_mape_value_svr_kacangtanah),
   stringsAsFactors = FALSE
   
 )
@@ -2894,10 +2848,10 @@ Berdasarkan hasil diatas, kalau dilihat dari performance matrik tingkat kesalaha
 model_performance_ubijalar <- data.frame(
   No = c(1:2),
   Model = c("Random Forest", "SVR"),
-  MSE = c(mse_value_rf_ubijalar, mse_value_svr_ubijalar),
-  RSME = c(rmse_value_rf_ubijalar, rmse_value_svr_ubijalar),
-  MAE = c(mae_value_rf_ubijalar, mae_value_svr_ubijalar),
-  MAPE = c(mape_value_rf_ubijalar, mape_value_svr_ubijalar),
+  MSE = c(gs_mse_value_rf_ubijalar, gs_mse_value_svr_ubijalar),
+  RSME = c(gs_rmse_value_rf_ubijalar, gs_rmse_value_svr_ubijalar),
+  MAE = c(gs_mae_value_rf_ubijalar, gs_mae_value_svr_ubijalar),
+  MAPE = c(gs_mape_value_rf_ubijalar, gs_mape_value_svr_ubijalar),
   stringsAsFactors = FALSE
   
 )
@@ -2910,10 +2864,10 @@ Berdasarkan hasil diatas, kalau dilihat dari performance matrik tingkat kesalaha
 model_performance_ubikayu <- data.frame(
   No = c(1:2),
   Model = c("Random Forest", "SVR"),
-  MSE = c(mse_value_rf_ubikayu, mse_value_svr_ubikayu),
-  RSME = c(rmse_value_rf_ubikayu, rmse_value_svr_ubikayu),
-  MAE = c(mae_value_rf_ubikayu, mae_value_svr_ubikayu),
-  MAPE = c(mape_value_rf_ubikayu, mape_value_svr_ubikayu),
+  MSE = c(gs_mse_value_rf_ubikayu, gs_mse_value_svr_ubikayu),
+  RSME = c(gs_rmse_value_rf_ubikayu, gs_rmse_value_svr_ubikayu),
+  MAE = c(gs_mae_value_rf_ubikayu, gs_mae_value_svr_ubikayu),
+  MAPE = c(gs_mape_value_rf_ubikayu, gs_mape_value_svr_ubikayu),
   stringsAsFactors = FALSE
   
 )
