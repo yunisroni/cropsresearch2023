@@ -1359,7 +1359,7 @@ print(gs_ubijalar_rf)
 ```
 The final value used for the model was mtry = 2.
 ```{r}
-gs_ubijalar_rf_model <- randomForest(Produksi ~ Produktivitas + Luas_Panen, data = dataubijalar_train, ntree = 1000,mtry=2 )
+gs_ubijalar_rf_model <- randomForest(Produksi ~ Produktivitas + Luas_Panen, data = dataubijalar_train, ntree = 1000,mtry=2)
 gs_ubijalar_rf_model
 ```
 
@@ -1420,7 +1420,7 @@ gs_ubikayu_rf <- train(
 print(gs_ubikayu_rf)
 
 ```
-The final value used for the model was mtry = 1.
+The final value used for the model was mtry = 2.
 ```{r}
 gs_ubikayu_rf_model <- randomForest(Produksi ~ Produktivitas + Luas_Panen, data = dataubikayu_train, ntree = 1000,mtry=2 )
 gs_ubikayu_rf_model
@@ -1700,7 +1700,7 @@ rs_ubijalar_rf <- train(Produksi ~ Produktivitas + Luas_Panen, data=dataubijalar
 
 print(rs_ubijalar_rf)
 ```
-The final value used for the model was mtry = 1.
+The final value used for the model was mtry = 2.
 ```{r}
 # Melakukan Prediksi terhadap Data Pengujian
 rs_ubijalar_rf_model <- randomForest(Produksi ~ Produktivitas + Luas_Panen, data = dataubijalar_train, ntree = 1000,mtry=2 )
