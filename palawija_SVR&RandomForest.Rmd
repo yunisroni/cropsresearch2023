@@ -1803,7 +1803,7 @@ cat(paste("MAPE: ", rs_mape_value_rf_ubikayu, "%\n"))
 ```
 
 ####d. Intepretasikan dan Membandingkan Model Random Forest dan SVR
-##### - Intepretasikan dan Membandingkan Model Random Forest dengan Grid Search dan Random Search- Jagung
+###  - Intepretasikan dan Membandingkan Model Random Forest dengan Grid Search dan Random Search- Jagung
 ```{r}
 model_performance_jagung_rf <- data.frame(
   No = c(1:2),
@@ -1920,36 +1920,38 @@ ctrl <- trainControl(method = "cv", number = 5)
 #### a. Grid search
 ```{r}
 # Melakukan grid search
-jagung_svr_grid <- train(Produksi ~ Produktivitas + Luas_Panen,
+gs_jagung_svr <- train(Produksi ~ Produktivitas + Luas_Panen,
                          data = datajagung_train,
-                         method = "svmRadial",
+                          method = "svmRadial",
                          trControl = ctrl,
                          tuneGrid = hyper_grid)
 
 # Melihat hasil grid search
-print(jagung_svr_grid)
+print(gs_jagung_svr)
 ```
 The final values used for the model were sigma = 0.2 and C = 10.
 ```{r}
 # Membuat model SVR dengan hiperparameter terbaik
-jagung_svr_bestgridsearch <- svm(Produksi ~ Produktivitas + Luas_Panen, 
+gs_jagung_svr_model <- svm(Produksi ~ Produktivitas + Luas_Panen, 
                        data = datajagung_train, 
                        kernel = "radial", 
                        cost = 10, 
                        sigma = 0.2)
 
 # Melihat ringkasan dari model
-print(jagung_svr_bestgridsearch)
-
-# Melakukan prediksi dengan Data Testing
-predictions_svr_jagung_bestgridsearch <- predict(jagung_svr_bestgridsearch, datajagung_test)
-predictions_svr_jagung_bestgridsearch
+print(gs_jagung_svr_model)
 ```
 ```{r}
-# Visualisasi hasil prediksi
-result_datajagung_svr_bestgridsearch <- data.frame(Produksi = datajagung_test$Produksi, Predictions = predictions_svr_jagung_bestgridsearch)
+# Melakukan prediksi dengan Data Testing
+gs_predictions_svr_jagung <- predict(gs_jagung_svr_model, datajagung_test)
+gs_predictions_svr_jagung
+```
 
-ggplot(data = result_datajagung_svr_bestgridsearch, aes(x = Produksi, y = Predictions)) +
+```{r}
+# Visualisasi hasil prediksi
+gs_result_datajagung_svr <- data.frame(Produksi = datajagung_test$Produksi, Predictions = gs_predictions_svr_jagung)
+
+ggplot(data = gs_result_datajagung_svr, aes(x = Produksi, y = Predictions)) +
   geom_point() +
   geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
   labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
@@ -1958,105 +1960,85 @@ ggplot(data = result_datajagung_svr_bestgridsearch, aes(x = Produksi, y = Predic
   ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
   theme_minimal()
 ```
-
-```{r}
-# Buat grafik garis dengan ggplot2
-ggplot(data = result_datajagung_svr_bestgridsearch, aes(x = 1:length(Produksi))) +
-  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
-  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
-  labs(x = "Observasi", y = "Produksi (Ton)") +
-  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
-  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal()
-```
-
-```{r}
-# Visualisasi hasil prediksi dengan sumbu x adalah tahun
-result_datajagung_svr_bestgridsearch2 <- data.frame(Tahun = datajagung_test$Tahun, Produksi = datajagung_test$Produksi, Predictions = predictions_svr_jagung_bestgridsearch)
-
-ggplot(data = result_datajagung_svr_bestgridsearch2, aes(x = Tahun)) +
-  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
-  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
-  labs(x = "Tahun", y = "Produksi (Ton)") +
-  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
-  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal()
-```
-
-
 ```{r}
 # Evaluasi SVR Model
 
 # Hitung MAE
-mae_value_svr_jagung <- mae(datajagung_test$Produksi, predictions_svr_jagung_bestgridsearch)
+gs_mae_value_svr_jagung <- mae(datajagung_test$Produksi, gs_predictions_svr_jagung)
 
 # Hitung MSE
-mse_value_svr_jagung <- mse(datajagung_test$Produksi, predictions_svr_jagung_bestgridsearch)
+gs_mse_value_svr_jagung <- mse(datajagung_test$Produksi, gs_predictions_svr_jagung)
 
 # Hitung RMSE
-rmse_value_svr_jagung <- rmse(datajagung_test$Produksi, predictions_svr_jagung_bestgridsearch)
+gs_rmse_value_svr_jagung <- rmse(datajagung_test$Produksi, gs_predictions_svr_jagung)
 
 # Hitung MAPE
-mape_value_svr_jagung <- mape(datajagung_test$Produksi, predictions_svr_jagung_bestgridsearch)
+gs_mape_value_svr_jagung <- mape(datajagung_test$Produksi, gs_predictions_svr_jagung)
 
 # Tampilkan hasil evaluasi
-cat(paste("MAE: ", mae_value_svr_jagung, "\n"))
-cat(paste("MSE: ", mse_value_svr_jagung, "\n"))
-cat(paste("RMSE: ", rmse_value_svr_jagung, "\n"))
-cat(paste("MAPE: ", mape_value_svr_jagung, "%\n"))
+cat(paste("MAE: ", gs_mae_value_svr_jagung, "\n"))
+cat(paste("MSE: ", gs_mse_value_svr_jagung, "\n"))
+cat(paste("RMSE: ", gs_rmse_value_svr_jagung, "\n"))
+cat(paste("MAPE: ", gs_mape_value_svr_jagung, "%\n"))
 ```
 
 #### b. Random search
 ```{r}
 # Melakukan random search
-jagung_svr_random <- train(Produksi ~ Produktivitas + Luas_Panen,
+rs_jagung_svr <- train(Produksi ~ Produktivitas + Luas_Panen,
                            data = datajagung_train,
                            method = "svmRadial",
                            trControl = ctrl,
                            tuneGrid = hyper_grid_random)
 
 # Melihat hasil random search
-print(jagung_svr_random)
+print(rs_jagung_svr)
+print(rs_jagung_svr$bestTune)
 ```
-The final values used for the model were sigma = 0.2099908 and C = 3.999512.
+The final values used for the model were sigma = 0.2118612 and C = 3.387988
 
 ```{r}
 # Membuat model SVR dengan hiperparameter terbaik
-jagung_svr_bestrandomsearch <- svm(Produksi ~ Produktivitas + Luas_Panen, 
+jagung_svr_model <- svm(Produksi ~ Produktivitas + Luas_Panen, 
                        data = datajagung_train, 
-                       kernel = "radial", 
-                       cost = 3.999512, 
-                       sigma = 0.2099908)
+                       kernel = "radial",
+                       cost = 3.387988, 
+                       sigma = 0.2118612 
+                       )
 
 # Melihat ringkasan dari model
-print(jagung_svr_bestrandomsearch)
+print(jagung_svr_model)
 
-# Melakukan prediksi dengan Data Testing
-predictions_svr_jagung_bestrandomsearch <- predict(jagung_svr_bestrandomsearch, datajagung_test)
-predictions_svr_jagung_bestrandomsearch
+
 ```
+
+```{r}
+# Melakukan prediksi dengan Data Testing
+rs_predictions_svr_jagung <- predict(jagung_svr_model, datajagung_test)
+rs_predictions_svr_jagung
+```
+
+
 ```{r}
 # Evaluasi SVR Model
 
 # Hitung MAE
-mae_value_svr_jagung <- mae(datajagung_test$Produksi, predictions_svr_jagung_bestrandomsearch)
+rs_mae_value_svr_jagung <- mae(datajagung_test$Produksi, rs_predictions_svr_jagung)
 
 # Hitung MSE
-mse_value_svr_jagung <- mse(datajagung_test$Produksi, predictions_svr_jagung_bestrandomsearch)
+rs_mse_value_svr_jagung <- mse(datajagung_test$Produksi, rs_predictions_svr_jagung)
 
 # Hitung RMSE
-rmse_value_svr_jagung <- rmse(datajagung_test$Produksi, predictions_svr_jagung_bestrandomsearch)
+rs_rmse_value_svr_jagung <- rmse(datajagung_test$Produksi, rs_predictions_svr_jagung)
 
 # Hitung MAPE
-mape_value_svr_jagung <- mape(datajagung_test$Produksi, predictions_svr_jagung_bestrandomsearch)
+rs_mape_value_svr_jagung <- mape(datajagung_test$Produksi, rs_predictions_svr_jagung)
 
 # Tampilkan hasil evaluasi
-cat(paste("MAE: ", mae_value_svr_jagung, "\n"))
-cat(paste("MSE: ", mse_value_svr_jagung, "\n"))
-cat(paste("RMSE: ", rmse_value_svr_jagung, "\n"))
-cat(paste("MAPE: ", mape_value_svr_jagung, "%\n"))
+cat(paste("MAE: ", rs_mae_value_svr_jagung, "\n"))
+cat(paste("MSE: ", rs_mse_value_svr_jagung, "\n"))
+cat(paste("RMSE: ", rs_rmse_value_svr_jagung, "\n"))
+cat(paste("MAPE: ", rs_mape_value_svr_jagung, "%\n"))
 ```
 
 
@@ -2102,33 +2084,6 @@ ggplot(data = result_datakacanghijau_svr_bestgridsearch, aes(x = Produksi, y = P
   ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
   theme_minimal()
 ```
-
-```{r}
-# Buat grafik garis dengan ggplot2
-ggplot(data = result_datakacanghijau_svr_bestgridsearch, aes(x = 1:length(Produksi))) +
-  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
-  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
-  labs(x = "Observasi", y = "Produksi (Ton)") +
-  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
-  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal()
-```
-
-```{r}
-# Visualisasi hasil prediksi dengan sumbu x adalah tahun
-result_datakacanghijau_svr_bestgridsearch2 <- data.frame(Tahun = datakacanghijau_test$Tahun, Produksi = datakacanghijau_test$Produksi, Predictions = predictions_svr_kacanghijau_bestgridsearch)
-
-ggplot(data = result_datakacanghijau_svr_bestgridsearch2, aes(x = Tahun)) +
-  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
-  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
-  labs(x = "Tahun", y = "Produksi (Ton)") +
-  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
-  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal()
-```
-
 
 ```{r}
 # Evaluasi SVR Model
@@ -2248,33 +2203,6 @@ ggplot(data = result_datakacangkedelai_svr_bestgridsearch, aes(x = Produksi, y =
 ```
 
 ```{r}
-# Buat grafik garis dengan ggplot2
-ggplot(data = result_datakacangkedelai_svr_bestgridsearch, aes(x = 1:length(Produksi))) +
-  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
-  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
-  labs(x = "Observasi", y = "Produksi (Ton)") +
-  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
-  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal()
-```
-
-```{r}
-# Visualisasi hasil prediksi dengan sumbu x adalah tahun
-result_datakacangkedelai_svr_bestgridsearch2 <- data.frame(Tahun = datakacangkedelai_test$Tahun, Produksi = datakacangkedelai_test$Produksi, Predictions = predictions_svr_kacangkedelai_bestgridsearch)
-
-ggplot(data = result_datakacangkedelai_svr_bestgridsearch2, aes(x = Tahun)) +
-  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
-  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
-  labs(x = "Tahun", y = "Produksi (Ton)") +
-  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
-  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal()
-```
-
-
-```{r}
 # Evaluasi SVR Model
 
 # Hitung MAE
@@ -2390,33 +2318,6 @@ ggplot(data = result_datakacangtanah_svr_bestgridsearch, aes(x = Produksi, y = P
   ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
   theme_minimal()
 ```
-
-```{r}
-# Buat grafik garis dengan ggplot2
-ggplot(data = result_datakacangtanah_svr_bestgridsearch, aes(x = 1:length(Produksi))) +
-  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
-  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
-  labs(x = "Observasi", y = "Produksi (Ton)") +
-  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
-  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal()
-```
-
-```{r}
-# Visualisasi hasil prediksi dengan sumbu x adalah tahun
-result_datakacangtanah_svr_bestgridsearch2 <- data.frame(Tahun = datakacangtanah_test$Tahun, Produksi = datakacangtanah_test$Produksi, Predictions = predictions_svr_kacangtanah_bestgridsearch)
-
-ggplot(data = result_datakacangtanah_svr_bestgridsearch2, aes(x = Tahun)) +
-  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
-  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
-  labs(x = "Tahun", y = "Produksi (Ton)") +
-  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
-  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal()
-```
-
 
 ```{r}
 # Evaluasi SVR Model
@@ -2536,33 +2437,6 @@ ggplot(data = result_dataubijalar_svr_bestgridsearch, aes(x = Produksi, y = Pred
 ```
 
 ```{r}
-# Buat grafik garis dengan ggplot2
-ggplot(data = result_dataubijalar_svr_bestgridsearch, aes(x = 1:length(Produksi))) +
-  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
-  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
-  labs(x = "Observasi", y = "Produksi (Ton)") +
-  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
-  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal()
-```
-
-```{r}
-# Visualisasi hasil prediksi dengan sumbu x adalah tahun
-result_dataubijalar_svr_bestgridsearch2 <- data.frame(Tahun = dataubijalar_test$Tahun, Produksi = dataubijalar_test$Produksi, Predictions = predictions_svr_ubijalar_bestgridsearch)
-
-ggplot(data = result_dataubijalar_svr_bestgridsearch2, aes(x = Tahun)) +
-  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
-  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
-  labs(x = "Tahun", y = "Produksi (Ton)") +
-  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
-  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal()
-```
-
-
-```{r}
 # Evaluasi SVR Model
 
 # Hitung MAE
@@ -2680,33 +2554,6 @@ ggplot(data = result_dataubikayu_svr_bestgridsearch, aes(x = Produksi, y = Predi
 ```
 
 ```{r}
-# Buat grafik garis dengan ggplot2
-ggplot(data = result_dataubikayu_svr_bestgridsearch, aes(x = 1:length(Produksi))) +
-  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
-  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
-  labs(x = "Observasi", y = "Produksi (Ton)") +
-  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
-  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal()
-```
-
-```{r}
-# Visualisasi hasil prediksi dengan sumbu x adalah tahun
-result_dataubikayu_svr_bestgridsearch2 <- data.frame(Tahun = dataubikayu_test$Tahun, Produksi = dataubikayu_test$Produksi, Predictions = predictions_svr_ubikayu_bestgridsearch)
-
-ggplot(data = result_dataubikayu_svr_bestgridsearch2, aes(x = Tahun)) +
-  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
-  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
-  labs(x = "Tahun", y = "Produksi (Ton)") +
-  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
-  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal()
-```
-
-
-```{r}
 # Evaluasi SVR Model
 
 # Hitung MAE
@@ -2778,26 +2625,6 @@ cat(paste("MSE: ", mse_value_svr_ubikayu, "\n"))
 cat(paste("RMSE: ", rmse_value_svr_ubikayu, "\n"))
 cat(paste("MAPE: ", mape_value_svr_ubikayu, "%\n"))
 ```
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 ##d. Intepretasikan dan Membandingkan Model Random Forest dan SVR
 ### - Intepretasikan dan Membandingkan Model Random Forest dan SVR - Jagung
