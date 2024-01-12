@@ -1089,6 +1089,7 @@ dim(dataubikayu_test)
 ```{r}
 set.seed(123)
 controlGS <- trainControl(method="cv", number=10, search="grid")
+controlRS <- trainControl(method="cv", number=10, search="random")
 tunegrid <- expand.grid(.mtry=c(1,2))
 ```
 
@@ -1470,11 +1471,8 @@ cat(paste("MAPE: ", gs_mape_value_rf_ubikayu, "%\n"))
 
 
 #### b. Random Search
-```{r}
-# Random Search
-set.seed(123)
-controlRS <- trainControl(method="cv", number=10, search="random")
-```
+
+
 #####- Jagung
 ```{r}
 mtry_jagung <- sqrt(ncol(datajagung_train)-1)
@@ -1903,7 +1901,7 @@ Berdasarkan hasil diatas, kalau dilihat dari performance matrik tingkat kesalaha
 ##c. Model SVR
 ### Mengatur Optimisasi hyperparameter
 ```{r}
-# Membuat grid dari hyperparameter yang ingin dioptimalkan
+# Mengatur Optimisasi hyperparameter
 ## grid search
 hyper_grid <- expand.grid(sigma = seq(0.1, 1, by = 0.1),
                           C = c(0.1, 1, 10, 100))
@@ -1913,7 +1911,7 @@ hyper_grid_random <- data.frame(sigma = runif(50, 0.1, 1),
                                 C = runif(50, 0.1, 100))
 
 # Membuat kontrol untuk cross-validation
-ctrl <- trainControl(method = "cv", number = 5)
+ctrl <- trainControl(method = "cv", number = 10)
 ```
 
 ### 1. Membuat Model SVR - Jagung
@@ -1936,7 +1934,7 @@ gs_jagung_svr_model <- svm(Produksi ~ Produktivitas + Luas_Panen,
                        data = datajagung_train, 
                        kernel = "radial", 
                        cost = 10, 
-                       sigma = 0.2)
+                       sigma = 0.3)
 
 # Melihat ringkasan dari model
 print(gs_jagung_svr_model)
@@ -2002,8 +2000,8 @@ The final values used for the model were sigma = 0.2118612 and C = 3.387988
 jagung_svr_model <- svm(Produksi ~ Produktivitas + Luas_Panen, 
                        data = datajagung_train, 
                        kernel = "radial",
-                       cost = 3.387988, 
-                       sigma = 0.2118612 
+                       cost = 17.75643, 
+                       sigma = 0.3145472 
                        )
 
 # Melihat ringkasan dari model
@@ -2062,7 +2060,7 @@ gs_kacanghijau_svr_model <- svm(Produksi ~ Produktivitas + Luas_Panen,
                        data = datakacanghijau_train, 
                        kernel = "radial", 
                        cost = 10, 
-                       sigma = 0.1)
+                       sigma = 0.2)
 
 # Melihat ringkasan dari model
 print(gs_kacanghijau_svr_model)
@@ -2131,8 +2129,8 @@ The final values used for the model were sigma = 0.1097859 and C
 rs_kacanghijau_svr_model <- svm(Produksi ~ Produktivitas + Luas_Panen, 
                        data = datakacanghijau_train, 
                        kernel = "radial", 
-                       cost = 0.1097859, 
-                       sigma = 26.29779)
+                       cost = 43.90775, 
+                       sigma = 0.1004324 )
 
 # Melihat ringkasan dari model
 print(rs_kacanghijau_svr_model)
@@ -2257,8 +2255,8 @@ The final values used for the model were sigma = 0.1097859 and C
 rs_kacangkedelai_svr_model <- svm(Produksi ~ Produktivitas + Luas_Panen, 
                        data = datakacangkedelai_train, 
                        kernel = "radial", 
-                       cost = 26.29779, 
-                       sigma = 0.1097859)
+                       cost = 43.90775, 
+                       sigma = 0.1004324 )
 
 # Melihat ringkasan dari model
 print(rs_kacangkedelai_svr_model)
@@ -2307,7 +2305,7 @@ gs_kacangtanah_svr <- train(Produksi ~ Produktivitas + Luas_Panen,
 # Melihat hasil grid search
 print(gs_kacangtanah_svr)
 ```
-The final values used for the model were sigma = 0.1 and C = 100.
+The final values used for the model were sigma = 0.1 and C = 10.
 ```{r}
 # Membuat model SVR dengan hiperparameter terbaik
 gs_kacangtanah_svr_model <- svm(Produksi ~ Produktivitas + Luas_Panen, 
@@ -2375,16 +2373,14 @@ rs_kacangtanah_svr <- train(Produksi ~ Produktivitas + Luas_Panen,
 # Melihat hasil random search
 print(rs_kacangtanah_svr)
 ```
-The final values used for the model were sigma = 0.1401413 and C
- = 4.938071.
-
+The final values used for the model were sigma = 0.1097859 and C = 26.29779.
 ```{r}
 # Membuat model SVR dengan hiperparameter terbaik
 rs_kacangtanah_svr_model <- svm(Produksi ~ Produktivitas + Luas_Panen, 
                        data = datakacangtanah_train, 
                        kernel = "radial", 
-                       cost = 4.938071, 
-                       sigma = 0.1401413)
+                       cost = 46.53322, 
+                       sigma = 0.1268883 )
 
 # Melihat ringkasan dari model
 print(rs_kacangtanah_svr_model)
@@ -2439,7 +2435,7 @@ The final values used for the model were sigma = 0.1 and C = 1.
 gs_ubijalar_svr_model <- svm(Produksi ~ Produktivitas + Luas_Panen, 
                        data = dataubijalar_train, 
                        kernel = "radial", 
-                       cost = 1, 
+                       cost = 10, 
                        sigma = 0.1)
 
 # Melihat ringkasan dari model
@@ -2510,8 +2506,8 @@ The final values used for the model were sigma = 0.3071873 and C
 rs_ubijalar_svr_model <- svm(Produksi ~ Produktivitas + Luas_Panen, 
                        data = dataubijalar_train, 
                        kernel = "radial", 
-                       cost = 1.122547, 
-                       sigma = 0.3071873  )
+                       cost = 0.9366928, 
+                       sigma = 0.170404   )
 
 # Melihat ringkasan dari model
 print(rs_ubijalar_svr_model)
@@ -2637,8 +2633,8 @@ The final values used for the model were sigma = 0.1097859 and C
 rs_ubikayu_svr_model <- svm(Produksi ~ Produktivitas + Luas_Panen, 
                        data = dataubikayu_train, 
                        kernel = "radial", 
-                       cost = 26.29779, 
-                       sigma = 0.1097859)
+                       cost = 43.90775, 
+                       sigma = 0.1004324 )
 
 # Melihat ringkasan dari model
 print(rs_ubikayu_svr_model)
@@ -2771,11 +2767,6 @@ model_performance_ubikayu_svr <- data.frame(
 model_performance_ubikayu_svr
 ```
 Berdasarkan hasil diatas, kalau dilihat dari performance matrik tingkat kesalahan yang paling rendah (MAE), maka model **SVR dengan Grid Search** yang dianggap sebagai model terbaik dalam hal akurasi prediksi produksi ubi kayu
-
-
-
-
-
 
 
 ##d. Intepretasikan dan Membandingkan Model Random Forest dan SVR
