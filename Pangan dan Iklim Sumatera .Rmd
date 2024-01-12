@@ -131,7 +131,6 @@ totproduksi_provsumatera
 ```
 
 ### visualisasi Produksi Tanaman Pangan per Provinsi di pulau sumatera
-
 ```{r}
 # Visualisasi Tren Produksi tanaman pangan per provinsi di setiap tahun
 plot_sumatera1 <- ggplot(Iklim_clean, aes(x = Tahun, y = total_produksi, color = Provinsi)) +
