@@ -891,6 +891,7 @@ produktivitas_padi
 totproduktivitas_padi_provinsi <- Padi %>% 
   group_by(Provinsi) %>% 
   summarise(Total_Produktivitas = sum(Produktivitas))
+totproduktivitas_padi_provinsi
 
 # Visualisasi dengan barplot
 plot_padi_4 <- ggplot(totproduktivitas_padi_provinsi, aes(x = Provinsi, y = Total_Produktivitas, fill = Provinsi)) +
@@ -1240,10 +1241,12 @@ dim(datapadi_test)
 ```{r}
 # Membuat model RF
 jagung_rf_model <- randomForest(Produksi ~ Produktivitas + Luas_Panen, data = datajagung_train, ntree = 1000)
+jagung_rf_model
 ```
 ```{r}
 # Melakukan Prediksi terhadap Data Pengujian
 predictions_rf_jagung <- predict(jagung_rf_model, datajagung_test)
+predictions_rf_jagung
 ```
 ```{r}
 # Visualisasi Hasil
@@ -1309,10 +1312,12 @@ cat(paste("MAPE: ", mape_value_rf_jagung, "%\n"))
 ```{r}
 # Membuat model RF
 kacanghijau_rf_model <- randomForest(Produksi ~ Produktivitas + Luas_Panen, data = datakacanghijau_train, ntree = 1000)
+kacanghijau_rf_model
 ```
 ```{r}
 # Melakukan Prediksi terhadap Data Pengujian
 predictions_rf_kacanghijau <- predict(kacanghijau_rf_model, datakacanghijau_test)
+predictions_rf_kacanghijau
 ```
 ```{r}
 # Visualisasi Hasil
@@ -1378,10 +1383,12 @@ cat(paste("MAPE: ", mape_value_rf_kacanghijau, "%\n"))
 ```{r}
 # Membuat model RF
 kacangkedelai_rf_model <- randomForest(Produksi ~ Produktivitas + Luas_Panen, data = datakacangkedelai_train, ntree = 1000)
+kacangkedelai_rf_model
 ```
 ```{r}
 # Melakukan Prediksi terhadap Data Pengujian
 predictions_rf_kacangkedelai <- predict(kacangkedelai_rf_model, datakacangkedelai_test)
+predictions_rf_kacangkedelai
 ```
 ```{r}
 # Visualisasi Hasil
@@ -1447,10 +1454,12 @@ cat(paste("MAPE: ", mape_value_rf_kacangkedelai, "%\n"))
 ```{r}
 # Membuat model RF
 kacangtanah_rf_model <- randomForest(Produksi ~ Produktivitas + Luas_Panen, data = datakacangtanah_train, ntree = 1000)
+kacangtanah_rf_model
 ```
 ```{r}
 # Melakukan Prediksi terhadap Data Pengujian
 predictions_rf_kacangtanah <- predict(kacangtanah_rf_model, datakacangtanah_test)
+predictions_rf_kacangtanah
 ```
 ```{r}
 # Visualisasi Hasil
@@ -1516,10 +1525,12 @@ cat(paste("MAPE: ", mape_value_rf_kacangtanah, "%\n"))
 ```{r}
 # Membuat model RF
 ubijalar_rf_model <- randomForest(Produksi ~ Produktivitas + Luas_Panen, data = dataubijalar_train, ntree = 1000)
+ubijalar_rf_model
 ```
 ```{r}
 # Melakukan Prediksi terhadap Data Pengujian
 predictions_rf_ubijalar <- predict(ubijalar_rf_model, dataubijalar_test)
+predictions_rf_ubijalar
 ```
 ```{r}
 # Visualisasi Hasil
@@ -1585,10 +1596,12 @@ cat(paste("MAPE: ", mape_value_rf_ubijalar, "%\n"))
 ```{r}
 # Membuat model RF
 ubikayu_rf_model <- randomForest(Produksi ~ Produktivitas + Luas_Panen, data = dataubikayu_train, ntree = 1000)
+ubikayu_rf_model
 ```
 ```{r}
 # Melakukan Prediksi terhadap Data Pengujian
 predictions_rf_ubikayu <- predict(ubikayu_rf_model, dataubikayu_test)
+predictions_rf_ubikayu
 ```
 ```{r}
 # Visualisasi Hasil
@@ -1600,8 +1613,8 @@ ggplot(data = result_dataubikayu_rf, aes(x = Produksi, y = Predictions)) +
   geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
   scale_x_continuous(labels = scales::comma) +
   scale_y_continuous(labels = scales::comma) +
-  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
-  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
+  labs(x = "Actual Production (Ton)", y = "Production Prediction (Ton)") +
+  ggtitle("Comparison of Actual Production and RF Model Prediction") +
   theme_minimal()
 ```
 ```{r}
@@ -1611,7 +1624,7 @@ ggplot(data = result_dataubikayu_rf, aes(x = 1:length(Produksi))) +
   geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
   labs(x = "Observasi", y = "Produksi (Ton)") +
   scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
-  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
+  ggtitle("Comparison of Actual Production and RF Model Prediction") +
   theme_minimal()
 ```
 
@@ -1655,10 +1668,12 @@ cat(paste("MAPE: ", mape_value_rf_ubikayu, "%\n"))
 ```{r}
 # Membuat model RF
 padi_rf_model <- randomForest(Produksi ~ Produktivitas + Luas_Panen, data = datapadi_train, ntree = 1000)
+padi_rf_model
 ```
 ```{r}
 # Melakukan Prediksi terhadap Data Pengujian
 predictions_rf_padi <- predict(padi_rf_model, datapadi_test)
+predictions_rf_padi
 ```
 ```{r}
 # Visualisasi Hasil
@@ -1726,11 +1741,13 @@ cat(paste("MAPE: ", mape_value_rf_padi, "%\n"))
 ```{r}
 # Membuat model SVR
 jagung_svr_model <- svm(Produksi ~ Produktivitas + Luas_Panen, data = datajagung_train, kernel = "radial", cost = 1)
+jagung_svr_model
 ```
 
 ```{r}
 # Melakukan prediksi dengan Data Testing
 predictions_svr_jagung <- predict(jagung_svr_model, datajagung_test)
+predictions_svr_jagung
 ```
 
 ```{r}
@@ -1801,11 +1818,13 @@ cat(paste("MAPE: ", mape_value_svr_jagung, "%\n"))
 ```{r}
 # Membuat model SVR
 kacanghijau_svr_model <- svm(Produksi ~ Produktivitas + Luas_Panen, data = datakacanghijau_train, kernel = "radial", cost = 1)
+kacanghijau_svr_model
 ```
 
 ```{r}
 # Melakukan prediksi dengan Data Testing
 predictions_svr_kacanghijau <- predict(kacanghijau_svr_model, datakacanghijau_test)
+predictions_svr_kacanghijau
 ```
 
 ```{r}
@@ -1876,11 +1895,13 @@ cat(paste("MAPE: ", mape_value_svr_kacanghijau, "%\n"))
 ```{r}
 # Membuat model SVR
 kacangkedelai_svr_model <- svm(Produksi ~ Produktivitas + Luas_Panen, data = datakacangkedelai_train, kernel = "radial", cost = 1)
+kacangkedelai_svr_model
 ```
 
 ```{r}
 # Melakukan prediksi dengan Data Testing
 predictions_svr_kacangkedelai <- predict(kacangkedelai_svr_model, datakacangkedelai_test)
+predictions_svr_kacangkedelai
 ```
 
 ```{r}
@@ -1951,11 +1972,13 @@ cat(paste("MAPE: ", mape_value_svr_kacangkedelai, "%\n"))
 ```{r}
 # Membuat model SVR
 kacangtanah_svr_model <- svm(Produksi ~ Produktivitas + Luas_Panen, data = datakacangtanah_train, kernel = "radial", cost = 1)
+kacangtanah_svr_model
 ```
 
 ```{r}
 # Melakukan prediksi dengan Data Testing
 predictions_svr_kacangtanah <- predict(kacangtanah_svr_model, datakacangtanah_test)
+predictions_svr_kacangtanah
 ```
 
 ```{r}
@@ -2025,11 +2048,13 @@ cat(paste("MAPE: ", mape_value_svr_kacangtanah, "%\n"))
 ```{r}
 # Membuat model SVR
 ubijalar_svr_model <- svm(Produksi ~ Produktivitas + Luas_Panen, data = dataubijalar_train, kernel = "radial", cost = 1)
+ubijalar_svr_model
 ```
 
 ```{r}
 # Melakukan prediksi dengan Data Testing
 predictions_svr_ubijalar <- predict(ubijalar_svr_model, dataubijalar_test)
+predictions_svr_ubijalar
 ```
 
 ```{r}
@@ -2099,11 +2124,13 @@ cat(paste("MAPE: ", mape_value_svr_ubijalar, "%\n"))
 ```{r}
 # Membuat model SVR
 ubikayu_svr_model <- svm(Produksi ~ Produktivitas + Luas_Panen, data = dataubikayu_train, kernel = "radial", cost = 1)
+ubikayu_svr_model
 ```
 
 ```{r}
 # Melakukan prediksi dengan Data Testing
 predictions_svr_ubikayu <- predict(ubikayu_svr_model, dataubikayu_test)
+predictions_svr_ubikayu
 ```
 
 ```{r}
@@ -2174,11 +2201,13 @@ cat(paste("MAPE: ", mape_value_svr_ubikayu, "%\n"))
 ```{r}
 # Membuat model SVR
 padi_svr_model <- svm(Produksi ~ Produktivitas + Luas_Panen, data = datapadi_train, kernel = "radial", cost = 1)
+padi_svr_model
 ```
 
 ```{r}
 # Melakukan prediksi dengan Data Testing
 predictions_svr_padi <- predict(padi_svr_model, datapadi_test)
+predictions_svr_padi
 ```
 
 ```{r}
