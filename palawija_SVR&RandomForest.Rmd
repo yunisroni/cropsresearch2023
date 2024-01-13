@@ -3630,6 +3630,7 @@ Berdasarkan hasil diatas, kalau dilihat dari performance matrik tingkat kesalaha
 
 
 
+##- Kernel Polynomial
 
 
 
