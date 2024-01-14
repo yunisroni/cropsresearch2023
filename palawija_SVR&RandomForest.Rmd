@@ -3846,7 +3846,6 @@ cat(paste("MAPE: ", gs_mape_value_svr_kacanghijau_poly, "%\n"))
 
 #### b. Random search
 ```{r}
-datakacanghijau_train$Produksi[is.na(datakacanghijau_train$Produksi)] <- mean(datakacanghijau_train$Produksi, na.rm = TRUE)
 # Melakukan random search
 rs_kacanghijau_svr_poly <- train(Produksi ~ Produktivitas + Luas_Panen,
                            data = datakacanghijau_train,
