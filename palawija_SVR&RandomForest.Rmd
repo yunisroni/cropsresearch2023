@@ -1898,71 +1898,6 @@ Berdasarkan hasil diatas, kalau dilihat dari performance matrik tingkat kesalaha
 
 
 ##c. Model SVR
-
-```{r}
-# Mengatur Optimisasi hyperparameter
-## grid search
-tuneGrid <- expand.grid(C = c(0.1, 1, 10),
-                        epsilon = c(0.1, 0.01, 0.001),
-                        kernel = c("linear", "radial"))
-                        
-
-# Melakukan grid search
-gs_jagung_svr <- train(Produksi ~ Produktivitas + Luas_Panen,
-                       data = datajagung_train,
-                       method = "svm",
-                       trControl = trainControl(method = "cv", number = 5),
-                       tuneGrid = tuneGrid
-)
-
-# Melihat hasil grid search
-print(gs_jagung_svr)
-
-```
-
-
-```{r}
-# Mengatur Optimisasi hyperparameter
-## grid search
-tuneGrid <- expand.grid(C = c(0.1, 1, 10),
-                        epsilon = c(0.1, 0.01, 0.001),
-                        kernel = c("linear", "radial"))
-
-# Melakukan grid search dengan menggunakan svmRadial atau svmLinear
-gs_jagung_svm <- train(Produksi ~ Produktivitas + Luas_Panen,
-                       data = datajagung_train,
-                       method = "svmRadial",  # Ganti dengan svmLinear jika menggunakan kernel linear
-                       trControl = trainControl(method = "cv", number = 5),
-                       tuneGrid = tuneGrid
-)
-
-# Melihat hasil grid search
-print(gs_jagung_svm)
-
-```
-
-
-```{r}
-# Mengatur Optimisasi hyperparameter
-## grid search
-tuneGrid <- expand.grid(C = c(0.1, 1, 10),
-                        epsilon = c(0.1, 0,01, 0,001),
-                        kernel = c("linear","radial"))
-                        
-
-```
-```{r}
-# Melakukan grid search
-gs_jagung_svr <- train(Produksi ~ Produktivitas + Luas_Panen,
-                         data = datajagung_train,
-                        trControl = trainControl(method = "cv", number = 5),
-                         tuneGrid = tuneGrid,
-                        )
-                         
-
-# Melihat hasil grid search
-print(gs_jagung_svr)
-```
 ### Mengatur Optimisasi hyperparameter
 ```{r}
 # Mengatur Optimisasi hyperparameter
@@ -2874,7 +2809,8 @@ The final value used for the model was C = 1.
 gs_jagung_svr_model_linear <- svm(Produksi ~ Produktivitas + Luas_Panen, 
                        data = datajagung_train, 
                        kernel = "linear", 
-                       cost = 1)
+                       cost = 1,
+                        epsilon=  0.001)
 
 # Melihat ringkasan dari model
 print(gs_jagung_svr_model_linear)
@@ -2944,6 +2880,7 @@ jagung_svr_model_linear <- svm(Produksi ~ Produktivitas + Luas_Panen,
                        data = datajagung_train, 
                        kernel = "linear",
                        cost = 0.877359, 
+                       epsilon=  0.001
                        
                        )
 
@@ -3002,7 +2939,8 @@ The final value used for the model was C = 10.
 gs_kacanghijau_svr_model_linear <- svm(Produksi ~ Produktivitas + Luas_Panen, 
                        data = datakacanghijau_train, 
                        kernel = "linear", 
-                       cost = 10)
+                       cost = 10,
+                       epsilon=  0.001)
 
 # Melihat ringkasan dari model
 print(gs_kacanghijau_svr_model_linear)
@@ -3071,7 +3009,8 @@ The final value used for the model was C
 rs_kacanghijau_svr_model_linear <- svm(Produksi ~ Produktivitas + Luas_Panen, 
                        data = datakacanghijau_train, 
                        kernel = "linear", 
-                       cost = 56.99969)
+                       cost = 56.99969,
+                       epsilon=  0.001)
 
 # Melihat ringkasan dari model
 print(rs_kacanghijau_svr_model_linear)
@@ -3126,7 +3065,8 @@ The final value used for the model was C = 0.1.
 gs_kacangkedelai_svr_model_linear <- svm(Produksi ~ Produktivitas + Luas_Panen, 
                        data = datakacangkedelai_train, 
                        kernel = "linear", 
-                       cost = 0.1 
+                       cost = 0.1,
+                       epsilon=  0.001
                        )
 
 # Melihat ringkasan dari model
@@ -3196,7 +3136,8 @@ The final value used for the model was C
 rs_kacangkedelai_svr_model_linear <- svm(Produksi ~ Produktivitas + Luas_Panen, 
                        data = datakacangkedelai_train, 
                        kernel = "linear", 
-                       cost = 0.877359)
+                       cost = 0.877359,
+                       epsilon=  0.001)
 
 # Melihat ringkasan dari model
 print(rs_kacangkedelai_svr_model_linear)
@@ -3251,7 +3192,8 @@ The final value used for the model was C = 0.1.
 gs_kacangtanah_svr_model_linear <- svm(Produksi ~ Produktivitas + Luas_Panen, 
                        data = datakacangtanah_train, 
                        kernel = "linear", 
-                       cost = 0.1)
+                       cost = 0.1,
+                       epsilon=  0.001)
 
 # Melihat ringkasan dari model
 print(gs_kacangtanah_svr_model_linear)
@@ -3312,13 +3254,14 @@ rs_kacangtanah_svr_linear <- train(Produksi ~ Produktivitas + Luas_Panen,
 # Melihat hasil random search
 print(rs_kacangtanah_svr_linear)
 ```
-The final value used for the model was C = 0.6634233.
+The final value used for the model was C = 0.1214563
 ```{r}
 # Membuat model SVR dengan hiperparameter terbaik
 rs_kacangtanah_svr_model_linear <- svm(Produksi ~ Produktivitas + Luas_Panen, 
                        data = datakacangtanah_train, 
                        kernel = "linear", 
-                       cost = 0.6634233 )
+                       cost = 0.1214563,
+                        epsilon=  0.001)
 
 # Melihat ringkasan dari model
 print(rs_kacangtanah_svr_model_linear)
@@ -3368,13 +3311,14 @@ gs_ubijalar_svr_linear <- train(Produksi ~ Produktivitas + Luas_Panen,
 # Melihat hasil grid search
 print(gs_ubijalar_svr_linear)
 ```
-The final value used for the model was C = 100.
+The final value used for the model was C = 1.
 ```{r}
 # Membuat model SVR dengan hiperparameter terbaik
 gs_ubijalar_svr_model_linear <- svm(Produksi ~ Produktivitas + Luas_Panen, 
                        data = dataubijalar_train, 
                        kernel = "linear", 
-                       cost = 100)
+                       cost = 1,
+                        epsilon=  0.001)
 
 # Melihat ringkasan dari model
 print(gs_ubijalar_svr_model_linear)
@@ -3436,14 +3380,15 @@ rs_ubijalar_svr_linear <- train(Produksi ~ Produktivitas + Luas_Panen,
 # Melihat hasil random search
 print(rs_ubijalar_svr_linear)
 ```
-The final value used for the model was C = 29.53511.
+The final value used for the model was C = 6.650893.
 
 ```{r}
 # Membuat model SVR dengan hiperparameter terbaik
 rs_ubijalar_svr_model_linear <- svm(Produksi ~ Produktivitas + Luas_Panen, 
                        data = dataubijalar_train, 
                        kernel = "linear", 
-                       cost = 29.53511  )
+                       cost = 6.650893,
+                       epsilon=  0.001 )
 
 # Melihat ringkasan dari model
 print(rs_ubijalar_svr_model_linear)
@@ -3493,13 +3438,14 @@ gs_ubikayu_svr_linear <- train(Produksi ~ Produktivitas + Luas_Panen,
 # Melihat hasil grid search
 print(gs_ubikayu_svr_linear)
 ```
-The final value used for the model was C = 100.
+The final value used for the model was C = 10.
 ```{r}
 # Membuat model SVR dengan hiperparameter terbaik
 gs_ubikayu_svr_model_linear <- svm(Produksi ~ Produktivitas + Luas_Panen, 
                        data = dataubikayu_train, 
                        kernel = "linear", 
-                       cost = 100)
+                       cost = 10,
+                        epsilon=  0.001)
 
 # Melihat ringkasan dari model
 print(gs_ubikayu_svr_model_linear)
@@ -3561,14 +3507,15 @@ rs_ubikayu_svr_linear <- train(Produksi ~ Produktivitas + Luas_Panen,
 # Melihat hasil random search
 print(rs_ubikayu_svr_linear)
 ```
-The final value used for the model was C = 79.91891.
+The final value used for the model was C = 47.93008
 
 ```{r}
 # Membuat model SVR dengan hiperparameter terbaik
 rs_ubikayu_svr_model_linear <- svm(Produksi ~ Produktivitas + Luas_Panen, 
                        data = dataubikayu_train, 
                        kernel = "linear", 
-                       cost = 79.91891 )
+                       cost = 47.93008,
+                        epsilon=  0.001)
 
 # Melihat ringkasan dari model
 print(rs_ubikayu_svr_model_linear)
