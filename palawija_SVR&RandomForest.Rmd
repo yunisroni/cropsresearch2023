@@ -136,7 +136,6 @@ KacangTanah
 ```{r}
 UbiJalar <- filter(pangan_clean, Jenis_Komoditi == "Ubi Jalar")
 UbiJalar
-
 ```
 ### - Filter data ubi kayu
 ```{r}
@@ -1090,7 +1089,7 @@ dim(dataubikayu_test)
 set.seed(123)
 controlGS <- trainControl(method="cv", number=10, search="grid")
 controlRS <- trainControl(method="cv", number=10, search="random")
-tunegrid <- expand.grid(.mtry=c(1,2))
+tunegrid <- expand.grid(mtry=c(1,2))
 ```
 
 
@@ -3635,13 +3634,13 @@ Berdasarkan hasil diatas, kalau dilihat dari performance matrik tingkat kesalaha
 ```{r}
 # Mengatur Optimisasi hyperparameter
 ## grid search
-hyper_grid_poly <- expand.grid( degree = c(2, 3, 4),  # Tambahkan degree
-                                scale = c(0.1, 1, 10),
+hyper_grid_poly <- expand.grid( degree = c(2, 3),  # Tambahkan degree
+                                scale = c(0.1, 1),
                                 C = c(0.1, 1, 10, 100))
 
 ## random search
-hyper_grid_random_poly <- data.frame(degree = runif(50, 2, 4),
-                                     scale = runif(50, 0.1, 10),
+hyper_grid_random_poly <- data.frame(degree = runif(50, 2, 3),
+                                     scale = runif(50, 0.1, 1),
                                 C = runif(50, 0.1, 100))
 
 # Membuat kontrol untuk cross-validation
@@ -3728,14 +3727,14 @@ rs_jagung_svr_poly <- train(Produksi ~ Produktivitas + Luas_Panen,
 print(rs_jagung_svr_poly)
 print(rs_jagung_svr_poly$bestTune)
 ```
-The final values used for the model were degree = 3.001645, scale = 6.155468 and C = 30.84844.
+The final values used for the model were degree = 2.00286, scale = 0.7608127 and C = 21.7318.
 ```{r}
 # Membuat model SVR dengan hiperparameter terbaik
 jagung_svr_model_poly <- svm(Produksi ~ Produktivitas + Luas_Panen, 
                        data = datajagung_train, 
                        kernel = "polynomial",
-                       degree = 3.001645,
-                       cost = 30.84844, 
+                       degree = 2.00286,
+                       cost = 21.7318, 
                        
                        )
 
@@ -3856,15 +3855,15 @@ rs_kacanghijau_svr_poly <- train(Produksi ~ Produktivitas + Luas_Panen,
 # Melihat hasil random search
 print(rs_kacanghijau_svr_poly)
 ```
-The final values used for the model were degree = 3.677383, scale = 7.735814 and C = 10.24228.
+The final values used for the model were degree = 2.00286, scale = 0.7608127 and C = 21.7318.
 
 ```{r}
 # Membuat model SVR dengan hiperparameter terbaik
 rs_kacanghijau_svr_model_poly <- svm(Produksi ~ Produktivitas + Luas_Panen, 
                        data = datakacanghijau_train, 
                        kernel = "polynomial", 
-                       degree = 3.677383,
-                       cost = 10.24228)
+                       degree = 2.00286,
+                       cost = 21.7318)
 
 # Melihat ringkasan dari model
 print(rs_kacanghijau_svr_model_poly)
@@ -3913,13 +3912,14 @@ gs_kacangkedelai_svr_poly <- train(Produksi ~ Produktivitas + Luas_Panen,
 # Melihat hasil grid search
 print(gs_kacangkedelai_svr_poly)
 ```
-
+The final values used for the model were degree = 3, scale = 1 and C = 100.
 ```{r}
 # Membuat model SVR dengan hiperparameter terbaik
 gs_kacangkedelai_svr_model_poly <- svm(Produksi ~ Produktivitas + Luas_Panen, 
                        data = datakacangkedelai_train, 
                        kernel = "polynomial", 
-                       cost = 0.1 
+                       degree = 3,
+                       cost = 100
                        )
 
 # Melihat ringkasan dari model
@@ -3981,13 +3981,14 @@ rs_kacangkedelai_svr_poly <- train(Produksi ~ Produktivitas + Luas_Panen,
 # Melihat hasil random search
 print(rs_kacangkedelai_svr_poly)
 ```
-
+The final values used for the model were degree = 2.00286, scale = 0.7608127 and C = 21.7318.
 ```{r}
 # Membuat model SVR dengan hiperparameter terbaik
 rs_kacangkedelai_svr_model_poly <- svm(Produksi ~ Produktivitas + Luas_Panen, 
                        data = datakacangkedelai_train, 
                        kernel = "polynomial", 
-                       cost = 0.877359)
+                       degree = 2.00286,
+                       cost = 21.7318)
 
 # Melihat ringkasan dari model
 print(rs_kacangkedelai_svr_model_poly)
@@ -4036,12 +4037,13 @@ gs_kacangtanah_svr_poly <- train(Produksi ~ Produktivitas + Luas_Panen,
 # Melihat hasil grid search
 print(gs_kacangtanah_svr_poly)
 ```
-
+The final values used for the model were degree = 3, scale = 1 and C = 0.1.
 ```{r}
 # Membuat model SVR dengan hiperparameter terbaik
 gs_kacangtanah_svr_model_poly <- svm(Produksi ~ Produktivitas + Luas_Panen, 
                        data = datakacangtanah_train, 
                        kernel = "polynomial", 
+                       degree = 3,
                        cost = 0.1)
 
 # Melihat ringkasan dari model
@@ -4103,13 +4105,14 @@ rs_kacangtanah_svr_poly <- train(Produksi ~ Produktivitas + Luas_Panen,
 # Melihat hasil random search
 print(rs_kacangtanah_svr_poly)
 ```
-
+The final values used for the model were degree = 2.219823, scale = 0.9529776 and C = 66.29891
 ```{r}
 # Membuat model SVR dengan hiperparameter terbaik
 rs_kacangtanah_svr_model_poly <- svm(Produksi ~ Produktivitas + Luas_Panen, 
                        data = datakacangtanah_train, 
                        kernel = "polynomial", 
-                       cost = 0.6634233 )
+                       degree = 2.219823,
+                       cost = 66.29891 )
 
 # Melihat ringkasan dari model
 print(rs_kacangtanah_svr_model_poly)
@@ -4159,13 +4162,14 @@ gs_ubijalar_svr_poly <- train(Produksi ~ Produktivitas + Luas_Panen,
 # Melihat hasil grid search
 print(gs_ubijalar_svr_poly)
 ```
-
+The final values used for the model were degree = 2, scale = 1 and C = 1.
 ```{r}
 # Membuat model SVR dengan hiperparameter terbaik
 gs_ubijalar_svr_model_poly <- svm(Produksi ~ Produktivitas + Luas_Panen, 
                        data = dataubijalar_train, 
-                       kernel = "polynomial", 
-                       cost = 100)
+                       kernel = "polynomial",
+                       degree = 2,
+                       cost = 1)
 
 # Melihat ringkasan dari model
 print(gs_ubijalar_svr_model_poly)
@@ -4227,14 +4231,15 @@ rs_ubijalar_svr_poly <- train(Produksi ~ Produktivitas + Luas_Panen,
 # Melihat hasil random search
 print(rs_ubijalar_svr_poly)
 ```
-
+The final values used for the model were degree = 2.00286, scale = 0.7608127 and C = 21.7318.
 
 ```{r}
 # Membuat model SVR dengan hiperparameter terbaik
 rs_ubijalar_svr_model_poly <- svm(Produksi ~ Produktivitas + Luas_Panen, 
                        data = dataubijalar_train, 
                        kernel = "polynomial", 
-                       cost = 29.53511  )
+                       degree = 2.00286,
+                       cost = 21.7318  )
 
 # Melihat ringkasan dari model
 print(rs_ubijalar_svr_model_poly)
@@ -4284,13 +4289,14 @@ gs_ubikayu_svr_poly <- train(Produksi ~ Produktivitas + Luas_Panen,
 # Melihat hasil grid search
 print(gs_ubikayu_svr_poly)
 ```
-
+The final values used for the model were degree = 2, scale = 0.1 and C = 1.
 ```{r}
 # Membuat model SVR dengan hiperparameter terbaik
 gs_ubikayu_svr_model_poly <- svm(Produksi ~ Produktivitas + Luas_Panen, 
                        data = dataubikayu_train, 
                        kernel = "polynomial", 
-                       cost = 100)
+                       degree = 2,
+                       cost = 1)
 
 # Melihat ringkasan dari model
 print(gs_ubikayu_svr_model_poly)
@@ -4352,14 +4358,15 @@ rs_ubikayu_svr_poly <- train(Produksi ~ Produktivitas + Luas_Panen,
 # Melihat hasil random search
 print(rs_ubikayu_svr_poly)
 ```
-
+The final values used for the model were degree = 2.00286, scale = 0.7608127 and C = 21.7318.
 
 ```{r}
 # Membuat model SVR dengan hiperparameter terbaik
 rs_ubikayu_svr_model_poly <- svm(Produksi ~ Produktivitas + Luas_Panen, 
                        data = dataubikayu_train, 
                        kernel = "polynomial", 
-                       cost = 79.91891 )
+                       degree = 2.00286,
+                       cost = 21.7318 )
 
 # Melihat ringkasan dari model
 print(rs_ubikayu_svr_model_poly)
@@ -4400,97 +4407,97 @@ cat(paste("MAPE: ", rs_mape_value_svr_ubikayu_poly, "%\n"))
 ####c. Intepretasikan dan Membandingkan Model SVR dengan Grid Search dan Random Search
 ###  - Intepretasikan dan Membandingkan Model SVR dengan Grid Search dan Random Search- Jagung
 ```{r}
-model_performance_jagung_svr_linear <- data.frame(
+model_performance_jagung_svr_poly <- data.frame(
   No = c(1:2),
   Model = c("Grid Search", "Random Search"),
-  MSE = c(gs_mse_value_svr_jagung_linear, rs_mse_value_svr_jagung_linear),
-  RSME = c(gs_rmse_value_svr_jagung_linear, rs_rmse_value_svr_jagung_linear),
-  MAE = c(gs_mae_value_svr_jagung_linear, rs_mae_value_svr_jagung_linear),
-  MAPE = c(gs_mape_value_svr_jagung_linear, rs_mape_value_svr_jagung_linear),
+  MSE = c(gs_mse_value_svr_jagung_poly, rs_mse_value_svr_jagung_poly),
+  RSME = c(gs_rmse_value_svr_jagung_poly, rs_rmse_value_svr_jagung_poly),
+  MAE = c(gs_mae_value_svr_jagung_poly, rs_mae_value_svr_jagung_poly),
+  MAPE = c(gs_mape_value_svr_jagung_poly, rs_mape_value_svr_jagung_poly),
   stringsAsFactors = FALSE
   
 )
-model_performance_jagung_svr_linear
+model_performance_jagung_svr_poly
 ```
 Berdasarkan hasil diatas, kalau dilihat dari performance matrik tingkat kesalahan yang paling rendah (MAE), maka model **SVR dengan Grid Search** yang dianggap sebagai model terbaik dalam hal akurasi prediksi produksi jagung.
 
 ### - Intepretasikan dan Membandingkan Model SVR dengan Grid Search dan Random Search - Kacang Hijau
 ```{r}
-model_performance_kacanghijau_svr_linear <- data.frame(
+model_performance_kacanghijau_svr_poly <- data.frame(
   No = c(1:2),
   Model = c("Grid Search", "Random Search"),
-  MSE = c(gs_mse_value_svr_kacanghijau_linear, rs_mse_value_svr_kacanghijau_linear),
-  RSME = c(gs_rmse_value_svr_kacanghijau_linear, rs_rmse_value_svr_kacanghijau_linear),
-  MAE = c(gs_mae_value_svr_kacanghijau_linear, rs_mae_value_svr_kacanghijau_linear),
-  MAPE = c(gs_mape_value_svr_kacanghijau_linear, rs_mape_value_svr_kacanghijau_linear),
+  MSE = c(gs_mse_value_svr_kacanghijau_poly, rs_mse_value_svr_kacanghijau_poly),
+  RSME = c(gs_rmse_value_svr_kacanghijau_poly, rs_rmse_value_svr_kacanghijau_poly),
+  MAE = c(gs_mae_value_svr_kacanghijau_poly, rs_mae_value_svr_kacanghijau_poly),
+  MAPE = c(gs_mape_value_svr_kacanghijau_poly, rs_mape_value_svr_kacanghijau_poly),
   stringsAsFactors = FALSE
   
 )
-model_performance_kacanghijau_svr_linear
+model_performance_kacanghijau_svr_poly
 ```
 Berdasarkan hasil diatas, kalau dilihat dari performance matrik tingkat kesalahan yang paling rendah (MAE), maka model **SVR  dengan Random Search** yang dianggap sebagai model terbaik dalam hal akurasi prediksi produksi kacang hijau.
 
 ### - Intepretasikan dan Membandingkan Model SVR dengan Grid Search dan Random Search - Kacang Kedelai
 ```{r}
-model_performance_kacangkedelai_svr_linear <- data.frame(
+model_performance_kacangkedelai_svr_poly <- data.frame(
   No = c(1:2),
   Model = c("Grid Search", "Random Search"),
-  MSE = c(gs_mse_value_svr_kacangkedelai_linear, rs_mse_value_svr_kacangkedelai_linear),
-  RSME = c(gs_rmse_value_svr_kacangkedelai_linear, rs_rmse_value_svr_kacangkedelai_linear),
-  MAE = c(gs_mae_value_svr_kacangkedelai_linear, rs_mae_value_svr_kacangkedelai_linear),
-  MAPE = c(gs_mape_value_svr_kacangkedelai_linear, rs_mape_value_svr_kacangkedelai_linear),
+  MSE = c(gs_mse_value_svr_kacangkedelai_poly, rs_mse_value_svr_kacangkedelai_poly),
+  RSME = c(gs_rmse_value_svr_kacangkedelai_poly, rs_rmse_value_svr_kacangkedelai_poly),
+  MAE = c(gs_mae_value_svr_kacangkedelai_poly, rs_mae_value_svr_kacangkedelai_poly),
+  MAPE = c(gs_mape_value_svr_kacangkedelai_poly, rs_mape_value_svr_kacangkedelai_poly),
   stringsAsFactors = FALSE
   
 )
-model_performance_kacangkedelai_svr_linear
+model_performance_kacangkedelai_svr_poly
 ```
 Berdasarkan hasil diatas, kalau dilihat dari performance matrik tingkat kesalahan yang paling rendah (MAE), maka model **SVR dengan Grid Search** yang dianggap sebagai model terbaik dalam hal akurasi prediksi produksi kacang kedelai
 
 ### - Intepretasikan dan Membandingkan Model SVR dengan Grid Search dan Random Search - Kacang Tanah
 ```{r}
-model_performance_kacangtanah_svr_linear <- data.frame(
+model_performance_kacangtanah_svr_poly <- data.frame(
   No = c(1:2),
   Model = c("Grid Search", "Random Search"),
-  MSE = c(gs_mse_value_svr_kacangtanah_linear, rs_mse_value_svr_kacangtanah_linear),
-  RSME = c(gs_rmse_value_svr_kacangtanah_linear, rs_rmse_value_svr_kacangtanah_linear),
-  MAE = c(gs_mae_value_svr_kacangtanah_linear, rs_mae_value_svr_kacangtanah_linear),
-  MAPE = c(gs_mape_value_svr_kacangtanah_linear, rs_mape_value_svr_kacangtanah_linear),
+  MSE = c(gs_mse_value_svr_kacangtanah_poly, rs_mse_value_svr_kacangtanah_poly),
+  RSME = c(gs_rmse_value_svr_kacangtanah_poly, rs_rmse_value_svr_kacangtanah_poly),
+  MAE = c(gs_mae_value_svr_kacangtanah_poly, rs_mae_value_svr_kacangtanah_poly),
+  MAPE = c(gs_mape_value_svr_kacangtanah_poly, rs_mape_value_svr_kacangtanah_poly),
   stringsAsFactors = FALSE
   
 )
-model_performance_kacangtanah_svr_linear
+model_performance_kacangtanah_svr_poly
 ```
 Berdasarkan hasil diatas, kalau dilihat dari performance matrik tingkat kesalahan yang paling rendah (MAE), maka model **SVR dengan Grid Search** yang dianggap sebagai model terbaik dalam hal akurasi prediksi produksi kacang tanah
 
 ### - Intepretasikan dan Membandingkan Model SVR dengan Grid Search dan Random Search - Ubi Jalar
 ```{r}
-model_performance_ubijalar_svr_linear <- data.frame(
+model_performance_ubijalar_svr_poly <- data.frame(
   No = c(1:2),
   Model = c("Grid Search", "Random Search"),
-  MSE = c(gs_mse_value_svr_ubijalar_linear, rs_mse_value_svr_ubijalar_linear),
-  RSME = c(gs_rmse_value_svr_ubijalar_linear, rs_rmse_value_svr_ubijalar_linear),
-  MAE = c(gs_mae_value_svr_ubijalar_linear, rs_mae_value_svr_ubijalar_linear),
-  MAPE = c(gs_mape_value_svr_ubijalar_linear, rs_mape_value_svr_ubijalar_linear),
+  MSE = c(gs_mse_value_svr_ubijalar_poly, rs_mse_value_svr_ubijalar_poly),
+  RSME = c(gs_rmse_value_svr_ubijalar_poly, rs_rmse_value_svr_ubijalar_poly),
+  MAE = c(gs_mae_value_svr_ubijalar_poly, rs_mae_value_svr_ubijalar_poly),
+  MAPE = c(gs_mape_value_svr_ubijalar_poly, rs_mape_value_svr_ubijalar_poly),
   stringsAsFactors = FALSE
   
 )
-model_performance_ubijalar_svr_linear
+model_performance_ubijalar_svr_poly
 ```
 Berdasarkan hasil diatas, kalau dilihat dari performance matrik tingkat kesalahan yang paling rendah (MAE), maka model **SVR dengan Grid Search** yang dianggap sebagai model terbaik dalam hal akurasi prediksi produksi ubi jalar
 
 ### - Intepretasikan dan Membandingkan Model SVR dengan Grid Search dan Random Search - Ubi Kayu
 ```{r}
-model_performance_ubikayu_svr_linear <- data.frame(
+model_performance_ubikayu_svr_poly <- data.frame(
   No = c(1:2),
   Model = c("Grid Search", "Random Search"),
-  MSE = c(gs_mse_value_svr_ubikayu_linear, rs_mse_value_svr_ubikayu_linear),
-  RSME = c(gs_rmse_value_svr_ubikayu_linear, rs_rmse_value_svr_ubikayu_linear),
-  MAE = c(gs_mae_value_svr_ubikayu_linear, rs_mae_value_svr_ubikayu_linear),
-  MAPE = c(gs_mape_value_svr_ubikayu_linear, rs_mape_value_svr_ubikayu_linear),
+  MSE = c(gs_mse_value_svr_ubikayu_poly, rs_mse_value_svr_ubikayu_poly),
+  RSME = c(gs_rmse_value_svr_ubikayu_poly, rs_rmse_value_svr_ubikayu_poly),
+  MAE = c(gs_mae_value_svr_ubikayu_poly, rs_mae_value_svr_ubikayu_poly),
+  MAPE = c(gs_mape_value_svr_ubikayu_poly, rs_mape_value_svr_ubikayu_poly),
   stringsAsFactors = FALSE
   
 )
-model_performance_ubikayu_svr_linear
+model_performance_ubikayu_svr_poly
 ```
 Berdasarkan hasil diatas, kalau dilihat dari performance matrik tingkat kesalahan yang paling rendah (MAE), maka model **SVR dengan Grid Search** yang dianggap sebagai model terbaik dalam hal akurasi prediksi produksi ubi kayu
 
