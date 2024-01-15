@@ -3690,8 +3690,8 @@ gs_jagung_svr_model_poly <- svm(Produksi ~ Produktivitas + Luas_Panen,
                        data = datajagung_train, 
                        kernel = "polynomial", 
                        degree = 2,
-                      # scale = 0.1,
-                       cost = 1)
+                       cost = 1,
+                       epsilon=  0.0001)
 
 # Melihat ringkasan dari model
 print(gs_jagung_svr_model_poly)
@@ -3750,14 +3750,15 @@ rs_jagung_svr_poly <- train(Produksi ~ Produktivitas + Luas_Panen,
 print(rs_jagung_svr_poly)
 print(rs_jagung_svr_poly$bestTune)
 ```
-The final values used for the model were degree = 2.00286, scale = 0.7608127 and C = 21.7318.
+The final values used for the model were degree = 2.01564, scale = 0.3638907 and C = 4.888363.
 ```{r}
 # Membuat model SVR dengan hiperparameter terbaik
 jagung_svr_model_poly <- svm(Produksi ~ Produktivitas + Luas_Panen, 
                        data = datajagung_train, 
                        kernel = "polynomial",
-                       degree = 2.00286,
-                       cost = 21.7318, 
+                       degree = 2.01564,
+                       cost = 4.888363, 
+                       epsilon=  0.0001
                        
                        )
 
@@ -3817,7 +3818,8 @@ gs_kacanghijau_svr_model_poly <- svm(Produksi ~ Produktivitas + Luas_Panen,
                        data = datakacanghijau_train, 
                        kernel = "polynomial", 
                        degree = 3,
-                       cost = 0.1)
+                       cost = 0.1,
+                       epsilon=  0.0001)
 
 # Melihat ringkasan dari model
 print(gs_kacanghijau_svr_model_poly)
@@ -3886,7 +3888,8 @@ rs_kacanghijau_svr_model_poly <- svm(Produksi ~ Produktivitas + Luas_Panen,
                        data = datakacanghijau_train, 
                        kernel = "polynomial", 
                        degree = 2.00286,
-                       cost = 21.7318)
+                       cost = 21.7318,
+                       epsilon=  0.0001)
 
 # Melihat ringkasan dari model
 print(rs_kacanghijau_svr_model_poly)
@@ -3942,7 +3945,8 @@ gs_kacangkedelai_svr_model_poly <- svm(Produksi ~ Produktivitas + Luas_Panen,
                        data = datakacangkedelai_train, 
                        kernel = "polynomial", 
                        degree = 3,
-                       cost = 100
+                       cost = 100,
+                       epsilon=  0.0001
                        )
 
 # Melihat ringkasan dari model
@@ -4004,14 +4008,15 @@ rs_kacangkedelai_svr_poly <- train(Produksi ~ Produktivitas + Luas_Panen,
 # Melihat hasil random search
 print(rs_kacangkedelai_svr_poly)
 ```
-The final values used for the model were degree = 2.00286, scale = 0.7608127 and C = 21.7318.
+The final values used for the model were degree = 2.01564, scale = 0.3638907 and C = 4.888363.
 ```{r}
 # Membuat model SVR dengan hiperparameter terbaik
 rs_kacangkedelai_svr_model_poly <- svm(Produksi ~ Produktivitas + Luas_Panen, 
                        data = datakacangkedelai_train, 
                        kernel = "polynomial", 
-                       degree = 2.00286,
-                       cost = 21.7318)
+                       degree = 2.01564,
+                       cost = 4.888363,
+                       epsilon=  0.0001)
 
 # Melihat ringkasan dari model
 print(rs_kacangkedelai_svr_model_poly)
@@ -4067,7 +4072,8 @@ gs_kacangtanah_svr_model_poly <- svm(Produksi ~ Produktivitas + Luas_Panen,
                        data = datakacangtanah_train, 
                        kernel = "polynomial", 
                        degree = 3,
-                       cost = 0.1)
+                       cost = 0.1,
+                       epsilon=  0.0001)
 
 # Melihat ringkasan dari model
 print(gs_kacangtanah_svr_model_poly)
@@ -4135,7 +4141,8 @@ rs_kacangtanah_svr_model_poly <- svm(Produksi ~ Produktivitas + Luas_Panen,
                        data = datakacangtanah_train, 
                        kernel = "polynomial", 
                        degree = 2.219823,
-                       cost = 66.29891 )
+                       cost = 66.29891,
+                       epsilon=  0.0001)
 
 # Melihat ringkasan dari model
 print(rs_kacangtanah_svr_model_poly)
@@ -4192,7 +4199,8 @@ gs_ubijalar_svr_model_poly <- svm(Produksi ~ Produktivitas + Luas_Panen,
                        data = dataubijalar_train, 
                        kernel = "polynomial",
                        degree = 2,
-                       cost = 1)
+                       cost = 1,
+                       epsilon=  0.0001)
 
 # Melihat ringkasan dari model
 print(gs_ubijalar_svr_model_poly)
@@ -4262,7 +4270,8 @@ rs_ubijalar_svr_model_poly <- svm(Produksi ~ Produktivitas + Luas_Panen,
                        data = dataubijalar_train, 
                        kernel = "polynomial", 
                        degree = 2.00286,
-                       cost = 21.7318  )
+                       cost = 21.7318,
+                       epsilon=  0.0001)
 
 # Melihat ringkasan dari model
 print(rs_ubijalar_svr_model_poly)
@@ -4319,7 +4328,8 @@ gs_ubikayu_svr_model_poly <- svm(Produksi ~ Produktivitas + Luas_Panen,
                        data = dataubikayu_train, 
                        kernel = "polynomial", 
                        degree = 2,
-                       cost = 1)
+                       cost = 1,
+                       epsilon=  0.0001)
 
 # Melihat ringkasan dari model
 print(gs_ubikayu_svr_model_poly)
@@ -4381,15 +4391,16 @@ rs_ubikayu_svr_poly <- train(Produksi ~ Produktivitas + Luas_Panen,
 # Melihat hasil random search
 print(rs_ubikayu_svr_poly)
 ```
-The final values used for the model were degree = 2.00286, scale = 0.7608127 and C = 21.7318.
+The final values used for the model were degree = 2.012855, scale = 0.8010565 and C = 13.3279.
 
 ```{r}
 # Membuat model SVR dengan hiperparameter terbaik
 rs_ubikayu_svr_model_poly <- svm(Produksi ~ Produktivitas + Luas_Panen, 
                        data = dataubikayu_train, 
                        kernel = "polynomial", 
-                       degree = 2.00286,
-                       cost = 21.7318 )
+                       degree = 2.012855,
+                       cost = 13.3279,
+                       epsilon=  0.0001)
 
 # Melihat ringkasan dari model
 print(rs_ubikayu_svr_model_poly)
