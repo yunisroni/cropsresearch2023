@@ -2181,13 +2181,13 @@ gs_kacangkedelai_svr_radial <- train(Produksi ~ Produktivitas + Luas_Panen,
 # Melihat hasil grid search
 print(gs_kacangkedelai_svr_radial)
 ```
-The final values used for the model were sigma = 0.1 and C = 100.
+The final values used for the model were sigma = 0.1 and C = 10.
 ```{r}
 # Membuat model SVR dengan hiperparameter terbaik
 gs_kacangkedelai_svr_model_radial <- svm(Produksi ~ Produktivitas + Luas_Panen, 
                        data = datakacangkedelai_train, 
                        kernel = "radial", 
-                       cost = 100, 
+                       cost = 10, 
                        sigma = 0.1,
                        epsilon=  0.0001)
 
@@ -2250,15 +2250,15 @@ rs_kacangkedelai_svr_radial <- train(Produksi ~ Produktivitas + Luas_Panen,
 # Melihat hasil random search
 print(rs_kacangkedelai_svr_radial)
 ```
-The final values used for the model were sigma = 0.1010994 and C = 18.92422.
+The final values used for the model were sigma = 0.1009415 and C = 7.176436.
 
 ```{r}
 # Membuat model SVR dengan hiperparameter terbaik
 rs_kacangkedelai_svr_model_radial <- svm(Produksi ~ Produktivitas + Luas_Panen, 
                        data = datakacangkedelai_train, 
                        kernel = "radial", 
-                       cost = 18.92422, 
-                       sigma = 0.1010994,
+                       cost = 7.176436, 
+                       sigma = 0.1009415,
                        epsilon=  0.0001)
 
 # Melihat ringkasan dari model
@@ -2377,14 +2377,14 @@ rs_kacangtanah_svr_radial <- train(Produksi ~ Produktivitas + Luas_Panen,
 # Melihat hasil random search
 print(rs_kacangtanah_svr_radial)
 ```
-The final values used for the model were sigma = 0.1610078 and C = 24.52022.
+The final values used for the model were sigma = 0.1009415 and C = 7.176436.
 ```{r}
 # Membuat model SVR dengan hiperparameter terbaik
 rs_kacangtanah_svr_model_radial <- svm(Produksi ~ Produktivitas + Luas_Panen, 
                        data = datakacangtanah_train, 
                        kernel = "radial", 
-                       cost = 24.52022, 
-                       sigma = 0.1610078,
+                       cost = 7.176436, 
+                       sigma = 0.1009415,
                        epsilon=  0.0001)
 
 # Melihat ringkasan dari model
@@ -2434,13 +2434,13 @@ gs_ubijalar_svr_radial <- train(Produksi ~ Produktivitas + Luas_Panen,
 # Melihat hasil grid search
 print(gs_ubijalar_svr_radial)
 ```
-The final values used for the model were sigma = 0.1 and C = 1.
+The final values used for the model were sigma = 0.1 and C = 10.
 ```{r}
 # Membuat model SVR dengan hiperparameter terbaik
 gs_ubijalar_svr_model_radial <- svm(Produksi ~ Produktivitas + Luas_Panen, 
                        data = dataubijalar_train, 
                        kernel = "radial", 
-                       cost = 1, 
+                       cost = 10, 
                        sigma = 0.1,
                        epsilon=  0.0001)
 
@@ -2504,15 +2504,15 @@ rs_ubijalar_svr_radial <- train(Produksi ~ Produktivitas + Luas_Panen,
 # Melihat hasil random search
 print(rs_ubijalar_svr_radial)
 ```
-The final values used for the model were sigma = 0.1159215 and C = 1.35561.
+The final values used for the model were sigma = 0.8915413 and C = 1.36784.
 
 ```{r}
 # Membuat model SVR dengan hiperparameter terbaik
 rs_ubijalar_svr_model_radial <- svm(Produksi ~ Produktivitas + Luas_Panen, 
                        data = dataubijalar_train, 
                        kernel = "radial", 
-                       cost = 1.35561, 
-                       sigma = 0.1159215 ,
+                       cost = 1.36784, 
+                       sigma = 0.8915413 ,
                        epsilon=  0.0001)
 
 # Melihat ringkasan dari model
@@ -2632,15 +2632,15 @@ rs_ubikayu_svr_radial <- train(Produksi ~ Produktivitas + Luas_Panen,
 # Melihat hasil random search
 print(rs_ubikayu_svr_radial)
 ```
-The final values used for the model were sigma = 0.1010994 and C = 18.92422.
+The final values used for the model were sigma = 0.1009415 and C = 7.176436.
 
 ```{r}
 # Membuat model SVR dengan hiperparameter terbaik
 rs_ubikayu_svr_model_radial <- svm(Produksi ~ Produktivitas + Luas_Panen, 
                        data = dataubikayu_train, 
                        kernel = "radial", 
-                       cost = 18.92422, 
-                       sigma = 0.1010994,
+                       cost = 7.176436, 
+                       sigma = 0.1009415,
                        epsilon=  0.0001)
 
 # Melihat ringkasan dari model
@@ -2793,14 +2793,14 @@ ctrl <- trainControl(method = "cv", number = 10)
 #### a. Grid search
 ```{r}
 # Melakukan grid search
-gs_jagung_svr_radial <- train(Produksi ~ Produktivitas + Luas_Panen,
+gs_jagung_svr_linear <- train(Produksi ~ Produktivitas + Luas_Panen,
                          data = datajagung_train,
                           method = "svmLinear",
                          trControl = ctrl,
                          tuneGrid = hyper_grid_linear)
 
 # Melihat hasil grid search
-print(gs_jagung_svr_radial)
+print(gs_jagung_svr_linear)
 ```
 The final value used for the model was C = 1.
 ```{r}
