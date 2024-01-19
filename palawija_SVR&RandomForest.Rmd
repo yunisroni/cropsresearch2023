@@ -29,8 +29,7 @@ library(e1071)
 library(caret)
 # library untuk evaluasi model
 library(Metrics)
-# library untuk model Prophet
-library (prophet)
+library(kernlab)
 
 ```
 
@@ -136,7 +135,6 @@ KacangTanah
 ```{r}
 UbiJalar <- filter(pangan_clean, Jenis_Komoditi == "Ubi Jalar")
 UbiJalar
-
 ```
 ### - Filter data ubi kayu
 ```{r}
@@ -1090,7 +1088,7 @@ dim(dataubikayu_test)
 set.seed(123)
 controlGS <- trainControl(method="cv", number=10, search="grid")
 controlRS <- trainControl(method="cv", number=10, search="random")
-tunegrid <- expand.grid(.mtry=c(1,2))
+tunegrid <- expand.grid(mtry=c(1,2))
 ```
 
 
@@ -1914,42 +1912,44 @@ hyper_grid_random <- data.frame(sigma = runif(50, 0.1, 1),
 ctrl <- trainControl(method = "cv", number = 10)
 ```
 
+## - Kernel Radial
 ### 1. Membuat Model SVR - Jagung
 #### a. Grid search
 ```{r}
 # Melakukan grid search
-gs_jagung_svr <- train(Produksi ~ Produktivitas + Luas_Panen,
+gs_jagung_svr_radial <- train(Produksi ~ Produktivitas + Luas_Panen,
                          data = datajagung_train,
                           method = "svmRadial",
                          trControl = ctrl,
                          tuneGrid = hyper_grid)
 
 # Melihat hasil grid search
-print(gs_jagung_svr)
+print(gs_jagung_svr_radial)
 ```
 The final values used for the model were sigma = 0.2 and C = 10.
 ```{r}
 # Membuat model SVR dengan hiperparameter terbaik
-gs_jagung_svr_model <- svm(Produksi ~ Produktivitas + Luas_Panen, 
+gs_jagung_svr_model_radial <- svm(Produksi ~ Produktivitas + Luas_Panen, 
                        data = datajagung_train, 
                        kernel = "radial", 
-                       cost = 10, 
-                       sigma = 0.3)
+                       cost = 10,
+                       sigma = 0.2,
+                        epsilon=  0.0001)
 
 # Melihat ringkasan dari model
-print(gs_jagung_svr_model)
+print(gs_jagung_svr_model_radial)
 ```
 ```{r}
 # Melakukan prediksi dengan Data Testing
-gs_predictions_svr_jagung <- predict(gs_jagung_svr_model, datajagung_test)
-gs_predictions_svr_jagung
+gs_predictions_svr_jagung_radial <- predict(gs_jagung_svr_model_radial, datajagung_test)
+gs_predictions_svr_jagung_radial
 ```
 
 ```{r}
 # Visualisasi hasil prediksi
-gs_result_datajagung_svr <- data.frame(Produksi = datajagung_test$Produksi, Predictions = gs_predictions_svr_jagung)
+gs_result_datajagung_svr_radial <- data.frame(Produksi = datajagung_test$Produksi, Predictions = gs_predictions_svr_jagung_radial)
 
-ggplot(data = gs_result_datajagung_svr, aes(x = Produksi, y = Predictions)) +
+ggplot(data = gs_result_datajagung_svr_radial, aes(x = Produksi, y = Predictions)) +
   geom_point() +
   geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
   labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
@@ -1962,58 +1962,59 @@ ggplot(data = gs_result_datajagung_svr, aes(x = Produksi, y = Predictions)) +
 # Evaluasi SVR Model
 
 # Hitung MAE
-gs_mae_value_svr_jagung <- mae(datajagung_test$Produksi, gs_predictions_svr_jagung)
+gs_mae_value_svr_jagung_radial <- mae(datajagung_test$Produksi, gs_predictions_svr_jagung_radial)
 
 # Hitung MSE
-gs_mse_value_svr_jagung <- mse(datajagung_test$Produksi, gs_predictions_svr_jagung)
+gs_mse_value_svr_jagung_radial <- mse(datajagung_test$Produksi, gs_predictions_svr_jagung_radial)
 
 # Hitung RMSE
-gs_rmse_value_svr_jagung <- rmse(datajagung_test$Produksi, gs_predictions_svr_jagung)
+gs_rmse_value_svr_jagung_radial <- rmse(datajagung_test$Produksi, gs_predictions_svr_jagung_radial)
 
 # Hitung MAPE
-gs_mape_value_svr_jagung <- mape(datajagung_test$Produksi, gs_predictions_svr_jagung)
+gs_mape_value_svr_jagung_radial <- mape(datajagung_test$Produksi, gs_predictions_svr_jagung_radial)
 
 # Tampilkan hasil evaluasi
-cat(paste("MAE: ", gs_mae_value_svr_jagung, "\n"))
-cat(paste("MSE: ", gs_mse_value_svr_jagung, "\n"))
-cat(paste("RMSE: ", gs_rmse_value_svr_jagung, "\n"))
-cat(paste("MAPE: ", gs_mape_value_svr_jagung, "%\n"))
+cat(paste("MAE: ", gs_mae_value_svr_jagung_radial, "\n"))
+cat(paste("MSE: ", gs_mse_value_svr_jagung_radial, "\n"))
+cat(paste("RMSE: ", gs_rmse_value_svr_jagung_radial, "\n"))
+cat(paste("MAPE: ", gs_mape_value_svr_jagung_radial, "%\n"))
 ```
 
 #### b. Random search
 ```{r}
 # Melakukan random search
-rs_jagung_svr <- train(Produksi ~ Produktivitas + Luas_Panen,
+rs_jagung_svr_radial <- train(Produksi ~ Produktivitas + Luas_Panen,
                            data = datajagung_train,
                            method = "svmRadial",
                            trControl = ctrl,
                            tuneGrid = hyper_grid_random)
 
 # Melihat hasil random search
-print(rs_jagung_svr)
-print(rs_jagung_svr$bestTune)
+print(rs_jagung_svr_radial)
+print(rs_jagung_svr_radial$bestTune)
 ```
-The final values used for the model were sigma = 0.2118612 and C = 3.387988
+The final values used for the model were sigma = 0.278943 and C = 15.61181.
 
 ```{r}
 # Membuat model SVR dengan hiperparameter terbaik
-jagung_svr_model <- svm(Produksi ~ Produktivitas + Luas_Panen, 
+jagung_svr_model_radial <- svm(Produksi ~ Produktivitas + Luas_Panen, 
                        data = datajagung_train, 
                        kernel = "radial",
-                       cost = 17.75643, 
-                       sigma = 0.3145472 
+                       cost = 15.61181, 
+                       sigma = 0.278943,
+                       epsilon=  0.0001
                        )
 
 # Melihat ringkasan dari model
-print(jagung_svr_model)
+print(jagung_svr_model_radial)
 
 
 ```
 
 ```{r}
 # Melakukan prediksi dengan Data Testing
-rs_predictions_svr_jagung <- predict(jagung_svr_model, datajagung_test)
-rs_predictions_svr_jagung
+rs_predictions_svr_jagung_radial <- predict(jagung_svr_model_radial, datajagung_test)
+rs_predictions_svr_jagung_radial
 ```
 
 
@@ -2021,22 +2022,22 @@ rs_predictions_svr_jagung
 # Evaluasi SVR Model
 
 # Hitung MAE
-rs_mae_value_svr_jagung <- mae(datajagung_test$Produksi, rs_predictions_svr_jagung)
+rs_mae_value_svr_jagung_radial <- mae(datajagung_test$Produksi, rs_predictions_svr_jagung_radial)
 
 # Hitung MSE
-rs_mse_value_svr_jagung <- mse(datajagung_test$Produksi, rs_predictions_svr_jagung)
+rs_mse_value_svr_jagung_radial <- mse(datajagung_test$Produksi, rs_predictions_svr_jagung_radial)
 
 # Hitung RMSE
-rs_rmse_value_svr_jagung <- rmse(datajagung_test$Produksi, rs_predictions_svr_jagung)
+rs_rmse_value_svr_jagung_radial <- rmse(datajagung_test$Produksi, rs_predictions_svr_jagung_radial)
 
 # Hitung MAPE
-rs_mape_value_svr_jagung <- mape(datajagung_test$Produksi, rs_predictions_svr_jagung)
+rs_mape_value_svr_jagung_radial <- mape(datajagung_test$Produksi, rs_predictions_svr_jagung_radial)
 
 # Tampilkan hasil evaluasi
-cat(paste("MAE: ", rs_mae_value_svr_jagung, "\n"))
-cat(paste("MSE: ", rs_mse_value_svr_jagung, "\n"))
-cat(paste("RMSE: ", rs_rmse_value_svr_jagung, "\n"))
-cat(paste("MAPE: ", rs_mape_value_svr_jagung, "%\n"))
+cat(paste("MAE: ", rs_mae_value_svr_jagung_radial, "\n"))
+cat(paste("MSE: ", rs_mse_value_svr_jagung_radial, "\n"))
+cat(paste("RMSE: ", rs_rmse_value_svr_jagung_radial, "\n"))
+cat(paste("MAPE: ", rs_mape_value_svr_jagung_radial, "%\n"))
 ```
 
 
@@ -2044,40 +2045,41 @@ cat(paste("MAPE: ", rs_mape_value_svr_jagung, "%\n"))
 #### a. Grid search
 ```{r}
 # Melakukan grid search
-gs_kacanghijau_svr <- train(Produksi ~ Produktivitas + Luas_Panen,
+gs_kacanghijau_svr_radial <- train(Produksi ~ Produktivitas + Luas_Panen,
                          data = datakacanghijau_train,
                          method = "svmRadial",
                          trControl = ctrl,
                          tuneGrid = hyper_grid)
 
 # Melihat hasil grid search
-print(gs_kacanghijau_svr)
+print(gs_kacanghijau_svr_radial)
 ```
 The final values used for the model were sigma = 0.1 and C = 10.
 ```{r}
 # Membuat model SVR dengan hiperparameter terbaik
-gs_kacanghijau_svr_model <- svm(Produksi ~ Produktivitas + Luas_Panen, 
+gs_kacanghijau_svr_model_radial <- svm(Produksi ~ Produktivitas + Luas_Panen, 
                        data = datakacanghijau_train, 
                        kernel = "radial", 
                        cost = 10, 
-                       sigma = 0.2)
+                       sigma = 0.1,
+                       epsilon=  0.0001)
 
 # Melihat ringkasan dari model
-print(gs_kacanghijau_svr_model)
+print(gs_kacanghijau_svr_model_radial)
 ```
 
 ```{r}
 # Melakukan prediksi dengan Data Testing
-gs_predictions_svr_kacanghijau <- predict(gs_kacanghijau_svr_model, datakacanghijau_test)
-gs_predictions_svr_kacanghijau
+gs_predictions_svr_kacanghijau_radial <- predict(gs_kacanghijau_svr_model_radial, datakacanghijau_test)
+gs_predictions_svr_kacanghijau_radial
 ```
 
 
 ```{r}
 # Visualisasi hasil prediksi
-gs_result_datakacanghijau_svr <- data.frame(Produksi = datakacanghijau_test$Produksi, Predictions = gs_predictions_svr_kacanghijau)
+gs_result_datakacanghijau_svr_radial <- data.frame(Produksi = datakacanghijau_test$Produksi, Predictions = gs_predictions_svr_kacanghijau_radial)
 
-ggplot(data = gs_result_datakacanghijau_svr, aes(x = Produksi, y = Predictions)) +
+ggplot(data = gs_result_datakacanghijau_svr_radial, aes(x = Produksi, y = Predictions)) +
   geom_point() +
   geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
   labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
@@ -2091,55 +2093,55 @@ ggplot(data = gs_result_datakacanghijau_svr, aes(x = Produksi, y = Predictions))
 # Evaluasi SVR Model
 
 # Hitung MAE
-gs_mae_value_svr_kacanghijau <- mae(datakacanghijau_test$Produksi, gs_predictions_svr_kacanghijau)
+gs_mae_value_svr_kacanghijau_radial <- mae(datakacanghijau_test$Produksi, gs_predictions_svr_kacanghijau_radial)
 
 # Hitung MSE
-gs_mse_value_svr_kacanghijau <- mse(datakacanghijau_test$Produksi, gs_predictions_svr_kacanghijau)
+gs_mse_value_svr_kacanghijau_radial <- mse(datakacanghijau_test$Produksi, gs_predictions_svr_kacanghijau_radial)
 
 # Hitung RMSE
-gs_rmse_value_svr_kacanghijau <- rmse(datakacanghijau_test$Produksi, gs_predictions_svr_kacanghijau)
+gs_rmse_value_svr_kacanghijau_radial <- rmse(datakacanghijau_test$Produksi, gs_predictions_svr_kacanghijau_radial)
 
 # Hitung MAPE
-gs_mape_value_svr_kacanghijau <- mape(datakacanghijau_test$Produksi, gs_predictions_svr_kacanghijau)
+gs_mape_value_svr_kacanghijau_radial <- mape(datakacanghijau_test$Produksi, gs_predictions_svr_kacanghijau_radial)
 
 # Tampilkan hasil evaluasi
-cat(paste("MAE: ", gs_mae_value_svr_kacanghijau, "\n"))
-cat(paste("MSE: ", gs_mse_value_svr_kacanghijau, "\n"))
-cat(paste("RMSE: ", gs_rmse_value_svr_kacanghijau, "\n"))
-cat(paste("MAPE: ", gs_mape_value_svr_kacanghijau, "%\n"))
+cat(paste("MAE: ", gs_mae_value_svr_kacanghijau_radial, "\n"))
+cat(paste("MSE: ", gs_mse_value_svr_kacanghijau_radial, "\n"))
+cat(paste("RMSE: ", gs_rmse_value_svr_kacanghijau_radial, "\n"))
+cat(paste("MAPE: ", gs_mape_value_svr_kacanghijau_radial, "%\n"))
 ```
 
 #### b. Random search
 ```{r}
 # Melakukan random search
-rs_kacanghijau_svr <- train(Produksi ~ Produktivitas + Luas_Panen,
+rs_kacanghijau_svr_radial <- train(Produksi ~ Produktivitas + Luas_Panen,
                            data = datakacanghijau_train,
                            method = "svmRadial",
                            trControl = ctrl,
                            tuneGrid = hyper_grid_random)
 
 # Melihat hasil random search
-print(rs_kacanghijau_svr)
+print(rs_kacanghijau_svr_radial)
 ```
-The final values used for the model were sigma = 0.1097859 and C
- = 26.29779.
+The final values used for the model were sigma = 0.1010994 and C = 18.92422.
 
 ```{r}
 # Membuat model SVR dengan hiperparameter terbaik
-rs_kacanghijau_svr_model <- svm(Produksi ~ Produktivitas + Luas_Panen, 
+rs_kacanghijau_svr_model_radial <- svm(Produksi ~ Produktivitas + Luas_Panen, 
                        data = datakacanghijau_train, 
                        kernel = "radial", 
-                       cost = 43.90775, 
-                       sigma = 0.1004324 )
+                       cost = 18.92422, 
+                       sigma = 0.1010994,
+                       epsilon=  0.0001)
 
 # Melihat ringkasan dari model
-print(rs_kacanghijau_svr_model)
+print(rs_kacanghijau_svr_model_radial)
 ```
 
 ```{r}
 # Melakukan prediksi dengan Data Testing
-rs_predictions_svr_kacanghijau <- predict(rs_kacanghijau_svr_model, datakacanghijau_test)
-rs_predictions_svr_kacanghijau
+rs_predictions_svr_kacanghijau_radial <- predict(rs_kacanghijau_svr_model_radial, datakacanghijau_test)
+rs_predictions_svr_kacanghijau_radial
 ```
 
 
@@ -2147,22 +2149,22 @@ rs_predictions_svr_kacanghijau
 # Evaluasi SVR Model
 
 # Hitung MAE
-rs_mae_value_svr_kacanghijau <- mae(datakacanghijau_test$Produksi, rs_predictions_svr_kacanghijau)
+rs_mae_value_svr_kacanghijau_radial <- mae(datakacanghijau_test$Produksi, rs_predictions_svr_kacanghijau_radial)
 
 # Hitung MSE
-rs_mse_value_svr_kacanghijau <- mse(datakacanghijau_test$Produksi, rs_predictions_svr_kacanghijau)
+rs_mse_value_svr_kacanghijau_radial <- mse(datakacanghijau_test$Produksi, rs_predictions_svr_kacanghijau_radial)
 
 # Hitung RMSE
-rs_rmse_value_svr_kacanghijau <- rmse(datakacanghijau_test$Produksi, rs_predictions_svr_kacanghijau)
+rs_rmse_value_svr_kacanghijau_radial <- rmse(datakacanghijau_test$Produksi, rs_predictions_svr_kacanghijau_radial)
 
 # Hitung MAPE
-rs_mape_value_svr_kacanghijau <- mape(datakacanghijau_test$Produksi, rs_predictions_svr_kacanghijau)
+rs_mape_value_svr_kacanghijau_radial <- mape(datakacanghijau_test$Produksi, rs_predictions_svr_kacanghijau_radial)
 
 # Tampilkan hasil evaluasi
-cat(paste("MAE: ", rs_mae_value_svr_kacanghijau, "\n"))
-cat(paste("MSE: ", rs_mse_value_svr_kacanghijau, "\n"))
-cat(paste("RMSE: ", rs_rmse_value_svr_kacanghijau, "\n"))
-cat(paste("MAPE: ", rs_mape_value_svr_kacanghijau, "%\n"))
+cat(paste("MAE: ", rs_mae_value_svr_kacanghijau_radial, "\n"))
+cat(paste("MSE: ", rs_mse_value_svr_kacanghijau_radial, "\n"))
+cat(paste("RMSE: ", rs_rmse_value_svr_kacanghijau_radial, "\n"))
+cat(paste("MAPE: ", rs_mape_value_svr_kacanghijau_radial, "%\n"))
 ```
 
 
@@ -2170,40 +2172,41 @@ cat(paste("MAPE: ", rs_mape_value_svr_kacanghijau, "%\n"))
 #### a. Grid search
 ```{r}
 # Melakukan grid search
-gs_kacangkedelai_svr <- train(Produksi ~ Produktivitas + Luas_Panen,
+gs_kacangkedelai_svr_radial <- train(Produksi ~ Produktivitas + Luas_Panen,
                          data = datakacangkedelai_train,
                          method = "svmRadial",
                          trControl = ctrl,
                          tuneGrid = hyper_grid)
 
 # Melihat hasil grid search
-print(gs_kacangkedelai_svr)
+print(gs_kacangkedelai_svr_radial)
 ```
-The final values used for the model were sigma = 0.1 and C = 100.
+The final values used for the model were sigma = 0.1 and C = 10.
 ```{r}
 # Membuat model SVR dengan hiperparameter terbaik
-gs_kacangkedelai_svr_model <- svm(Produksi ~ Produktivitas + Luas_Panen, 
+gs_kacangkedelai_svr_model_radial <- svm(Produksi ~ Produktivitas + Luas_Panen, 
                        data = datakacangkedelai_train, 
                        kernel = "radial", 
-                       cost = 100, 
-                       sigma = 0.1)
+                       cost = 10, 
+                       sigma = 0.1,
+                       epsilon=  0.0001)
 
 # Melihat ringkasan dari model
-print(gs_kacangkedelai_svr_model)
+print(gs_kacangkedelai_svr_model_radial)
 ```
 
 ```{r}
 # Melakukan prediksi dengan Data Testing
-gs_predictions_svr_kacangkedelai <- predict(gs_kacangkedelai_svr_model, datakacangkedelai_test)
-gs_predictions_svr_kacangkedelai
+gs_predictions_svr_kacangkedelai_radial <- predict(gs_kacangkedelai_svr_model_radial, datakacangkedelai_test)
+gs_predictions_svr_kacangkedelai_radial
 ```
 
 
 ```{r}
 # Visualisasi hasil prediksi
-gs_result_datakacangkedelai_svr <- data.frame(Produksi = datakacangkedelai_test$Produksi, Predictions = gs_predictions_svr_kacangkedelai)
+gs_result_datakacangkedelai_svr_radial <- data.frame(Produksi = datakacangkedelai_test$Produksi, Predictions = gs_predictions_svr_kacangkedelai_radial)
 
-ggplot(data = gs_result_datakacangkedelai_svr, aes(x = Produksi, y = Predictions)) +
+ggplot(data = gs_result_datakacangkedelai_svr_radial, aes(x = Produksi, y = Predictions)) +
   geom_point() +
   geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
   labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
@@ -2217,55 +2220,55 @@ ggplot(data = gs_result_datakacangkedelai_svr, aes(x = Produksi, y = Predictions
 # Evaluasi SVR Model
 
 # Hitung MAE
-gs_mae_value_svr_kacangkedelai <- mae(datakacangkedelai_test$Produksi, gs_predictions_svr_kacangkedelai)
+gs_mae_value_svr_kacangkedelai_radial <- mae(datakacangkedelai_test$Produksi, gs_predictions_svr_kacangkedelai_radial)
 
 # Hitung MSE
-gs_mse_value_svr_kacangkedelai <- mse(datakacangkedelai_test$Produksi, gs_predictions_svr_kacangkedelai)
+gs_mse_value_svr_kacangkedelai_radial <- mse(datakacangkedelai_test$Produksi, gs_predictions_svr_kacangkedelai_radial)
 
 # Hitung RMSE
-gs_rmse_value_svr_kacangkedelai <- rmse(datakacangkedelai_test$Produksi, gs_predictions_svr_kacangkedelai)
+gs_rmse_value_svr_kacangkedelai_radial <- rmse(datakacangkedelai_test$Produksi, gs_predictions_svr_kacangkedelai_radial)
 
 # Hitung MAPE
-gs_mape_value_svr_kacangkedelai <- mape(datakacangkedelai_test$Produksi, gs_predictions_svr_kacangkedelai)
+gs_mape_value_svr_kacangkedelai_radial <- mape(datakacangkedelai_test$Produksi, gs_predictions_svr_kacangkedelai_radial)
 
 # Tampilkan hasil evaluasi
-cat(paste("MAE: ", gs_mae_value_svr_kacangkedelai, "\n"))
-cat(paste("MSE: ", gs_mse_value_svr_kacangkedelai, "\n"))
-cat(paste("RMSE: ", gs_rmse_value_svr_kacangkedelai, "\n"))
-cat(paste("MAPE: ", gs_mape_value_svr_kacangkedelai, "%\n"))
+cat(paste("MAE: ", gs_mae_value_svr_kacangkedelai_radial, "\n"))
+cat(paste("MSE: ", gs_mse_value_svr_kacangkedelai_radial, "\n"))
+cat(paste("RMSE: ", gs_rmse_value_svr_kacangkedelai_radial, "\n"))
+cat(paste("MAPE: ", gs_mape_value_svr_kacangkedelai_radial, "%\n"))
 ```
 
 #### b. Random search
 ```{r}
 # Melakukan random search
-rs_kacangkedelai_svr <- train(Produksi ~ Produktivitas + Luas_Panen,
+rs_kacangkedelai_svr_radial <- train(Produksi ~ Produktivitas + Luas_Panen,
                            data = datakacangkedelai_train,
                            method = "svmRadial",
                            trControl = ctrl,
                            tuneGrid = hyper_grid_random)
 
 # Melihat hasil random search
-print(rs_kacangkedelai_svr)
+print(rs_kacangkedelai_svr_radial)
 ```
-The final values used for the model were sigma = 0.1097859 and C
- = 26.29779.
+The final values used for the model were sigma = 0.1009415 and C = 7.176436.
 
 ```{r}
 # Membuat model SVR dengan hiperparameter terbaik
-rs_kacangkedelai_svr_model <- svm(Produksi ~ Produktivitas + Luas_Panen, 
+rs_kacangkedelai_svr_model_radial <- svm(Produksi ~ Produktivitas + Luas_Panen, 
                        data = datakacangkedelai_train, 
                        kernel = "radial", 
-                       cost = 43.90775, 
-                       sigma = 0.1004324 )
+                       cost = 7.176436, 
+                       sigma = 0.1009415,
+                       epsilon=  0.0001)
 
 # Melihat ringkasan dari model
-print(rs_kacangkedelai_svr_model)
+print(rs_kacangkedelai_svr_model_radial)
 ```
 
 ```{r}
 # Melakukan prediksi dengan Data Testing
-rs_predictions_svr_kacangkedelai <- predict(rs_kacangkedelai_svr_model, datakacangkedelai_test)
-rs_predictions_svr_kacangkedelai
+rs_predictions_svr_kacangkedelai_radial <- predict(rs_kacangkedelai_svr_model_radial, datakacangkedelai_test)
+rs_predictions_svr_kacangkedelai_radial
 ```
 
 
@@ -2273,22 +2276,22 @@ rs_predictions_svr_kacangkedelai
 # Evaluasi SVR Model
 
 # Hitung MAE
-rs_mae_value_svr_kacangkedelai <- mae(datakacangkedelai_test$Produksi, rs_predictions_svr_kacangkedelai)
+rs_mae_value_svr_kacangkedelai_radial <- mae(datakacangkedelai_test$Produksi, rs_predictions_svr_kacangkedelai_radial)
 
 # Hitung MSE
-rs_mse_value_svr_kacangkedelai <- mse(datakacangkedelai_test$Produksi, rs_predictions_svr_kacangkedelai)
+rs_mse_value_svr_kacangkedelai_radial <- mse(datakacangkedelai_test$Produksi, rs_predictions_svr_kacangkedelai_radial)
 
 # Hitung RMSE
-rs_rmse_value_svr_kacangkedelai <- rmse(datakacangkedelai_test$Produksi, rs_predictions_svr_kacangkedelai)
+rs_rmse_value_svr_kacangkedelai_radial <- rmse(datakacangkedelai_test$Produksi, rs_predictions_svr_kacangkedelai_radial)
 
 # Hitung MAPE
-rs_mape_value_svr_kacangkedelai <- mape(datakacangkedelai_test$Produksi, rs_predictions_svr_kacangkedelai)
+rs_mape_value_svr_kacangkedelai_radial <- mape(datakacangkedelai_test$Produksi, rs_predictions_svr_kacangkedelai_radial)
 
 # Tampilkan hasil evaluasi
-cat(paste("MAE: ", rs_mae_value_svr_kacangkedelai, "\n"))
-cat(paste("MSE: ", rs_mse_value_svr_kacangkedelai, "\n"))
-cat(paste("RMSE: ", rs_rmse_value_svr_kacangkedelai, "\n"))
-cat(paste("MAPE: ", rs_mape_value_svr_kacangkedelai, "%\n"))
+cat(paste("MAE: ", rs_mae_value_svr_kacangkedelai_radial, "\n"))
+cat(paste("MSE: ", rs_mse_value_svr_kacangkedelai_radial, "\n"))
+cat(paste("RMSE: ", rs_rmse_value_svr_kacangkedelai_radial, "\n"))
+cat(paste("MAPE: ", rs_mape_value_svr_kacangkedelai_radial, "%\n"))
 ```
 
 
@@ -2296,40 +2299,41 @@ cat(paste("MAPE: ", rs_mape_value_svr_kacangkedelai, "%\n"))
 #### a. Grid search
 ```{r}
 # Melakukan grid search
-gs_kacangtanah_svr <- train(Produksi ~ Produktivitas + Luas_Panen,
+gs_kacangtanah_svr_radial <- train(Produksi ~ Produktivitas + Luas_Panen,
                          data = datakacangtanah_train,
                          method = "svmRadial",
                          trControl = ctrl,
                          tuneGrid = hyper_grid)
 
 # Melihat hasil grid search
-print(gs_kacangtanah_svr)
+print(gs_kacangtanah_svr_radial)
 ```
 The final values used for the model were sigma = 0.1 and C = 10.
 ```{r}
 # Membuat model SVR dengan hiperparameter terbaik
-gs_kacangtanah_svr_model <- svm(Produksi ~ Produktivitas + Luas_Panen, 
+gs_kacangtanah_svr_model_radial <- svm(Produksi ~ Produktivitas + Luas_Panen, 
                        data = datakacangtanah_train, 
                        kernel = "radial", 
-                       cost = 100, 
-                       sigma = 0.1)
+                       cost = 10, 
+                       sigma = 0.1,
+                       epsilon=  0.0001)
 
 # Melihat ringkasan dari model
-print(gs_kacangtanah_svr_model)
+print(gs_kacangtanah_svr_model_radial)
 ```
 
 ```{r}
 # Melakukan prediksi dengan Data Testing
-gs_predictions_svr_kacangtanah <- predict(gs_kacangtanah_svr_model, datakacangtanah_test)
-gs_predictions_svr_kacangtanah
+gs_predictions_svr_kacangtanah_radial <- predict(gs_kacangtanah_svr_model_radial, datakacangtanah_test)
+gs_predictions_svr_kacangtanah_radial
 ```
 
 
 ```{r}
 # Visualisasi hasil prediksi
-gs_result_datakacangtanah_svr<- data.frame(Produksi = datakacangtanah_test$Produksi, Predictions = gs_predictions_svr_kacangtanah)
+gs_result_datakacangtanah_svr_radial<- data.frame(Produksi = datakacangtanah_test$Produksi, Predictions = gs_predictions_svr_kacangtanah_radial)
 
-ggplot(data = gs_result_datakacangtanah_svr, aes(x = Produksi, y = Predictions)) +
+ggplot(data = gs_result_datakacangtanah_svr_radial, aes(x = Produksi, y = Predictions)) +
   geom_point() +
   geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
   labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
@@ -2343,53 +2347,54 @@ ggplot(data = gs_result_datakacangtanah_svr, aes(x = Produksi, y = Predictions))
 # Evaluasi SVR Model
 
 # Hitung MAE
-gs_mae_value_svr_kacangtanah <- mae(datakacangtanah_test$Produksi, gs_predictions_svr_kacangtanah)
+gs_mae_value_svr_kacangtanah_radial <- mae(datakacangtanah_test$Produksi, gs_predictions_svr_kacangtanah_radial)
 
 # Hitung MSE
-gs_mse_value_svr_kacangtanah <- mse(datakacangtanah_test$Produksi, gs_predictions_svr_kacangtanah)
+gs_mse_value_svr_kacangtanah_radial <- mse(datakacangtanah_test$Produksi, gs_predictions_svr_kacangtanah_radial)
 
 # Hitung RMSE
-gs_rmse_value_svr_kacangtanah <- rmse(datakacangtanah_test$Produksi, gs_predictions_svr_kacangtanah)
+gs_rmse_value_svr_kacangtanah_radial <- rmse(datakacangtanah_test$Produksi, gs_predictions_svr_kacangtanah_radial)
 
 # Hitung MAPE
-gs_mape_value_svr_kacangtanah <- mape(datakacangtanah_test$Produksi, gs_predictions_svr_kacangtanah)
+gs_mape_value_svr_kacangtanah_radial <- mape(datakacangtanah_test$Produksi, gs_predictions_svr_kacangtanah_radial)
 
 # Tampilkan hasil evaluasi
-cat(paste("MAE: ", gs_mae_value_svr_kacangtanah, "\n"))
-cat(paste("MSE: ", gs_mse_value_svr_kacangtanah, "\n"))
-cat(paste("RMSE: ", gs_rmse_value_svr_kacangtanah, "\n"))
-cat(paste("MAPE: ", gs_mape_value_svr_kacangtanah, "%\n"))
+cat(paste("MAE: ", gs_mae_value_svr_kacangtanah_radial, "\n"))
+cat(paste("MSE: ", gs_mse_value_svr_kacangtanah_radial, "\n"))
+cat(paste("RMSE: ", gs_rmse_value_svr_kacangtanah_radial, "\n"))
+cat(paste("MAPE: ", gs_mape_value_svr_kacangtanah_radial, "%\n"))
 ```
 
 #### b. Random search
 ```{r}
 # Melakukan random search
-rs_kacangtanah_svr <- train(Produksi ~ Produktivitas + Luas_Panen,
+rs_kacangtanah_svr_radial <- train(Produksi ~ Produktivitas + Luas_Panen,
                            data = datakacangtanah_train,
                            method = "svmRadial",
                            trControl = ctrl,
                            tuneGrid = hyper_grid_random)
 
 # Melihat hasil random search
-print(rs_kacangtanah_svr)
+print(rs_kacangtanah_svr_radial)
 ```
-The final values used for the model were sigma = 0.1097859 and C = 26.29779.
+The final values used for the model were sigma = 0.1009415 and C = 7.176436.
 ```{r}
 # Membuat model SVR dengan hiperparameter terbaik
-rs_kacangtanah_svr_model <- svm(Produksi ~ Produktivitas + Luas_Panen, 
+rs_kacangtanah_svr_model_radial <- svm(Produksi ~ Produktivitas + Luas_Panen, 
                        data = datakacangtanah_train, 
                        kernel = "radial", 
-                       cost = 46.53322, 
-                       sigma = 0.1268883 )
+                       cost = 7.176436, 
+                       sigma = 0.1009415,
+                       epsilon=  0.0001)
 
 # Melihat ringkasan dari model
-print(rs_kacangtanah_svr_model)
+print(rs_kacangtanah_svr_model_radial)
 ```
 
 ```{r}
 # Melakukan prediksi dengan Data Testing
-rs_predictions_svr_kacangtanah <- predict(rs_kacangtanah_svr_model, datakacangtanah_test)
-rs_predictions_svr_kacangtanah
+rs_predictions_svr_kacangtanah_radial <- predict(rs_kacangtanah_svr_model_radial, datakacangtanah_test)
+rs_predictions_svr_kacangtanah_radial
 ```
 
 
@@ -2397,22 +2402,22 @@ rs_predictions_svr_kacangtanah
 # Evaluasi SVR Model
 
 # Hitung MAE
-rs_mae_value_svr_kacangtanah <- mae(datakacangtanah_test$Produksi, rs_predictions_svr_kacangtanah)
+rs_mae_value_svr_kacangtanah_radial <- mae(datakacangtanah_test$Produksi, rs_predictions_svr_kacangtanah_radial)
 
 # Hitung MSE
-rs_mse_value_svr_kacangtanah <- mse(datakacangtanah_test$Produksi, rs_predictions_svr_kacangtanah)
+rs_mse_value_svr_kacangtanah_radial <- mse(datakacangtanah_test$Produksi, rs_predictions_svr_kacangtanah_radial)
 
 # Hitung RMSE
-rs_rmse_value_svr_kacangtanah <- rmse(datakacangtanah_test$Produksi, rs_predictions_svr_kacangtanah)
+rs_rmse_value_svr_kacangtanah_radial <- rmse(datakacangtanah_test$Produksi, rs_predictions_svr_kacangtanah_radial)
 
 # Hitung MAPE
-rs_mape_value_svr_kacangtanah <- mape(datakacangtanah_test$Produksi, rs_predictions_svr_kacangtanah)
+rs_mape_value_svr_kacangtanah_radial <- mape(datakacangtanah_test$Produksi, rs_predictions_svr_kacangtanah_radial)
 
 # Tampilkan hasil evaluasi
-cat(paste("MAE: ", rs_mae_value_svr_kacangtanah, "\n"))
-cat(paste("MSE: ", rs_mse_value_svr_kacangtanah, "\n"))
-cat(paste("RMSE: ", rs_rmse_value_svr_kacangtanah, "\n"))
-cat(paste("MAPE: ", rs_mape_value_svr_kacangtanah, "%\n"))
+cat(paste("MAE: ", rs_mae_value_svr_kacangtanah_radial, "\n"))
+cat(paste("MSE: ", rs_mse_value_svr_kacangtanah_radial, "\n"))
+cat(paste("RMSE: ", rs_rmse_value_svr_kacangtanah_radial, "\n"))
+cat(paste("MAPE: ", rs_mape_value_svr_kacangtanah_radial, "%\n"))
 ```
 
 
@@ -2420,41 +2425,42 @@ cat(paste("MAPE: ", rs_mape_value_svr_kacangtanah, "%\n"))
 #### a. Grid search
 ```{r}
 # Melakukan grid search
-gs_ubijalar_svr <- train(Produksi ~ Produktivitas + Luas_Panen,
+gs_ubijalar_svr_radial <- train(Produksi ~ Produktivitas + Luas_Panen,
                          data = dataubijalar_train,
                          method = "svmRadial",
                          trControl = ctrl,
                          tuneGrid = hyper_grid)
 
 # Melihat hasil grid search
-print(gs_ubijalar_svr)
+print(gs_ubijalar_svr_radial)
 ```
-The final values used for the model were sigma = 0.1 and C = 1.
+The final values used for the model were sigma = 0.1 and C = 10.
 ```{r}
 # Membuat model SVR dengan hiperparameter terbaik
-gs_ubijalar_svr_model <- svm(Produksi ~ Produktivitas + Luas_Panen, 
+gs_ubijalar_svr_model_radial <- svm(Produksi ~ Produktivitas + Luas_Panen, 
                        data = dataubijalar_train, 
                        kernel = "radial", 
                        cost = 10, 
-                       sigma = 0.1)
+                       sigma = 0.1,
+                       epsilon=  0.0001)
 
 # Melihat ringkasan dari model
-print(gs_ubijalar_svr_model)
+print(gs_ubijalar_svr_model_radial)
 
 ```
 
 ```{r}
 # Melakukan prediksi dengan Data Testing
-gs_predictions_svr_ubijalar <- predict(rs_ubijalar_svr_model, dataubijalar_test)
-gs_predictions_svr_ubijalar
+gs_predictions_svr_ubijalar_radial <- predict(gs_ubijalar_svr_model_radial, dataubijalar_test)
+gs_predictions_svr_ubijalar_radial
 ```
 
 
 ```{r}
 # Visualisasi hasil prediksi
-gs_result_dataubijalar_svr <- data.frame(Produksi = dataubijalar_test$Produksi, Predictions = gs_predictions_svr_ubijalar)
+gs_result_dataubijalar_svr_radial <- data.frame(Produksi = dataubijalar_test$Produksi, Predictions = gs_predictions_svr_ubijalar_radial)
 
-ggplot(data = gs_result_dataubijalar_svr, aes(x = Produksi, y = Predictions)) +
+ggplot(data = gs_result_dataubijalar_svr_radial, aes(x = Produksi, y = Predictions)) +
   geom_point() +
   geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
   labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
@@ -2468,55 +2474,55 @@ ggplot(data = gs_result_dataubijalar_svr, aes(x = Produksi, y = Predictions)) +
 # Evaluasi SVR Model
 
 # Hitung MAE
-gs_mae_value_svr_ubijalar <- mae(dataubijalar_test$Produksi, gs_predictions_svr_ubijalar)
+gs_mae_value_svr_ubijalar_radial <- mae(dataubijalar_test$Produksi, gs_predictions_svr_ubijalar_radial)
 
 # Hitung MSE
-gs_mse_value_svr_ubijalar <- mse(dataubijalar_test$Produksi, gs_predictions_svr_ubijalar)
+gs_mse_value_svr_ubijalar_radial <- mse(dataubijalar_test$Produksi, gs_predictions_svr_ubijalar_radial)
 
 # Hitung RMSE
-gs_rmse_value_svr_ubijalar <- rmse(dataubijalar_test$Produksi, gs_predictions_svr_ubijalar)
+gs_rmse_value_svr_ubijalar_radial <- rmse(dataubijalar_test$Produksi, gs_predictions_svr_ubijalar_radial)
 
 # Hitung MAPE
-gs_mape_value_svr_ubijalar <- mape(dataubijalar_test$Produksi, gs_predictions_svr_ubijalar)
+gs_mape_value_svr_ubijalar_radial <- mape(dataubijalar_test$Produksi, gs_predictions_svr_ubijalar_radial)
 
 # Tampilkan hasil evaluasi
-cat(paste("MAE: ", gs_mae_value_svr_ubijalar, "\n"))
-cat(paste("MSE: ", gs_mse_value_svr_ubijalar, "\n"))
-cat(paste("RMSE: ", gs_rmse_value_svr_ubijalar, "\n"))
-cat(paste("MAPE: ", gs_mape_value_svr_ubijalar, "%\n"))
+cat(paste("MAE: ", gs_mae_value_svr_ubijalar_radial, "\n"))
+cat(paste("MSE: ", gs_mse_value_svr_ubijalar_radial, "\n"))
+cat(paste("RMSE: ", gs_rmse_value_svr_ubijalar_radial, "\n"))
+cat(paste("MAPE: ", gs_mape_value_svr_ubijalar_radial, "%\n"))
 ```
 
 #### b. Random search
 ```{r}
 # Melakukan random search
-rs_ubijalar_svr <- train(Produksi ~ Produktivitas + Luas_Panen,
+rs_ubijalar_svr_radial <- train(Produksi ~ Produktivitas + Luas_Panen,
                            data = dataubijalar_train,
                            method = "svmRadial",
                            trControl = ctrl,
                            tuneGrid = hyper_grid_random)
 
 # Melihat hasil random search
-print(rs_ubijalar_svr)
+print(rs_ubijalar_svr_radial)
 ```
-The final values used for the model were sigma = 0.3071873 and C
- = 1.122547.
+The final values used for the model were sigma = 0.8915413 and C = 1.36784.
 
 ```{r}
 # Membuat model SVR dengan hiperparameter terbaik
-rs_ubijalar_svr_model <- svm(Produksi ~ Produktivitas + Luas_Panen, 
+rs_ubijalar_svr_model_radial <- svm(Produksi ~ Produktivitas + Luas_Panen, 
                        data = dataubijalar_train, 
                        kernel = "radial", 
-                       cost = 0.9366928, 
-                       sigma = 0.170404   )
+                       cost = 1.36784, 
+                       sigma = 0.8915413 ,
+                       epsilon=  0.0001)
 
 # Melihat ringkasan dari model
-print(rs_ubijalar_svr_model)
+print(rs_ubijalar_svr_model_radial)
 ```
 
 ```{r}
 # Melakukan prediksi dengan Data Testing
-rs_predictions_svr_ubijalar <- predict(rs_ubijalar_svr_model, dataubijalar_test)
-rs_predictions_svr_ubijalar
+rs_predictions_svr_ubijalar_radial <- predict(rs_ubijalar_svr_model_radial, dataubijalar_test)
+rs_predictions_svr_ubijalar_radial
 ```
 
 
@@ -2524,22 +2530,22 @@ rs_predictions_svr_ubijalar
 # Evaluasi SVR Model
 
 # Hitung MAE
-rs_mae_value_svr_ubijalar <- mae(dataubijalar_test$Produksi, rs_predictions_svr_ubijalar)
+rs_mae_value_svr_ubijalar_radial <- mae(dataubijalar_test$Produksi, rs_predictions_svr_ubijalar_radial)
 
 # Hitung MSE
-rs_mse_value_svr_ubijalar <- mse(dataubijalar_test$Produksi, rs_predictions_svr_ubijalar)
+rs_mse_value_svr_ubijalar_radial <- mse(dataubijalar_test$Produksi, rs_predictions_svr_ubijalar_radial)
 
 # Hitung RMSE
-rs_rmse_value_svr_ubijalar <- rmse(dataubijalar_test$Produksi, rs_predictions_svr_ubijalar)
+rs_rmse_value_svr_ubijalar_radial <- rmse(dataubijalar_test$Produksi, rs_predictions_svr_ubijalar_radial)
 
 # Hitung MAPE
-rs_mape_value_svr_ubijalar <- mape(dataubijalar_test$Produksi, rs_predictions_svr_ubijalar)
+rs_mape_value_svr_ubijalar_radial <- mape(dataubijalar_test$Produksi, rs_predictions_svr_ubijalar_radial)
 
 # Tampilkan hasil evaluasi
-cat(paste("MAE: ", rs_mae_value_svr_ubijalar, "\n"))
-cat(paste("MSE: ", rs_mse_value_svr_ubijalar, "\n"))
-cat(paste("RMSE: ", rs_rmse_value_svr_ubijalar, "\n"))
-cat(paste("MAPE: ", rs_mape_value_svr_ubijalar, "%\n"))
+cat(paste("MAE: ", rs_mae_value_svr_ubijalar_radial, "\n"))
+cat(paste("MSE: ", rs_mse_value_svr_ubijalar_radial, "\n"))
+cat(paste("RMSE: ", rs_rmse_value_svr_ubijalar_radial, "\n"))
+cat(paste("MAPE: ", rs_mape_value_svr_ubijalar_radial, "%\n"))
 ```
 
 
@@ -2547,41 +2553,42 @@ cat(paste("MAPE: ", rs_mape_value_svr_ubijalar, "%\n"))
 #### a. Grid search
 ```{r}
 # Melakukan grid search
-gs_ubikayu_svr <- train(Produksi ~ Produktivitas + Luas_Panen,
+gs_ubikayu_svr_radial <- train(Produksi ~ Produktivitas + Luas_Panen,
                          data = dataubikayu_train,
                          method = "svmRadial",
                          trControl = ctrl,
                          tuneGrid = hyper_grid)
 
 # Melihat hasil grid search
-print(gs_ubikayu_svr)
+print(gs_ubikayu_svr_radial)
 ```
 The final values used for the model were sigma = 0.1 and C = 10.
 ```{r}
 # Membuat model SVR dengan hiperparameter terbaik
-gs_ubikayu_svr_model <- svm(Produksi ~ Produktivitas + Luas_Panen, 
+gs_ubikayu_svr_model_radial <- svm(Produksi ~ Produktivitas + Luas_Panen, 
                        data = dataubikayu_train, 
                        kernel = "radial", 
                        cost = 10, 
-                       sigma = 0.1)
+                       sigma = 0.1,
+                       epsilon=  0.0001)
 
 # Melihat ringkasan dari model
-print(gs_ubikayu_svr_model)
+print(gs_ubikayu_svr_model_radial)
 
 ```
 
 ```{r}
 # Melakukan prediksi dengan Data Testing
-gs_predictions_svr_ubikayu <- predict(gs_ubikayu_svr_model, dataubikayu_test)
-gs_predictions_svr_ubikayu
+gs_predictions_svr_ubikayu_radial <- predict(gs_ubikayu_svr_model_radial, dataubikayu_test)
+gs_predictions_svr_ubikayu_radial
 ```
 
 
 ```{r}
 # Visualisasi hasil prediksi
-gs_result_dataubikayu <- data.frame(Produksi = dataubikayu_test$Produksi, Predictions = gs_predictions_svr_ubikayu)
+gs_result_dataubikayu_radial <- data.frame(Produksi = dataubikayu_test$Produksi, Predictions = gs_predictions_svr_ubikayu_radial)
 
-ggplot(data = gs_result_dataubikayu, aes(x = Produksi, y = Predictions)) +
+ggplot(data = gs_result_dataubikayu_radial, aes(x = Produksi, y = Predictions)) +
   geom_point() +
   geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
   labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
@@ -2595,57 +2602,57 @@ ggplot(data = gs_result_dataubikayu, aes(x = Produksi, y = Predictions)) +
 # Evaluasi SVR Model
 
 # Hitung MAE
-gs_mae_value_svr_ubikayu <- mae(dataubikayu_test$Produksi, gs_predictions_svr_ubikayu)
+gs_mae_value_svr_ubikayu_radial <- mae(dataubikayu_test$Produksi, gs_predictions_svr_ubikayu_radial)
 
 # Hitung MSE
-gs_mse_value_svr_ubikayu <- mse(dataubikayu_test$Produksi, gs_predictions_svr_ubikayu)
+gs_mse_value_svr_ubikayu_radial <- mse(dataubikayu_test$Produksi, gs_predictions_svr_ubikayu_radial)
 
 # Hitung RMSE
-gs_rmse_value_svr_ubikayu <- rmse(dataubikayu_test$Produksi, gs_predictions_svr_ubikayu)
+gs_rmse_value_svr_ubikayu_radial <- rmse(dataubikayu_test$Produksi, gs_predictions_svr_ubikayu_radial)
 
 # Hitung MAPE
-gs_mape_value_svr_ubikayu <- mape(dataubikayu_test$Produksi, gs_predictions_svr_ubikayu)
+gs_mape_value_svr_ubikayu_radial <- mape(dataubikayu_test$Produksi, gs_predictions_svr_ubikayu_radial)
 
 # Tampilkan hasil evaluasi
-cat(paste("MAE: ", gs_mae_value_svr_ubikayu, "\n"))
-cat(paste("MSE: ", gs_mse_value_svr_ubikayu, "\n"))
-cat(paste("RMSE: ", gs_rmse_value_svr_ubikayu, "\n"))
-cat(paste("MAPE: ", gs_mape_value_svr_ubikayu, "%\n"))
+cat(paste("MAE: ", gs_mae_value_svr_ubikayu_radial, "\n"))
+cat(paste("MSE: ", gs_mse_value_svr_ubikayu_radial, "\n"))
+cat(paste("RMSE: ", gs_rmse_value_svr_ubikayu_radial, "\n"))
+cat(paste("MAPE: ", gs_mape_value_svr_ubikayu_radial, "%\n"))
 ```
 
 #### b. Random search
 ```{r}
 # Melakukan random search
-rs_ubikayu_svr <- train(Produksi ~ Produktivitas + Luas_Panen,
+rs_ubikayu_svr_radial <- train(Produksi ~ Produktivitas + Luas_Panen,
                            data = dataubikayu_train,
                            method = "svmRadial",
                            trControl = ctrl,
                            tuneGrid = hyper_grid_random)
 
 # Melihat hasil random search
-print(rs_ubikayu_svr)
+print(rs_ubikayu_svr_radial)
 ```
-The final values used for the model were sigma = 0.1097859 and C
- = 26.29779.
+The final values used for the model were sigma = 0.1009415 and C = 7.176436.
 
 ```{r}
 # Membuat model SVR dengan hiperparameter terbaik
-rs_ubikayu_svr_model <- svm(Produksi ~ Produktivitas + Luas_Panen, 
+rs_ubikayu_svr_model_radial <- svm(Produksi ~ Produktivitas + Luas_Panen, 
                        data = dataubikayu_train, 
                        kernel = "radial", 
-                       cost = 43.90775, 
-                       sigma = 0.1004324 )
+                       cost = 7.176436, 
+                       sigma = 0.1009415,
+                       epsilon=  0.0001)
 
 # Melihat ringkasan dari model
-print(rs_ubikayu_svr_model)
+print(rs_ubikayu_svr_model_radial)
 
 
 ```
 
 ```{r}
 # Melakukan prediksi dengan Data Testing
-rs_predictions_svr_ubikayu <- predict(rs_ubikayu_svr_model, dataubikayu_test)
-rs_predictions_svr_ubikayu
+rs_predictions_svr_ubikayu_radial <- predict(rs_ubikayu_svr_model_radial, dataubikayu_test)
+rs_predictions_svr_ubikayu_radial
 ```
 
 
@@ -2653,217 +2660,1878 @@ rs_predictions_svr_ubikayu
 # Evaluasi SVR Model
 
 # Hitung MAE
-rs_mae_value_svr_ubikayu <- mae(dataubikayu_test$Produksi, rs_predictions_svr_ubikayu)
+rs_mae_value_svr_ubikayu_radial <- mae(dataubikayu_test$Produksi, rs_predictions_svr_ubikayu_radial)
 
 # Hitung MSE
-rs_mse_value_svr_ubikayu <- mse(dataubikayu_test$Produksi, rs_predictions_svr_ubikayu)
+rs_mse_value_svr_ubikayu_radial <- mse(dataubikayu_test$Produksi, rs_predictions_svr_ubikayu_radial)
 
 # Hitung RMSE
-rs_rmse_value_svr_ubikayu <- rmse(dataubikayu_test$Produksi, rs_predictions_svr_ubikayu)
+rs_rmse_value_svr_ubikayu_radial <- rmse(dataubikayu_test$Produksi, rs_predictions_svr_ubikayu_radial)
 
 # Hitung MAPE
-rs_mape_value_svr_ubikayu <- mape(dataubikayu_test$Produksi, rs_predictions_svr_ubikayu)
+rs_mape_value_svr_ubikayu_radial <- mape(dataubikayu_test$Produksi, rs_predictions_svr_ubikayu_radial)
 
 # Tampilkan hasil evaluasi
-cat(paste("MAE: ", rs_mae_value_svr_ubikayu, "\n"))
-cat(paste("MSE: ", rs_mse_value_svr_ubikayu, "\n"))
-cat(paste("RMSE: ", rs_rmse_value_svr_ubikayu, "\n"))
-cat(paste("MAPE: ", rs_mape_value_svr_ubikayu, "%\n"))
+cat(paste("MAE: ", rs_mae_value_svr_ubikayu_radial, "\n"))
+cat(paste("MSE: ", rs_mse_value_svr_ubikayu_radial, "\n"))
+cat(paste("RMSE: ", rs_rmse_value_svr_ubikayu_radial, "\n"))
+cat(paste("MAPE: ", rs_mape_value_svr_ubikayu_radial, "%\n"))
 ```
 
 ####c. Intepretasikan dan Membandingkan Model SVR dengan Grid Search dan Random Search
 ###  - Intepretasikan dan Membandingkan Model SVR dengan Grid Search dan Random Search- Jagung
 ```{r}
-model_performance_jagung_svr <- data.frame(
+model_performance_jagung_svr_radial <- data.frame(
   No = c(1:2),
   Model = c("Grid Search", "Random Search"),
-  MSE = c(gs_mse_value_svr_jagung, rs_mse_value_svr_jagung),
-  RSME = c(gs_rmse_value_svr_jagung, rs_rmse_value_svr_jagung),
-  MAE = c(gs_mae_value_svr_jagung, rs_mae_value_svr_jagung),
-  MAPE = c(gs_mape_value_svr_jagung, rs_mape_value_svr_jagung),
+  MSE = c(gs_mse_value_svr_jagung_radial, rs_mse_value_svr_jagung_radial),
+  RSME = c(gs_rmse_value_svr_jagung_radial, rs_rmse_value_svr_jagung_radial),
+  MAE = c(gs_mae_value_svr_jagung_radial, rs_mae_value_svr_jagung_radial),
+  MAPE = c(gs_mape_value_svr_jagung_radial, rs_mape_value_svr_jagung_radial),
   stringsAsFactors = FALSE
   
 )
-model_performance_jagung_svr
+model_performance_jagung_svr_radial
 ```
 Berdasarkan hasil diatas, kalau dilihat dari performance matrik tingkat kesalahan yang paling rendah (MAE), maka model **SVR dengan Grid Search** yang dianggap sebagai model terbaik dalam hal akurasi prediksi produksi jagung.
 
 ### - Intepretasikan dan Membandingkan Model SVR dengan Grid Search dan Random Search - Kacang Hijau
 ```{r}
-model_performance_kacanghijau_svr <- data.frame(
+model_performance_kacanghijau_svr_radial <- data.frame(
   No = c(1:2),
   Model = c("Grid Search", "Random Search"),
-  MSE = c(gs_mse_value_svr_kacanghijau, rs_mse_value_svr_kacanghijau),
-  RSME = c(gs_rmse_value_svr_kacanghijau, rs_rmse_value_svr_kacanghijau),
-  MAE = c(gs_mae_value_svr_kacanghijau, rs_mae_value_svr_kacanghijau),
-  MAPE = c(gs_mape_value_svr_kacanghijau, rs_mape_value_svr_kacanghijau),
+  MSE = c(gs_mse_value_svr_kacanghijau_radial, rs_mse_value_svr_kacanghijau_radial),
+  RSME = c(gs_rmse_value_svr_kacanghijau_radial, rs_rmse_value_svr_kacanghijau_radial),
+  MAE = c(gs_mae_value_svr_kacanghijau_radial, rs_mae_value_svr_kacanghijau_radial),
+  MAPE = c(gs_mape_value_svr_kacanghijau_radial, rs_mape_value_svr_kacanghijau_radial),
   stringsAsFactors = FALSE
   
 )
-model_performance_kacanghijau_svr
+model_performance_kacanghijau_svr_radial
 ```
 Berdasarkan hasil diatas, kalau dilihat dari performance matrik tingkat kesalahan yang paling rendah (MAE), maka model **SVR  dengan Grid Search** yang dianggap sebagai model terbaik dalam hal akurasi prediksi produksi kacang hijau.
 
 ### - Intepretasikan dan Membandingkan Model SVR dengan Grid Search dan Random Search - Kacang Kedelai
 ```{r}
-model_performance_kacangkedelai_svr <- data.frame(
+model_performance_kacangkedelai_svr_radial <- data.frame(
   No = c(1:2),
   Model = c("Grid Search", "Random Search"),
-  MSE = c(gs_mse_value_svr_kacangkedelai, rs_mse_value_svr_kacangkedelai),
-  RSME = c(gs_rmse_value_svr_kacangkedelai, rs_rmse_value_svr_kacangkedelai),
-  MAE = c(gs_mae_value_svr_kacangkedelai, rs_mae_value_svr_kacangkedelai),
-  MAPE = c(gs_mape_value_svr_kacangkedelai, rs_mape_value_svr_kacangkedelai),
+  MSE = c(gs_mse_value_svr_kacangkedelai_radial, rs_mse_value_svr_kacangkedelai_radial),
+  RSME = c(gs_rmse_value_svr_kacangkedelai_radial, rs_rmse_value_svr_kacangkedelai_radial),
+  MAE = c(gs_mae_value_svr_kacangkedelai_radial, rs_mae_value_svr_kacangkedelai_radial),
+  MAPE = c(gs_mape_value_svr_kacangkedelai_radial, rs_mape_value_svr_kacangkedelai_radial),
   stringsAsFactors = FALSE
   
 )
-model_performance_kacangkedelai_svr
+model_performance_kacangkedelai_svr_radial
 ```
 Berdasarkan hasil diatas, kalau dilihat dari performance matrik tingkat kesalahan yang paling rendah (MAE), maka model **SVR dengan Grid Search** yang dianggap sebagai model terbaik dalam hal akurasi prediksi produksi kacang kedelai
 
 ### - Intepretasikan dan Membandingkan Model SVR dengan Grid Search dan Random Search - Kacang Tanah
 ```{r}
-model_performance_kacangtanah_svr <- data.frame(
+model_performance_kacangtanah_svr_radial <- data.frame(
   No = c(1:2),
   Model = c("Grid Search", "Random Search"),
-  MSE = c(gs_mse_value_svr_kacangtanah, rs_mse_value_svr_kacangtanah),
-  RSME = c(gs_rmse_value_svr_kacangtanah, rs_rmse_value_svr_kacangtanah),
-  MAE = c(gs_mae_value_svr_kacangtanah, rs_mae_value_svr_kacangtanah),
-  MAPE = c(gs_mape_value_svr_kacangtanah, rs_mape_value_svr_kacangtanah),
+  MSE = c(gs_mse_value_svr_kacangtanah_radial, rs_mse_value_svr_kacangtanah_radial),
+  RSME = c(gs_rmse_value_svr_kacangtanah_radial, rs_rmse_value_svr_kacangtanah_radial),
+  MAE = c(gs_mae_value_svr_kacangtanah_radial, rs_mae_value_svr_kacangtanah_radial),
+  MAPE = c(gs_mape_value_svr_kacangtanah_radial, rs_mape_value_svr_kacangtanah_radial),
   stringsAsFactors = FALSE
   
 )
-model_performance_kacangtanah_svr
+model_performance_kacangtanah_svr_radial
 ```
 Berdasarkan hasil diatas, kalau dilihat dari performance matrik tingkat kesalahan yang paling rendah (MAE), maka model **SVR dengan Grid Search** yang dianggap sebagai model terbaik dalam hal akurasi prediksi produksi kacang tanah
 
 ### - Intepretasikan dan Membandingkan Model SVR dengan Grid Search dan Random Search - Ubi Jalar
 ```{r}
-model_performance_ubijalar_svr <- data.frame(
+model_performance_ubijalar_svr_radial <- data.frame(
   No = c(1:2),
   Model = c("Grid Search", "Random Search"),
-  MSE = c(gs_mse_value_svr_ubijalar, rs_mse_value_svr_ubijalar),
-  RSME = c(gs_rmse_value_svr_ubijalar, rs_rmse_value_svr_ubijalar),
-  MAE = c(gs_mae_value_svr_ubijalar, rs_mae_value_svr_ubijalar),
-  MAPE = c(gs_mape_value_svr_ubijalar, rs_mape_value_svr_ubijalar),
+  MSE = c(gs_mse_value_svr_ubijalar_radial, rs_mse_value_svr_ubijalar_radial),
+  RSME = c(gs_rmse_value_svr_ubijalar_radial, rs_rmse_value_svr_ubijalar_radial),
+  MAE = c(gs_mae_value_svr_ubijalar_radial, rs_mae_value_svr_ubijalar_radial),
+  MAPE = c(gs_mape_value_svr_ubijalar_radial, rs_mape_value_svr_ubijalar_radial),
   stringsAsFactors = FALSE
   
 )
-model_performance_ubijalar_svr
+model_performance_ubijalar_svr_radial
 ```
 Berdasarkan hasil diatas, kalau dilihat dari performance matrik tingkat kesalahan yang paling rendah (MAE), maka model **SVR dengan Grid Search** yang dianggap sebagai model terbaik dalam hal akurasi prediksi produksi ubi jalar
 
 ### - Intepretasikan dan Membandingkan Model SVR dengan Grid Search dan Random Search - Ubi Kayu
 ```{r}
-model_performance_ubikayu_svr <- data.frame(
+model_performance_ubikayu_svr_radial <- data.frame(
   No = c(1:2),
   Model = c("Grid Search", "Random Search"),
-  MSE = c(gs_mse_value_svr_ubikayu, rs_mse_value_svr_ubikayu),
-  RSME = c(gs_rmse_value_svr_ubikayu, rs_rmse_value_svr_ubikayu),
-  MAE = c(gs_mae_value_svr_ubikayu, rs_mae_value_svr_ubikayu),
-  MAPE = c(gs_mape_value_svr_ubikayu, rs_mape_value_svr_ubikayu),
+  MSE = c(gs_mse_value_svr_ubikayu_radial, rs_mse_value_svr_ubikayu_radial),
+  RSME = c(gs_rmse_value_svr_ubikayu_radial, rs_rmse_value_svr_ubikayu_radial),
+  MAE = c(gs_mae_value_svr_ubikayu_radial, rs_mae_value_svr_ubikayu_radial),
+  MAPE = c(gs_mape_value_svr_ubikayu_radial, rs_mape_value_svr_ubikayu_radial),
   stringsAsFactors = FALSE
   
 )
-model_performance_ubikayu_svr
+model_performance_ubikayu_svr_radial
 ```
 Berdasarkan hasil diatas, kalau dilihat dari performance matrik tingkat kesalahan yang paling rendah (MAE), maka model **SVR dengan Grid Search** yang dianggap sebagai model terbaik dalam hal akurasi prediksi produksi ubi kayu
 
 
-##d. Intepretasikan dan Membandingkan Model Random Forest dan SVR
-### - Intepretasikan dan Membandingkan Model Random Forest dan SVR - Jagung
+##- Kernel Linear
+### Mengatur Optimisasi hyperparameter
 ```{r}
-model_performance_jagung <- data.frame(
-  No = c(1:2),
-  Model = c("Random Forest", "SVR"),
-  MSE = c(gs_mse_value_rf_jagung, gs_mse_value_svr_jagung),
-  RSME = c(gs_rmse_value_rf_jagung, gs_rmse_value_svr_jagung),
-  MAE = c(gs_mae_value_rf_jagung, gs_mae_value_svr_jagung),
-  MAPE = c(gs_mape_value_rf_jagung, gs_mape_value_svr_jagung),
-  stringsAsFactors = FALSE
-  
-)
-model_performance_jagung
-```
-Berdasarkan hasil diatas, kalau dilihat dari performance matrik tingkat kesalahan yang paling rendah (MAE), maka model **Random Forest** yang dianggap sebagai model terbaik dalam hal akurasi prediksi produksi jagung.
+# Mengatur Optimisasi hyperparameter
+## grid search
+hyper_grid_linear <- expand.grid(C = c(0.1, 1, 10, 100))
 
-### - Intepretasikan dan Membandingkan Model Random Forest dan SVR - Kacang Hijau
-```{r}
-model_performance_kacanghijau <- data.frame(
-  No = c(1:2),
-  Model = c("Random Forest", "SVR"),
-  MSE = c(gs_mse_value_rf_kacanghijau, gs_mse_value_svr_kacanghijau),
-  RSME = c(gs_rmse_value_rf_kacanghijau, gs_rmse_value_svr_kacanghijau),
-  MAE = c(gs_mae_value_rf_kacanghijau, gs_mae_value_svr_kacanghijau),
-  MAPE = c(gs_mape_value_rf_kacanghijau, gs_mape_value_svr_kacanghijau),
-  stringsAsFactors = FALSE
-  
-)
-model_performance_kacanghijau
-```
-Berdasarkan hasil diatas, kalau dilihat dari performance matrik tingkat kesalahan yang paling rendah (MAE), maka model **Random Forest** yang dianggap sebagai model terbaik dalam hal akurasi prediksi produksi kacang hijau.
+## random search
+hyper_grid_random_linear <- data.frame(C = runif(50, 0.1, 100))
 
-### - Intepretasikan dan Membandingkan Model Random Forest dan SVR - Kacang Kedelai
-```{r}
-model_performance_kacangkedelai <- data.frame(
-  No = c(1:2),
-  Model = c("Random Forest", "SVR"),
-  MSE = c(gs_mse_value_rf_kacangkedelai, gs_mse_value_svr_kacangkedelai),
-  RSME = c(gs_rmse_value_rf_kacangkedelai, gs_rmse_value_svr_kacangkedelai),
-  MAE = c(gs_mae_value_rf_kacangkedelai, gs_mae_value_svr_kacangkedelai),
-  MAPE = c(gs_mape_value_rf_kacangkedelai, gs_mape_value_svr_kacangkedelai),
-  stringsAsFactors = FALSE
-  
-)
-model_performance_kacangkedelai
+# Membuat kontrol untuk cross-validation
+ctrl <- trainControl(method = "cv", number = 10)
 ```
-Berdasarkan hasil diatas, kalau dilihat dari performance matrik tingkat kesalahan yang paling rendah (MAE), maka model **Random Forest** yang dianggap sebagai model terbaik dalam hal akurasi prediksi produksi kacang kedelai
+### 1. Membuat Model SVR - Jagung
+#### a. Grid search
+```{r}
+# Melakukan grid search
+gs_jagung_svr_linear <- train(Produksi ~ Produktivitas + Luas_Panen,
+                         data = datajagung_train,
+                          method = "svmLinear",
+                         trControl = ctrl,
+                         tuneGrid = hyper_grid_linear)
 
-### - Intepretasikan dan Membandingkan Model Random Forest dan SVR - Kacang Tanah
-```{r}
-model_performance_kacangtanah <- data.frame(
-  No = c(1:2),
-  Model = c("Random Forest", "SVR"),
-  MSE = c(gs_mse_value_rf_kacangtanah, gs_mse_value_svr_kacangtanah),
-  RSME = c(gs_rmse_value_rf_kacangtanah, gs_rmse_value_svr_kacangtanah),
-  MAE = c(gs_mae_value_rf_kacangtanah, gs_mae_value_svr_kacangtanah),
-  MAPE = c(gs_mape_value_rf_kacangtanah, gs_mape_value_svr_kacangtanah),
-  stringsAsFactors = FALSE
-  
-)
-model_performance_kacangtanah
+# Melihat hasil grid search
+print(gs_jagung_svr_linear)
 ```
-Berdasarkan hasil diatas, kalau dilihat dari performance matrik tingkat kesalahan yang paling rendah (MAE), maka model **Random Forest** yang dianggap sebagai model terbaik dalam hal akurasi prediksi produksi kacang tanah
+The final value used for the model was C = 1.
+```{r}
+# Membuat model SVR dengan hiperparameter terbaik
+gs_jagung_svr_model_linear <- svm(Produksi ~ Produktivitas + Luas_Panen, 
+                       data = datajagung_train, 
+                       kernel = "linear", 
+                       cost = 1,
+                        epsilon=  0.001)
 
-### - Intepretasikan dan Membandingkan Model Random Forest dan SVR - Ubi Jalar
-```{r}
-model_performance_ubijalar <- data.frame(
-  No = c(1:2),
-  Model = c("Random Forest", "SVR"),
-  MSE = c(gs_mse_value_rf_ubijalar, gs_mse_value_svr_ubijalar),
-  RSME = c(gs_rmse_value_rf_ubijalar, gs_rmse_value_svr_ubijalar),
-  MAE = c(gs_mae_value_rf_ubijalar, gs_mae_value_svr_ubijalar),
-  MAPE = c(gs_mape_value_rf_ubijalar, gs_mape_value_svr_ubijalar),
-  stringsAsFactors = FALSE
-  
-)
-model_performance_ubijalar
+# Melihat ringkasan dari model
+print(gs_jagung_svr_model_linear)
 ```
-Berdasarkan hasil diatas, kalau dilihat dari performance matrik tingkat kesalahan yang paling rendah (MAE), maka model **Random Forest** yang dianggap sebagai model terbaik dalam hal akurasi prediksi produksi ubi jalar
+```{r}
+# Melakukan prediksi dengan Data Testing
+gs_predictions_svr_jagung_linear <- predict(gs_jagung_svr_model_linear, datajagung_test)
+gs_predictions_svr_jagung_linear
+```
 
-### - Intepretasikan dan Membandingkan Model Random Forest dan SVR - Ubi Kayu
 ```{r}
-model_performance_ubikayu <- data.frame(
+# Visualisasi hasil prediksi
+gs_result_datajagung_svr_linear <- data.frame(Produksi = datajagung_test$Produksi, Predictions = gs_predictions_svr_jagung_linear)
+
+ggplot(data = gs_result_datajagung_svr_linear, aes(x = Produksi, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
+  theme_minimal()
+```
+```{r}
+# Evaluasi SVR Model
+
+# Hitung MAE
+gs_mae_value_svr_jagung_linear <- mae(datajagung_test$Produksi, gs_predictions_svr_jagung_linear)
+
+# Hitung MSE
+gs_mse_value_svr_jagung_linear <- mse(datajagung_test$Produksi, gs_predictions_svr_jagung_linear)
+
+# Hitung RMSE
+gs_rmse_value_svr_jagung_linear <- rmse(datajagung_test$Produksi, gs_predictions_svr_jagung_linear)
+
+# Hitung MAPE
+gs_mape_value_svr_jagung_linear <- mape(datajagung_test$Produksi, gs_predictions_svr_jagung_linear)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", gs_mae_value_svr_jagung_linear, "\n"))
+cat(paste("MSE: ", gs_mse_value_svr_jagung_linear, "\n"))
+cat(paste("RMSE: ", gs_rmse_value_svr_jagung_linear, "\n"))
+cat(paste("MAPE: ", gs_mape_value_svr_jagung_linear, "%\n"))
+```
+
+#### b. Random search
+```{r}
+# Melakukan random search
+rs_jagung_svr_linear <- train(Produksi ~ Produktivitas + Luas_Panen,
+                           data = datajagung_train,
+                           method = "svmLinear",
+                           trControl = ctrl,
+                           tuneGrid = hyper_grid_random_linear)
+
+# Melihat hasil random search
+print(rs_jagung_svr_linear)
+print(rs_jagung_svr_linear$bestTune)
+```
+RMSE was used to select the optimal model
+ using the smallest value.
+The final value used for the model was C
+ = 0.877359.
+
+```{r}
+# Membuat model SVR dengan hiperparameter terbaik
+jagung_svr_model_linear <- svm(Produksi ~ Produktivitas + Luas_Panen, 
+                       data = datajagung_train, 
+                       kernel = "linear",
+                       cost = 0.877359, 
+                       epsilon=  0.001
+                       
+                       )
+
+# Melihat ringkasan dari model
+print(jagung_svr_model_linear)
+
+
+```
+
+```{r}
+# Melakukan prediksi dengan Data Testing
+rs_predictions_svr_jagung_linear <- predict(jagung_svr_model_linear, datajagung_test)
+rs_predictions_svr_jagung_linear
+```
+
+
+```{r}
+# Evaluasi SVR Model
+
+# Hitung MAE
+rs_mae_value_svr_jagung_linear <- mae(datajagung_test$Produksi, rs_predictions_svr_jagung_linear)
+
+# Hitung MSE
+rs_mse_value_svr_jagung_linear <- mse(datajagung_test$Produksi, rs_predictions_svr_jagung_linear)
+
+# Hitung RMSE
+rs_rmse_value_svr_jagung_linear <- rmse(datajagung_test$Produksi, rs_predictions_svr_jagung_linear)
+
+# Hitung MAPE
+rs_mape_value_svr_jagung_linear <- mape(datajagung_test$Produksi, rs_predictions_svr_jagung_linear)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", rs_mae_value_svr_jagung_linear, "\n"))
+cat(paste("MSE: ", rs_mse_value_svr_jagung_linear, "\n"))
+cat(paste("RMSE: ", rs_rmse_value_svr_jagung_linear, "\n"))
+cat(paste("MAPE: ", rs_mape_value_svr_jagung_linear, "%\n"))
+```
+
+
+### 2. Membuat Model SVR - Kacang Hijau
+#### a. Grid search
+```{r}
+# Melakukan grid search
+gs_kacanghijau_svr_linear <- train(Produksi ~ Produktivitas + Luas_Panen,
+                         data = datakacanghijau_train,
+                         method = "svmLinear",
+                         trControl = ctrl,
+                         tuneGrid = hyper_grid_linear)
+
+# Melihat hasil grid search
+print(gs_kacanghijau_svr_linear)
+```
+The final value used for the model was C = 10.
+```{r}
+# Membuat model SVR dengan hiperparameter terbaik
+gs_kacanghijau_svr_model_linear <- svm(Produksi ~ Produktivitas + Luas_Panen, 
+                       data = datakacanghijau_train, 
+                       kernel = "linear", 
+                       cost = 10,
+                       epsilon=  0.001)
+
+# Melihat ringkasan dari model
+print(gs_kacanghijau_svr_model_linear)
+```
+
+```{r}
+# Melakukan prediksi dengan Data Testing
+gs_predictions_svr_kacanghijau_linear <- predict(gs_kacanghijau_svr_model_linear, datakacanghijau_test)
+gs_predictions_svr_kacanghijau_linear
+```
+
+
+```{r}
+# Visualisasi hasil prediksi
+gs_result_datakacanghijau_svr_linear <- data.frame(Produksi = datakacanghijau_test$Produksi, Predictions = gs_predictions_svr_kacanghijau_linear)
+
+ggplot(data = gs_result_datakacanghijau_svr_linear, aes(x = Produksi, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
+  theme_minimal()
+```
+
+```{r}
+# Evaluasi SVR Model
+
+# Hitung MAE
+gs_mae_value_svr_kacanghijau_linear <- mae(datakacanghijau_test$Produksi, gs_predictions_svr_kacanghijau_linear)
+
+# Hitung MSE
+gs_mse_value_svr_kacanghijau_linear <- mse(datakacanghijau_test$Produksi, gs_predictions_svr_kacanghijau_linear)
+
+# Hitung RMSE
+gs_rmse_value_svr_kacanghijau_linear <- rmse(datakacanghijau_test$Produksi, gs_predictions_svr_kacanghijau_linear)
+
+# Hitung MAPE
+gs_mape_value_svr_kacanghijau_linear <- mape(datakacanghijau_test$Produksi, gs_predictions_svr_kacanghijau_linear)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", gs_mae_value_svr_kacanghijau_linear, "\n"))
+cat(paste("MSE: ", gs_mse_value_svr_kacanghijau_linear, "\n"))
+cat(paste("RMSE: ", gs_rmse_value_svr_kacanghijau_linear, "\n"))
+cat(paste("MAPE: ", gs_mape_value_svr_kacanghijau_linear, "%\n"))
+```
+
+#### b. Random search
+```{r}
+# Melakukan random search
+rs_kacanghijau_svr_linear <- train(Produksi ~ Produktivitas + Luas_Panen,
+                           data = datakacanghijau_train,
+                           method = "svmLinear",
+                           trControl = ctrl,
+                           tuneGrid = hyper_grid_random_linear)
+
+# Melihat hasil random search
+print(rs_kacanghijau_svr_linear)
+```
+The final value used for the model was C
+ = 56.99969.
+
+```{r}
+# Membuat model SVR dengan hiperparameter terbaik
+rs_kacanghijau_svr_model_linear <- svm(Produksi ~ Produktivitas + Luas_Panen, 
+                       data = datakacanghijau_train, 
+                       kernel = "linear", 
+                       cost = 56.99969,
+                       epsilon=  0.001)
+
+# Melihat ringkasan dari model
+print(rs_kacanghijau_svr_model_linear)
+```
+
+```{r}
+# Melakukan prediksi dengan Data Testing
+rs_predictions_svr_kacanghijau_linear <- predict(rs_kacanghijau_svr_model_linear, datakacanghijau_test)
+rs_predictions_svr_kacanghijau_linear
+```
+
+
+```{r}
+# Evaluasi SVR Model
+
+# Hitung MAE
+rs_mae_value_svr_kacanghijau_linear <- mae(datakacanghijau_test$Produksi, rs_predictions_svr_kacanghijau_linear)
+
+# Hitung MSE
+rs_mse_value_svr_kacanghijau_linear <- mse(datakacanghijau_test$Produksi, rs_predictions_svr_kacanghijau_linear)
+
+# Hitung RMSE
+rs_rmse_value_svr_kacanghijau_linear <- rmse(datakacanghijau_test$Produksi, rs_predictions_svr_kacanghijau_linear)
+
+# Hitung MAPE
+rs_mape_value_svr_kacanghijau_linear <- mape(datakacanghijau_test$Produksi, rs_predictions_svr_kacanghijau_linear)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", rs_mae_value_svr_kacanghijau_linear, "\n"))
+cat(paste("MSE: ", rs_mse_value_svr_kacanghijau_linear, "\n"))
+cat(paste("RMSE: ", rs_rmse_value_svr_kacanghijau_linear, "\n"))
+cat(paste("MAPE: ", rs_mape_value_svr_kacanghijau_linear, "%\n"))
+```
+
+
+### 3. Membuat Model SVR - Kacang Kedelai
+#### a. Grid search
+```{r}
+# Melakukan grid search
+gs_kacangkedelai_svr_linear <- train(Produksi ~ Produktivitas + Luas_Panen,
+                         data = datakacangkedelai_train,
+                         method = "svmLinear",
+                         trControl = ctrl,
+                         tuneGrid = hyper_grid_linear)
+
+# Melihat hasil grid search
+print(gs_kacangkedelai_svr_linear)
+```
+The final value used for the model was C = 0.1.
+```{r}
+# Membuat model SVR dengan hiperparameter terbaik
+gs_kacangkedelai_svr_model_linear <- svm(Produksi ~ Produktivitas + Luas_Panen, 
+                       data = datakacangkedelai_train, 
+                       kernel = "linear", 
+                       cost = 0.1,
+                       epsilon=  0.001
+                       )
+
+# Melihat ringkasan dari model
+print(gs_kacangkedelai_svr_model_linear)
+```
+
+```{r}
+# Melakukan prediksi dengan Data Testing
+gs_predictions_svr_kacangkedelai_linear <- predict(gs_kacangkedelai_svr_model_linear, datakacangkedelai_test)
+gs_predictions_svr_kacangkedelai_linear
+```
+
+
+```{r}
+# Visualisasi hasil prediksi
+gs_result_datakacangkedelai_svr_linear <- data.frame(Produksi = datakacangkedelai_test$Produksi, Predictions = gs_predictions_svr_kacangkedelai_linear)
+
+ggplot(data = gs_result_datakacangkedelai_svr_linear, aes(x = Produksi, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
+  theme_minimal()
+```
+
+```{r}
+# Evaluasi SVR Model
+
+# Hitung MAE
+gs_mae_value_svr_kacangkedelai_linear <- mae(datakacangkedelai_test$Produksi, gs_predictions_svr_kacangkedelai_linear)
+
+# Hitung MSE
+gs_mse_value_svr_kacangkedelai_linear <- mse(datakacangkedelai_test$Produksi, gs_predictions_svr_kacangkedelai_linear)
+
+# Hitung RMSE
+gs_rmse_value_svr_kacangkedelai_linear <- rmse(datakacangkedelai_test$Produksi, gs_predictions_svr_kacangkedelai_linear)
+
+# Hitung MAPE
+gs_mape_value_svr_kacangkedelai_linear <- mape(datakacangkedelai_test$Produksi, gs_predictions_svr_kacangkedelai_linear)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", gs_mae_value_svr_kacangkedelai_linear, "\n"))
+cat(paste("MSE: ", gs_mse_value_svr_kacangkedelai_linear, "\n"))
+cat(paste("RMSE: ", gs_rmse_value_svr_kacangkedelai_linear, "\n"))
+cat(paste("MAPE: ", gs_mape_value_svr_kacangkedelai_linear, "%\n"))
+```
+
+#### b. Random search
+```{r}
+# Melakukan random search
+rs_kacangkedelai_svr_linear <- train(Produksi ~ Produktivitas + Luas_Panen,
+                           data = datakacangkedelai_train,
+                           method = "svmLinear",
+                           trControl = ctrl,
+                           tuneGrid = hyper_grid_random_linear)
+
+# Melihat hasil random search
+print(rs_kacangkedelai_svr_linear)
+```
+The final value used for the model was C
+ = 0.877359.
+
+```{r}
+# Membuat model SVR dengan hiperparameter terbaik
+rs_kacangkedelai_svr_model_linear <- svm(Produksi ~ Produktivitas + Luas_Panen, 
+                       data = datakacangkedelai_train, 
+                       kernel = "linear", 
+                       cost = 0.877359,
+                       epsilon=  0.001)
+
+# Melihat ringkasan dari model
+print(rs_kacangkedelai_svr_model_linear)
+```
+
+```{r}
+# Melakukan prediksi dengan Data Testing
+rs_predictions_svr_kacangkedelai_linear <- predict(rs_kacangkedelai_svr_model_linear, datakacangkedelai_test)
+rs_predictions_svr_kacangkedelai_linear
+```
+
+
+```{r}
+# Evaluasi SVR Model
+
+# Hitung MAE
+rs_mae_value_svr_kacangkedelai_linear <- mae(datakacangkedelai_test$Produksi, rs_predictions_svr_kacangkedelai_linear)
+
+# Hitung MSE
+rs_mse_value_svr_kacangkedelai_linear <- mse(datakacangkedelai_test$Produksi, rs_predictions_svr_kacangkedelai_linear)
+
+# Hitung RMSE
+rs_rmse_value_svr_kacangkedelai_linear <- rmse(datakacangkedelai_test$Produksi, rs_predictions_svr_kacangkedelai_linear)
+
+# Hitung MAPE
+rs_mape_value_svr_kacangkedelai_linear <- mape(datakacangkedelai_test$Produksi, rs_predictions_svr_kacangkedelai_linear)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", rs_mae_value_svr_kacangkedelai_linear, "\n"))
+cat(paste("MSE: ", rs_mse_value_svr_kacangkedelai_linear, "\n"))
+cat(paste("RMSE: ", rs_rmse_value_svr_kacangkedelai_linear, "\n"))
+cat(paste("MAPE: ", rs_mape_value_svr_kacangkedelai_linear, "%\n"))
+```
+
+
+### 4. Membuat Model SVR - Kacang Tanah
+#### a. Grid search
+```{r}
+# Melakukan grid search
+gs_kacangtanah_svr_linear <- train(Produksi ~ Produktivitas + Luas_Panen,
+                         data = datakacangtanah_train,
+                         method = "svmLinear",
+                         trControl = ctrl,
+                         tuneGrid = hyper_grid_linear)
+
+# Melihat hasil grid search
+print(gs_kacangtanah_svr_linear)
+```
+The final value used for the model was C = 0.1.
+```{r}
+# Membuat model SVR dengan hiperparameter terbaik
+gs_kacangtanah_svr_model_linear <- svm(Produksi ~ Produktivitas + Luas_Panen, 
+                       data = datakacangtanah_train, 
+                       kernel = "linear", 
+                       cost = 0.1,
+                       epsilon=  0.001)
+
+# Melihat ringkasan dari model
+print(gs_kacangtanah_svr_model_linear)
+```
+
+```{r}
+# Melakukan prediksi dengan Data Testing
+gs_predictions_svr_kacangtanah_linear <- predict(gs_kacangtanah_svr_model_linear, datakacangtanah_test)
+gs_predictions_svr_kacangtanah_linear
+```
+
+
+```{r}
+# Visualisasi hasil prediksi
+gs_result_datakacangtanah_svr_linear<- data.frame(Produksi = datakacangtanah_test$Produksi, Predictions = gs_predictions_svr_kacangtanah_linear)
+
+ggplot(data = gs_result_datakacangtanah_svr_linear, aes(x = Produksi, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
+  theme_minimal()
+```
+
+```{r}
+# Evaluasi SVR Model
+
+# Hitung MAE
+gs_mae_value_svr_kacangtanah_linear <- mae(datakacangtanah_test$Produksi, gs_predictions_svr_kacangtanah_linear)
+
+# Hitung MSE
+gs_mse_value_svr_kacangtanah_linear <- mse(datakacangtanah_test$Produksi, gs_predictions_svr_kacangtanah_linear)
+
+# Hitung RMSE
+gs_rmse_value_svr_kacangtanah_linear <- rmse(datakacangtanah_test$Produksi, gs_predictions_svr_kacangtanah_linear)
+
+# Hitung MAPE
+gs_mape_value_svr_kacangtanah_linear <- mape(datakacangtanah_test$Produksi, gs_predictions_svr_kacangtanah_linear)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", gs_mae_value_svr_kacangtanah_linear, "\n"))
+cat(paste("MSE: ", gs_mse_value_svr_kacangtanah_linear, "\n"))
+cat(paste("RMSE: ", gs_rmse_value_svr_kacangtanah_linear, "\n"))
+cat(paste("MAPE: ", gs_mape_value_svr_kacangtanah_linear, "%\n"))
+```
+
+#### b. Random search
+```{r}
+# Melakukan random search
+rs_kacangtanah_svr_linear <- train(Produksi ~ Produktivitas + Luas_Panen,
+                           data = datakacangtanah_train,
+                           method = "svmLinear",
+                           trControl = ctrl,
+                           tuneGrid = hyper_grid_random_linear)
+
+# Melihat hasil random search
+print(rs_kacangtanah_svr_linear)
+```
+The final value used for the model was C = 0.1214563
+```{r}
+# Membuat model SVR dengan hiperparameter terbaik
+rs_kacangtanah_svr_model_linear <- svm(Produksi ~ Produktivitas + Luas_Panen, 
+                       data = datakacangtanah_train, 
+                       kernel = "linear", 
+                       cost = 0.1214563,
+                        epsilon=  0.001)
+
+# Melihat ringkasan dari model
+print(rs_kacangtanah_svr_model_linear)
+```
+
+```{r}
+# Melakukan prediksi dengan Data Testing
+rs_predictions_svr_kacangtanah_linear <- predict(rs_kacangtanah_svr_model_linear, datakacangtanah_test)
+rs_predictions_svr_kacangtanah_linear
+```
+
+
+```{r}
+# Evaluasi SVR Model
+
+# Hitung MAE
+rs_mae_value_svr_kacangtanah_linear <- mae(datakacangtanah_test$Produksi, rs_predictions_svr_kacangtanah_linear)
+
+# Hitung MSE
+rs_mse_value_svr_kacangtanah_linear <- mse(datakacangtanah_test$Produksi, rs_predictions_svr_kacangtanah_linear)
+
+# Hitung RMSE
+rs_rmse_value_svr_kacangtanah_linear <- rmse(datakacangtanah_test$Produksi, rs_predictions_svr_kacangtanah_linear)
+
+# Hitung MAPE
+rs_mape_value_svr_kacangtanah_linear <- mape(datakacangtanah_test$Produksi, rs_predictions_svr_kacangtanah_linear)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", rs_mae_value_svr_kacangtanah_linear, "\n"))
+cat(paste("MSE: ", rs_mse_value_svr_kacangtanah_linear, "\n"))
+cat(paste("RMSE: ", rs_rmse_value_svr_kacangtanah_linear, "\n"))
+cat(paste("MAPE: ", rs_mape_value_svr_kacangtanah_linear, "%\n"))
+```
+
+
+
+### 5. Membuat Model SVR - Ubi Jalar
+#### a. Grid search
+```{r}
+# Melakukan grid search
+gs_ubijalar_svr_linear <- train(Produksi ~ Produktivitas + Luas_Panen,
+                         data = dataubijalar_train,
+                         method = "svmLinear",
+                         trControl = ctrl,
+                         tuneGrid = hyper_grid_linear)
+
+# Melihat hasil grid search
+print(gs_ubijalar_svr_linear)
+```
+The final value used for the model was C = 1.
+```{r}
+# Membuat model SVR dengan hiperparameter terbaik
+gs_ubijalar_svr_model_linear <- svm(Produksi ~ Produktivitas + Luas_Panen, 
+                       data = dataubijalar_train, 
+                       kernel = "linear", 
+                       cost = 1,
+                        epsilon=  0.001)
+
+# Melihat ringkasan dari model
+print(gs_ubijalar_svr_model_linear)
+
+```
+
+```{r}
+# Melakukan prediksi dengan Data Testing
+gs_predictions_svr_ubijalar_linear <- predict(gs_ubijalar_svr_model_linear, dataubijalar_test)
+gs_predictions_svr_ubijalar_linear
+```
+
+
+```{r}
+# Visualisasi hasil prediksi
+gs_result_dataubijalar_svr_linear <- data.frame(Produksi = dataubijalar_test$Produksi, Predictions = gs_predictions_svr_ubijalar_linear)
+
+ggplot(data = gs_result_dataubijalar_svr_linear, aes(x = Produksi, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
+  theme_minimal()
+```
+
+```{r}
+# Evaluasi SVR Model
+
+# Hitung MAE
+gs_mae_value_svr_ubijalar_linear <- mae(dataubijalar_test$Produksi, gs_predictions_svr_ubijalar_linear)
+
+# Hitung MSE
+gs_mse_value_svr_ubijalar_linear <- mse(dataubijalar_test$Produksi, gs_predictions_svr_ubijalar_linear)
+
+# Hitung RMSE
+gs_rmse_value_svr_ubijalar_linear <- rmse(dataubijalar_test$Produksi, gs_predictions_svr_ubijalar_linear)
+
+# Hitung MAPE
+gs_mape_value_svr_ubijalar_linear <- mape(dataubijalar_test$Produksi, gs_predictions_svr_ubijalar_linear)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", gs_mae_value_svr_ubijalar_linear, "\n"))
+cat(paste("MSE: ", gs_mse_value_svr_ubijalar_linear, "\n"))
+cat(paste("RMSE: ", gs_rmse_value_svr_ubijalar_linear, "\n"))
+cat(paste("MAPE: ", gs_mape_value_svr_ubijalar_linear, "%\n"))
+```
+
+#### b. Random search
+```{r}
+# Melakukan random search
+rs_ubijalar_svr_linear <- train(Produksi ~ Produktivitas + Luas_Panen,
+                           data = dataubijalar_train,
+                           method = "svmLinear",
+                           trControl = ctrl,
+                           tuneGrid = hyper_grid_random_linear)
+
+# Melihat hasil random search
+print(rs_ubijalar_svr_linear)
+```
+The final value used for the model was C = 6.650893.
+
+```{r}
+# Membuat model SVR dengan hiperparameter terbaik
+rs_ubijalar_svr_model_linear <- svm(Produksi ~ Produktivitas + Luas_Panen, 
+                       data = dataubijalar_train, 
+                       kernel = "linear", 
+                       cost = 6.650893,
+                       epsilon=  0.001 )
+
+# Melihat ringkasan dari model
+print(rs_ubijalar_svr_model_linear)
+```
+
+```{r}
+# Melakukan prediksi dengan Data Testing
+rs_predictions_svr_ubijalar_linear <- predict(rs_ubijalar_svr_model_linear, dataubijalar_test)
+rs_predictions_svr_ubijalar_linear
+```
+
+
+```{r}
+# Evaluasi SVR Model
+
+# Hitung MAE
+rs_mae_value_svr_ubijalar_linear <- mae(dataubijalar_test$Produksi, rs_predictions_svr_ubijalar_linear)
+
+# Hitung MSE
+rs_mse_value_svr_ubijalar_linear <- mse(dataubijalar_test$Produksi, rs_predictions_svr_ubijalar_linear)
+
+# Hitung RMSE
+rs_rmse_value_svr_ubijalar_linear <- rmse(dataubijalar_test$Produksi, rs_predictions_svr_ubijalar_linear)
+
+# Hitung MAPE
+rs_mape_value_svr_ubijalar_linear <- mape(dataubijalar_test$Produksi, rs_predictions_svr_ubijalar_linear)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", rs_mae_value_svr_ubijalar_linear, "\n"))
+cat(paste("MSE: ", rs_mse_value_svr_ubijalar_linear, "\n"))
+cat(paste("RMSE: ", rs_rmse_value_svr_ubijalar_linear, "\n"))
+cat(paste("MAPE: ", rs_mape_value_svr_ubijalar_linear, "%\n"))
+```
+
+
+
+### 6. Membuat Model SVR - Ubi Kayu
+#### a. Grid search
+```{r}
+# Melakukan grid search
+gs_ubikayu_svr_linear <- train(Produksi ~ Produktivitas + Luas_Panen,
+                         data = dataubikayu_train,
+                         method = "svmLinear",
+                         trControl = ctrl,
+                         tuneGrid = hyper_grid_linear)
+
+# Melihat hasil grid search
+print(gs_ubikayu_svr_linear)
+```
+The final value used for the model was C = 10.
+```{r}
+# Membuat model SVR dengan hiperparameter terbaik
+gs_ubikayu_svr_model_linear <- svm(Produksi ~ Produktivitas + Luas_Panen, 
+                       data = dataubikayu_train, 
+                       kernel = "linear", 
+                       cost = 10,
+                        epsilon=  0.001)
+
+# Melihat ringkasan dari model
+print(gs_ubikayu_svr_model_linear)
+
+```
+
+```{r}
+# Melakukan prediksi dengan Data Testing
+gs_predictions_svr_ubikayu_linear <- predict(gs_ubikayu_svr_model_linear, dataubikayu_test)
+gs_predictions_svr_ubikayu_linear
+```
+
+
+```{r}
+# Visualisasi hasil prediksi
+gs_result_dataubikayu_linear <- data.frame(Produksi = dataubikayu_test$Produksi, Predictions = gs_predictions_svr_ubikayu_linear)
+
+ggplot(data = gs_result_dataubikayu_linear, aes(x = Produksi, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
+  theme_minimal()
+```
+
+```{r}
+# Evaluasi SVR Model
+
+# Hitung MAE
+gs_mae_value_svr_ubikayu_linear <- mae(dataubikayu_test$Produksi, gs_predictions_svr_ubikayu_linear)
+
+# Hitung MSE
+gs_mse_value_svr_ubikayu_linear <- mse(dataubikayu_test$Produksi, gs_predictions_svr_ubikayu_linear)
+
+# Hitung RMSE
+gs_rmse_value_svr_ubikayu_linear <- rmse(dataubikayu_test$Produksi, gs_predictions_svr_ubikayu_linear)
+
+# Hitung MAPE
+gs_mape_value_svr_ubikayu_linear <- mape(dataubikayu_test$Produksi, gs_predictions_svr_ubikayu_linear)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", gs_mae_value_svr_ubikayu_linear, "\n"))
+cat(paste("MSE: ", gs_mse_value_svr_ubikayu_linear, "\n"))
+cat(paste("RMSE: ", gs_rmse_value_svr_ubikayu_linear, "\n"))
+cat(paste("MAPE: ", gs_mape_value_svr_ubikayu_linear, "%\n"))
+```
+
+#### b. Random search
+```{r}
+# Melakukan random search
+rs_ubikayu_svr_linear <- train(Produksi ~ Produktivitas + Luas_Panen,
+                           data = dataubikayu_train,
+                           method = "svmLinear",
+                           trControl = ctrl,
+                           tuneGrid = hyper_grid_random_linear)
+
+# Melihat hasil random search
+print(rs_ubikayu_svr_linear)
+```
+The final value used for the model was C = 47.93008
+
+```{r}
+# Membuat model SVR dengan hiperparameter terbaik
+rs_ubikayu_svr_model_linear <- svm(Produksi ~ Produktivitas + Luas_Panen, 
+                       data = dataubikayu_train, 
+                       kernel = "linear", 
+                       cost = 47.93008,
+                        epsilon=  0.001)
+
+# Melihat ringkasan dari model
+print(rs_ubikayu_svr_model_linear)
+
+
+```
+
+```{r}
+# Melakukan prediksi dengan Data Testing
+rs_predictions_svr_ubikayu_linear <- predict(rs_ubikayu_svr_model_linear, dataubikayu_test)
+rs_predictions_svr_ubikayu_linear
+```
+
+
+```{r}
+# Evaluasi SVR Model
+
+# Hitung MAE
+rs_mae_value_svr_ubikayu_linear <- mae(dataubikayu_test$Produksi, rs_predictions_svr_ubikayu_linear)
+
+# Hitung MSE
+rs_mse_value_svr_ubikayu_linear <- mse(dataubikayu_test$Produksi, rs_predictions_svr_ubikayu_linear)
+
+# Hitung RMSE
+rs_rmse_value_svr_ubikayu_linear <- rmse(dataubikayu_test$Produksi, rs_predictions_svr_ubikayu_linear)
+
+# Hitung MAPE
+rs_mape_value_svr_ubikayu_linear <- mape(dataubikayu_test$Produksi, rs_predictions_svr_ubikayu_linear)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", rs_mae_value_svr_ubikayu_linear, "\n"))
+cat(paste("MSE: ", rs_mse_value_svr_ubikayu_linear, "\n"))
+cat(paste("RMSE: ", rs_rmse_value_svr_ubikayu_linear, "\n"))
+cat(paste("MAPE: ", rs_mape_value_svr_ubikayu_linear, "%\n"))
+```
+
+
+####c. Intepretasikan dan Membandingkan Model SVR dengan Grid Search dan Random Search
+###  - Intepretasikan dan Membandingkan Model SVR dengan Grid Search dan Random Search- Jagung
+```{r}
+model_performance_jagung_svr_linear <- data.frame(
   No = c(1:2),
-  Model = c("Random Forest", "SVR"),
-  MSE = c(gs_mse_value_rf_ubikayu, gs_mse_value_svr_ubikayu),
-  RSME = c(gs_rmse_value_rf_ubikayu, gs_rmse_value_svr_ubikayu),
-  MAE = c(gs_mae_value_rf_ubikayu, gs_mae_value_svr_ubikayu),
-  MAPE = c(gs_mape_value_rf_ubikayu, gs_mape_value_svr_ubikayu),
+  Model = c("Grid Search", "Random Search"),
+  MSE = c(gs_mse_value_svr_jagung_linear, rs_mse_value_svr_jagung_linear),
+  RSME = c(gs_rmse_value_svr_jagung_linear, rs_rmse_value_svr_jagung_linear),
+  MAE = c(gs_mae_value_svr_jagung_linear, rs_mae_value_svr_jagung_linear),
+  MAPE = c(gs_mape_value_svr_jagung_linear, rs_mape_value_svr_jagung_linear),
   stringsAsFactors = FALSE
   
 )
-model_performance_ubikayu
+model_performance_jagung_svr_linear
 ```
-Berdasarkan hasil diatas, kalau dilihat dari performance matrik tingkat kesalahan yang paling rendah (MAE), maka model **Random Forest** yang dianggap sebagai model terbaik dalam hal akurasi prediksi produksi ubi kayu
+Berdasarkan hasil diatas, kalau dilihat dari performance matrik tingkat kesalahan yang paling rendah (MAE), maka model **SVR dengan Grid Search** yang dianggap sebagai model terbaik dalam hal akurasi prediksi produksi jagung.
+
+### - Intepretasikan dan Membandingkan Model SVR dengan Grid Search dan Random Search - Kacang Hijau
+```{r}
+model_performance_kacanghijau_svr_linear <- data.frame(
+  No = c(1:2),
+  Model = c("Grid Search", "Random Search"),
+  MSE = c(gs_mse_value_svr_kacanghijau_linear, rs_mse_value_svr_kacanghijau_linear),
+  RSME = c(gs_rmse_value_svr_kacanghijau_linear, rs_rmse_value_svr_kacanghijau_linear),
+  MAE = c(gs_mae_value_svr_kacanghijau_linear, rs_mae_value_svr_kacanghijau_linear),
+  MAPE = c(gs_mape_value_svr_kacanghijau_linear, rs_mape_value_svr_kacanghijau_linear),
+  stringsAsFactors = FALSE
+  
+)
+model_performance_kacanghijau_svr_linear
+```
+Berdasarkan hasil diatas, kalau dilihat dari performance matrik tingkat kesalahan yang paling rendah (MAE), maka model **SVR  dengan Random Search** yang dianggap sebagai model terbaik dalam hal akurasi prediksi produksi kacang hijau.
+
+### - Intepretasikan dan Membandingkan Model SVR dengan Grid Search dan Random Search - Kacang Kedelai
+```{r}
+model_performance_kacangkedelai_svr_linear <- data.frame(
+  No = c(1:2),
+  Model = c("Grid Search", "Random Search"),
+  MSE = c(gs_mse_value_svr_kacangkedelai_linear, rs_mse_value_svr_kacangkedelai_linear),
+  RSME = c(gs_rmse_value_svr_kacangkedelai_linear, rs_rmse_value_svr_kacangkedelai_linear),
+  MAE = c(gs_mae_value_svr_kacangkedelai_linear, rs_mae_value_svr_kacangkedelai_linear),
+  MAPE = c(gs_mape_value_svr_kacangkedelai_linear, rs_mape_value_svr_kacangkedelai_linear),
+  stringsAsFactors = FALSE
+  
+)
+model_performance_kacangkedelai_svr_linear
+```
+Berdasarkan hasil diatas, kalau dilihat dari performance matrik tingkat kesalahan yang paling rendah (MAE), maka model **SVR dengan Grid Search** yang dianggap sebagai model terbaik dalam hal akurasi prediksi produksi kacang kedelai
+
+### - Intepretasikan dan Membandingkan Model SVR dengan Grid Search dan Random Search - Kacang Tanah
+```{r}
+model_performance_kacangtanah_svr_linear <- data.frame(
+  No = c(1:2),
+  Model = c("Grid Search", "Random Search"),
+  MSE = c(gs_mse_value_svr_kacangtanah_linear, rs_mse_value_svr_kacangtanah_linear),
+  RSME = c(gs_rmse_value_svr_kacangtanah_linear, rs_rmse_value_svr_kacangtanah_linear),
+  MAE = c(gs_mae_value_svr_kacangtanah_linear, rs_mae_value_svr_kacangtanah_linear),
+  MAPE = c(gs_mape_value_svr_kacangtanah_linear, rs_mape_value_svr_kacangtanah_linear),
+  stringsAsFactors = FALSE
+  
+)
+model_performance_kacangtanah_svr_linear
+```
+Berdasarkan hasil diatas, kalau dilihat dari performance matrik tingkat kesalahan yang paling rendah (MAE), maka model **SVR dengan Grid Search** yang dianggap sebagai model terbaik dalam hal akurasi prediksi produksi kacang tanah
+
+### - Intepretasikan dan Membandingkan Model SVR dengan Grid Search dan Random Search - Ubi Jalar
+```{r}
+model_performance_ubijalar_svr_linear <- data.frame(
+  No = c(1:2),
+  Model = c("Grid Search", "Random Search"),
+  MSE = c(gs_mse_value_svr_ubijalar_linear, rs_mse_value_svr_ubijalar_linear),
+  RSME = c(gs_rmse_value_svr_ubijalar_linear, rs_rmse_value_svr_ubijalar_linear),
+  MAE = c(gs_mae_value_svr_ubijalar_linear, rs_mae_value_svr_ubijalar_linear),
+  MAPE = c(gs_mape_value_svr_ubijalar_linear, rs_mape_value_svr_ubijalar_linear),
+  stringsAsFactors = FALSE
+  
+)
+model_performance_ubijalar_svr_linear
+```
+Berdasarkan hasil diatas, kalau dilihat dari performance matrik tingkat kesalahan yang paling rendah (MAE), maka model **SVR dengan Grid Search** yang dianggap sebagai model terbaik dalam hal akurasi prediksi produksi ubi jalar
+
+### - Intepretasikan dan Membandingkan Model SVR dengan Grid Search dan Random Search - Ubi Kayu
+```{r}
+model_performance_ubikayu_svr_linear <- data.frame(
+  No = c(1:2),
+  Model = c("Grid Search", "Random Search"),
+  MSE = c(gs_mse_value_svr_ubikayu_linear, rs_mse_value_svr_ubikayu_linear),
+  RSME = c(gs_rmse_value_svr_ubikayu_linear, rs_rmse_value_svr_ubikayu_linear),
+  MAE = c(gs_mae_value_svr_ubikayu_linear, rs_mae_value_svr_ubikayu_linear),
+  MAPE = c(gs_mape_value_svr_ubikayu_linear, rs_mape_value_svr_ubikayu_linear),
+  stringsAsFactors = FALSE
+  
+)
+model_performance_ubikayu_svr_linear
+```
+Berdasarkan hasil diatas, kalau dilihat dari performance matrik tingkat kesalahan yang paling rendah (MAE), maka model **SVR dengan Grid Search** yang dianggap sebagai model terbaik dalam hal akurasi prediksi produksi ubi kayu
+
+
+
+##- Kernel Polynomial
+### Mengatur Optimisasi hyperparameter
+```{r}
+# Mengatur Optimisasi hyperparameter
+## grid search
+hyper_grid_poly <- expand.grid( degree = c(2, 3),  # Tambahkan degree
+                                scale = c(0.1, 1),
+                                C = c(0.1, 1, 10, 100))
+
+## random search
+hyper_grid_random_poly <- data.frame(degree = runif(50, 2, 3),
+                                     scale = runif(50, 0.1, 1),
+                                C = runif(50, 0.1, 100))
+
+# Membuat kontrol untuk cross-validation
+ctrl <- trainControl(method = "cv", number = 10)
+```
+
+### 1. Membuat Model SVR - Jagung
+#### a. Grid search
+```{r}
+# Melakukan grid search
+gs_jagung_svr_poly <- train(Produksi ~ Produktivitas + Luas_Panen,
+                         data = datajagung_train,
+                          method = "svmPoly",
+                         trControl = ctrl,
+                         tuneGrid = hyper_grid_poly)
+
+# Melihat hasil grid search
+print(gs_jagung_svr_poly)
+```
+The final values used for the model were degree = 2, scale = 0.1 and C = 1.
+```{r}
+# Membuat model SVR dengan hiperparameter terbaik
+gs_jagung_svr_model_poly <- svm(Produksi ~ Produktivitas + Luas_Panen, 
+                       data = datajagung_train, 
+                       kernel = "polynomial", 
+                       degree = 2,
+                       cost = 1,
+                       epsilon=  0.0001)
+
+# Melihat ringkasan dari model
+print(gs_jagung_svr_model_poly)
+```
+```{r}
+# Melakukan prediksi dengan Data Testing
+gs_predictions_svr_jagung_poly <- predict(gs_jagung_svr_model_poly, datajagung_test)
+gs_predictions_svr_jagung_poly
+```
+
+```{r}
+# Visualisasi hasil prediksi
+gs_result_datajagung_svr_poly <- data.frame(Produksi = datajagung_test$Produksi, Predictions = gs_predictions_svr_jagung_poly)
+
+ggplot(data = gs_result_datajagung_svr_poly, aes(x = Produksi, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
+  theme_minimal()
+```
+```{r}
+# Evaluasi SVR Model
+
+# Hitung MAE
+gs_mae_value_svr_jagung_poly <- mae(datajagung_test$Produksi, gs_predictions_svr_jagung_poly)
+
+# Hitung MSE
+gs_mse_value_svr_jagung_poly <- mse(datajagung_test$Produksi, gs_predictions_svr_jagung_poly)
+
+# Hitung RMSE
+gs_rmse_value_svr_jagung_poly <- rmse(datajagung_test$Produksi, gs_predictions_svr_jagung_poly)
+
+# Hitung MAPE
+gs_mape_value_svr_jagung_poly <- mape(datajagung_test$Produksi, gs_predictions_svr_jagung_poly)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", gs_mae_value_svr_jagung_poly, "\n"))
+cat(paste("MSE: ", gs_mse_value_svr_jagung_poly, "\n"))
+cat(paste("RMSE: ", gs_rmse_value_svr_jagung_poly, "\n"))
+cat(paste("MAPE: ", gs_mape_value_svr_jagung_poly, "%\n"))
+```
+
+#### b. Random search
+```{r}
+# Melakukan random search
+rs_jagung_svr_poly <- train(Produksi ~ Produktivitas + Luas_Panen,
+                           data = datajagung_train,
+                           method = "svmPoly",
+                           trControl = ctrl,
+                           tuneGrid = hyper_grid_random_poly)
+
+# Melihat hasil random search
+print(rs_jagung_svr_poly)
+print(rs_jagung_svr_poly$bestTune)
+```
+The final values used for the model were degree = 2.01564, scale = 0.3638907 and C = 4.888363.
+```{r}
+# Membuat model SVR dengan hiperparameter terbaik
+jagung_svr_model_poly <- svm(Produksi ~ Produktivitas + Luas_Panen, 
+                       data = datajagung_train, 
+                       kernel = "polynomial",
+                       degree = 2.01564,
+                       cost = 4.888363, 
+                       epsilon=  0.0001
+                       
+                       )
+
+# Melihat ringkasan dari model
+print(jagung_svr_model_poly)
+
+
+```
+
+```{r}
+# Melakukan prediksi dengan Data Testing
+rs_predictions_svr_jagung_poly <- predict(jagung_svr_model_poly, datajagung_test)
+rs_predictions_svr_jagung_poly
+```
+
+
+```{r}
+# Evaluasi SVR Model
+
+# Hitung MAE
+rs_mae_value_svr_jagung_poly <- mae(datajagung_test$Produksi, rs_predictions_svr_jagung_poly)
+
+# Hitung MSE
+rs_mse_value_svr_jagung_poly <- mse(datajagung_test$Produksi, rs_predictions_svr_jagung_poly)
+
+# Hitung RMSE
+rs_rmse_value_svr_jagung_poly <- rmse(datajagung_test$Produksi, rs_predictions_svr_jagung_poly)
+
+# Hitung MAPE
+rs_mape_value_svr_jagung_poly <- mape(datajagung_test$Produksi, rs_predictions_svr_jagung_poly)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", rs_mae_value_svr_jagung_poly, "\n"))
+cat(paste("MSE: ", rs_mse_value_svr_jagung_poly, "\n"))
+cat(paste("RMSE: ", rs_rmse_value_svr_jagung_poly, "\n"))
+cat(paste("MAPE: ", rs_mape_value_svr_jagung_poly, "%\n"))
+```
+
+
+### 2. Membuat Model SVR - Kacang Hijau
+#### a. Grid search
+```{r}
+# Melakukan grid search
+gs_kacanghijau_svr_poly <- train(Produksi ~ Produktivitas + Luas_Panen,
+                         data = datakacanghijau_train,
+                         method = "svmPoly",
+                         trControl = ctrl,
+                         tuneGrid = hyper_grid_poly)
+
+# Melihat hasil grid search
+print(gs_kacanghijau_svr_poly)
+```
+The final values used for the model were degree = 3, scale = 1 and C = 0.1.
+```{r}
+# Membuat model SVR dengan hiperparameter terbaik
+gs_kacanghijau_svr_model_poly <- svm(Produksi ~ Produktivitas + Luas_Panen, 
+                       data = datakacanghijau_train, 
+                       kernel = "polynomial", 
+                       degree = 3,
+                       cost = 0.1,
+                       epsilon=  0.0001)
+
+# Melihat ringkasan dari model
+print(gs_kacanghijau_svr_model_poly)
+```
+
+```{r}
+# Melakukan prediksi dengan Data Testing
+gs_predictions_svr_kacanghijau_poly <- predict(gs_kacanghijau_svr_model_poly, datakacanghijau_test)
+gs_predictions_svr_kacanghijau_poly
+```
+
+
+```{r}
+# Visualisasi hasil prediksi
+gs_result_datakacanghijau_svr_poly <- data.frame(Produksi = datakacanghijau_test$Produksi, Predictions = gs_predictions_svr_kacanghijau_poly)
+
+ggplot(data = gs_result_datakacanghijau_svr_poly, aes(x = Produksi, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
+  theme_minimal()
+```
+
+```{r}
+# Evaluasi SVR Model
+
+# Hitung MAE
+gs_mae_value_svr_kacanghijau_poly <- mae(datakacanghijau_test$Produksi, gs_predictions_svr_kacanghijau_poly)
+
+# Hitung MSE
+gs_mse_value_svr_kacanghijau_poly <- mse(datakacanghijau_test$Produksi, gs_predictions_svr_kacanghijau_poly)
+
+# Hitung RMSE
+gs_rmse_value_svr_kacanghijau_poly <- rmse(datakacanghijau_test$Produksi, gs_predictions_svr_kacanghijau_poly)
+
+# Hitung MAPE
+gs_mape_value_svr_kacanghijau_poly <- mape(datakacanghijau_test$Produksi, gs_predictions_svr_kacanghijau_poly)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", gs_mae_value_svr_kacanghijau_poly, "\n"))
+cat(paste("MSE: ", gs_mse_value_svr_kacanghijau_poly, "\n"))
+cat(paste("RMSE: ", gs_rmse_value_svr_kacanghijau_poly, "\n"))
+cat(paste("MAPE: ", gs_mape_value_svr_kacanghijau_poly, "%\n"))
+```
+
+#### b. Random search
+```{r}
+# Melakukan random search
+rs_kacanghijau_svr_poly <- train(Produksi ~ Produktivitas + Luas_Panen,
+                           data = datakacanghijau_train,
+                           method = "svmPoly",
+                           trControl = ctrl,
+                           tuneGrid = hyper_grid_random_poly)
+
+# Melihat hasil random search
+print(rs_kacanghijau_svr_poly)
+```
+The final values used for the model were degree = 2.00286, scale = 0.7608127 and C = 21.7318.
+
+```{r}
+# Membuat model SVR dengan hiperparameter terbaik
+rs_kacanghijau_svr_model_poly <- svm(Produksi ~ Produktivitas + Luas_Panen, 
+                       data = datakacanghijau_train, 
+                       kernel = "polynomial", 
+                       degree = 2.00286,
+                       cost = 21.7318,
+                       epsilon=  0.0001)
+
+# Melihat ringkasan dari model
+print(rs_kacanghijau_svr_model_poly)
+```
+
+```{r}
+# Melakukan prediksi dengan Data Testing
+rs_predictions_svr_kacanghijau_poly <- predict(rs_kacanghijau_svr_model_poly, datakacanghijau_test)
+rs_predictions_svr_kacanghijau_poly
+```
+
+
+```{r}
+# Evaluasi SVR Model
+
+# Hitung MAE
+rs_mae_value_svr_kacanghijau_poly <- mae(datakacanghijau_test$Produksi, rs_predictions_svr_kacanghijau_poly)
+
+# Hitung MSE
+rs_mse_value_svr_kacanghijau_poly <- mse(datakacanghijau_test$Produksi, rs_predictions_svr_kacanghijau_poly)
+
+# Hitung RMSE
+rs_rmse_value_svr_kacanghijau_poly <- rmse(datakacanghijau_test$Produksi, rs_predictions_svr_kacanghijau_poly)
+
+# Hitung MAPE
+rs_mape_value_svr_kacanghijau_poly <- mape(datakacanghijau_test$Produksi, rs_predictions_svr_kacanghijau_poly)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", rs_mae_value_svr_kacanghijau_poly, "\n"))
+cat(paste("MSE: ", rs_mse_value_svr_kacanghijau_poly, "\n"))
+cat(paste("RMSE: ", rs_rmse_value_svr_kacanghijau_poly, "\n"))
+cat(paste("MAPE: ", rs_mape_value_svr_kacanghijau_poly, "%\n"))
+```
+
+
+### 3. Membuat Model SVR - Kacang Kedelai
+#### a. Grid search
+```{r}
+# Melakukan grid search
+gs_kacangkedelai_svr_poly <- train(Produksi ~ Produktivitas + Luas_Panen,
+                         data = datakacangkedelai_train,
+                         method = "svmPoly",
+                         trControl = ctrl,
+                         tuneGrid = hyper_grid_poly)
+
+# Melihat hasil grid search
+print(gs_kacangkedelai_svr_poly)
+```
+The final values used for the model were degree = 3, scale = 1 and C = 100.
+```{r}
+# Membuat model SVR dengan hiperparameter terbaik
+gs_kacangkedelai_svr_model_poly <- svm(Produksi ~ Produktivitas + Luas_Panen, 
+                       data = datakacangkedelai_train, 
+                       kernel = "polynomial", 
+                       degree = 3,
+                       cost = 100,
+                       epsilon=  0.0001
+                       )
+
+# Melihat ringkasan dari model
+print(gs_kacangkedelai_svr_model_poly)
+```
+
+```{r}
+# Melakukan prediksi dengan Data Testing
+gs_predictions_svr_kacangkedelai_poly <- predict(gs_kacangkedelai_svr_model_poly, datakacangkedelai_test)
+gs_predictions_svr_kacangkedelai_poly
+```
+
+
+```{r}
+# Visualisasi hasil prediksi
+gs_result_datakacangkedelai_svr_poly <- data.frame(Produksi = datakacangkedelai_test$Produksi, Predictions = gs_predictions_svr_kacangkedelai_poly)
+
+ggplot(data = gs_result_datakacangkedelai_svr_poly, aes(x = Produksi, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
+  theme_minimal()
+```
+
+```{r}
+# Evaluasi SVR Model
+
+# Hitung MAE
+gs_mae_value_svr_kacangkedelai_poly <- mae(datakacangkedelai_test$Produksi, gs_predictions_svr_kacangkedelai_poly)
+
+# Hitung MSE
+gs_mse_value_svr_kacangkedelai_poly <- mse(datakacangkedelai_test$Produksi, gs_predictions_svr_kacangkedelai_poly)
+
+# Hitung RMSE
+gs_rmse_value_svr_kacangkedelai_poly <- rmse(datakacangkedelai_test$Produksi, gs_predictions_svr_kacangkedelai_poly)
+
+# Hitung MAPE
+gs_mape_value_svr_kacangkedelai_poly <- mape(datakacangkedelai_test$Produksi, gs_predictions_svr_kacangkedelai_poly)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", gs_mae_value_svr_kacangkedelai_poly, "\n"))
+cat(paste("MSE: ", gs_mse_value_svr_kacangkedelai_poly, "\n"))
+cat(paste("RMSE: ", gs_rmse_value_svr_kacangkedelai_poly, "\n"))
+cat(paste("MAPE: ", gs_mape_value_svr_kacangkedelai_poly, "%\n"))
+```
+
+#### b. Random search
+```{r}
+# Melakukan random search
+rs_kacangkedelai_svr_poly <- train(Produksi ~ Produktivitas + Luas_Panen,
+                           data = datakacangkedelai_train,
+                           method = "svmPoly",
+                           trControl = ctrl,
+                           tuneGrid = hyper_grid_random_poly)
+
+# Melihat hasil random search
+print(rs_kacangkedelai_svr_poly)
+```
+The final values used for the model were degree = 2.01564, scale = 0.3638907 and C = 4.888363.
+```{r}
+# Membuat model SVR dengan hiperparameter terbaik
+rs_kacangkedelai_svr_model_poly <- svm(Produksi ~ Produktivitas + Luas_Panen, 
+                       data = datakacangkedelai_train, 
+                       kernel = "polynomial", 
+                       degree = 2.01564,
+                       cost = 4.888363,
+                       epsilon=  0.0001)
+
+# Melihat ringkasan dari model
+print(rs_kacangkedelai_svr_model_poly)
+```
+
+```{r}
+# Melakukan prediksi dengan Data Testing
+rs_predictions_svr_kacangkedelai_poly <- predict(rs_kacangkedelai_svr_model_poly, datakacangkedelai_test)
+rs_predictions_svr_kacangkedelai_poly
+```
+
+
+```{r}
+# Evaluasi SVR Model
+
+# Hitung MAE
+rs_mae_value_svr_kacangkedelai_poly <- mae(datakacangkedelai_test$Produksi, rs_predictions_svr_kacangkedelai_poly)
+
+# Hitung MSE
+rs_mse_value_svr_kacangkedelai_poly <- mse(datakacangkedelai_test$Produksi, rs_predictions_svr_kacangkedelai_poly)
+
+# Hitung RMSE
+rs_rmse_value_svr_kacangkedelai_poly <- rmse(datakacangkedelai_test$Produksi, rs_predictions_svr_kacangkedelai_poly)
+
+# Hitung MAPE
+rs_mape_value_svr_kacangkedelai_poly <- mape(datakacangkedelai_test$Produksi, rs_predictions_svr_kacangkedelai_poly)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", rs_mae_value_svr_kacangkedelai_poly, "\n"))
+cat(paste("MSE: ", rs_mse_value_svr_kacangkedelai_poly, "\n"))
+cat(paste("RMSE: ", rs_rmse_value_svr_kacangkedelai_poly, "\n"))
+cat(paste("MAPE: ", rs_mape_value_svr_kacangkedelai_poly, "%\n"))
+```
+
+
+### 4. Membuat Model SVR - Kacang Tanah
+#### a. Grid search
+```{r}
+# Melakukan grid search
+gs_kacangtanah_svr_poly <- train(Produksi ~ Produktivitas + Luas_Panen,
+                         data = datakacangtanah_train,
+                         method = "svmPoly",
+                         trControl = ctrl,
+                         tuneGrid = hyper_grid_poly)
+
+# Melihat hasil grid search
+print(gs_kacangtanah_svr_poly)
+```
+The final values used for the model were degree = 3, scale = 1 and C = 0.1.
+```{r}
+# Membuat model SVR dengan hiperparameter terbaik
+gs_kacangtanah_svr_model_poly <- svm(Produksi ~ Produktivitas + Luas_Panen, 
+                       data = datakacangtanah_train, 
+                       kernel = "polynomial", 
+                       degree = 3,
+                       cost = 0.1,
+                       epsilon=  0.0001)
+
+# Melihat ringkasan dari model
+print(gs_kacangtanah_svr_model_poly)
+```
+
+```{r}
+# Melakukan prediksi dengan Data Testing
+gs_predictions_svr_kacangtanah_poly <- predict(gs_kacangtanah_svr_model_poly, datakacangtanah_test)
+gs_predictions_svr_kacangtanah_poly
+```
+
+
+```{r}
+# Visualisasi hasil prediksi
+gs_result_datakacangtanah_svr_poly<- data.frame(Produksi = datakacangtanah_test$Produksi, Predictions = gs_predictions_svr_kacangtanah_poly)
+
+ggplot(data = gs_result_datakacangtanah_svr_poly, aes(x = Produksi, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
+  theme_minimal()
+```
+
+```{r}
+# Evaluasi SVR Model
+
+# Hitung MAE
+gs_mae_value_svr_kacangtanah_poly <- mae(datakacangtanah_test$Produksi, gs_predictions_svr_kacangtanah_poly)
+
+# Hitung MSE
+gs_mse_value_svr_kacangtanah_poly <- mse(datakacangtanah_test$Produksi, gs_predictions_svr_kacangtanah_poly)
+
+# Hitung RMSE
+gs_rmse_value_svr_kacangtanah_poly <- rmse(datakacangtanah_test$Produksi, gs_predictions_svr_kacangtanah_poly)
+
+# Hitung MAPE
+gs_mape_value_svr_kacangtanah_poly <- mape(datakacangtanah_test$Produksi, gs_predictions_svr_kacangtanah_poly)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", gs_mae_value_svr_kacangtanah_poly, "\n"))
+cat(paste("MSE: ", gs_mse_value_svr_kacangtanah_poly, "\n"))
+cat(paste("RMSE: ", gs_rmse_value_svr_kacangtanah_poly, "\n"))
+cat(paste("MAPE: ", gs_mape_value_svr_kacangtanah_poly, "%\n"))
+```
+
+#### b. Random search
+```{r}
+# Melakukan random search
+rs_kacangtanah_svr_poly <- train(Produksi ~ Produktivitas + Luas_Panen,
+                           data = datakacangtanah_train,
+                           method = "svmPoly",
+                           trControl = ctrl,
+                           tuneGrid = hyper_grid_random_poly)
+
+# Melihat hasil random search
+print(rs_kacangtanah_svr_poly)
+```
+The final values used for the model were degree = 2.219823, scale = 0.9529776 and C = 66.29891
+```{r}
+# Membuat model SVR dengan hiperparameter terbaik
+rs_kacangtanah_svr_model_poly <- svm(Produksi ~ Produktivitas + Luas_Panen, 
+                       data = datakacangtanah_train, 
+                       kernel = "polynomial", 
+                       degree = 2.219823,
+                       cost = 66.29891,
+                       epsilon=  0.0001)
+
+# Melihat ringkasan dari model
+print(rs_kacangtanah_svr_model_poly)
+```
+
+```{r}
+# Melakukan prediksi dengan Data Testing
+rs_predictions_svr_kacangtanah_poly <- predict(rs_kacangtanah_svr_model_poly, datakacangtanah_test)
+rs_predictions_svr_kacangtanah_poly
+```
+
+
+```{r}
+# Evaluasi SVR Model
+
+# Hitung MAE
+rs_mae_value_svr_kacangtanah_poly <- mae(datakacangtanah_test$Produksi, rs_predictions_svr_kacangtanah_poly)
+
+# Hitung MSE
+rs_mse_value_svr_kacangtanah_poly <- mse(datakacangtanah_test$Produksi, rs_predictions_svr_kacangtanah_poly)
+
+# Hitung RMSE
+rs_rmse_value_svr_kacangtanah_poly <- rmse(datakacangtanah_test$Produksi, rs_predictions_svr_kacangtanah_poly)
+
+# Hitung MAPE
+rs_mape_value_svr_kacangtanah_poly <- mape(datakacangtanah_test$Produksi, rs_predictions_svr_kacangtanah_poly)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", rs_mae_value_svr_kacangtanah_poly, "\n"))
+cat(paste("MSE: ", rs_mse_value_svr_kacangtanah_poly, "\n"))
+cat(paste("RMSE: ", rs_rmse_value_svr_kacangtanah_poly, "\n"))
+cat(paste("MAPE: ", rs_mape_value_svr_kacangtanah_poly, "%\n"))
+```
+
+
+
+### 5. Membuat Model SVR - Ubi Jalar
+#### a. Grid search
+```{r}
+# Melakukan grid search
+gs_ubijalar_svr_poly <- train(Produksi ~ Produktivitas + Luas_Panen,
+                         data = dataubijalar_train,
+                         method = "svmPoly",
+                         trControl = ctrl,
+                         tuneGrid = hyper_grid_poly)
+
+# Melihat hasil grid search
+print(gs_ubijalar_svr_poly)
+```
+The final values used for the model were degree = 2, scale = 1 and C = 1.
+```{r}
+# Membuat model SVR dengan hiperparameter terbaik
+gs_ubijalar_svr_model_poly <- svm(Produksi ~ Produktivitas + Luas_Panen, 
+                       data = dataubijalar_train, 
+                       kernel = "polynomial",
+                       degree = 2,
+                       cost = 1,
+                       epsilon=  0.0001)
+
+# Melihat ringkasan dari model
+print(gs_ubijalar_svr_model_poly)
+
+```
+
+```{r}
+# Melakukan prediksi dengan Data Testing
+gs_predictions_svr_ubijalar_poly <- predict(gs_ubijalar_svr_model_poly, dataubijalar_test)
+gs_predictions_svr_ubijalar_poly
+```
+
+
+```{r}
+# Visualisasi hasil prediksi
+gs_result_dataubijalar_svr_poly <- data.frame(Produksi = dataubijalar_test$Produksi, Predictions = gs_predictions_svr_ubijalar_poly)
+
+ggplot(data = gs_result_dataubijalar_svr_poly, aes(x = Produksi, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
+  theme_minimal()
+```
+
+```{r}
+# Evaluasi SVR Model
+
+# Hitung MAE
+gs_mae_value_svr_ubijalar_poly <- mae(dataubijalar_test$Produksi, gs_predictions_svr_ubijalar_poly)
+
+# Hitung MSE
+gs_mse_value_svr_ubijalar_poly <- mse(dataubijalar_test$Produksi, gs_predictions_svr_ubijalar_poly)
+
+# Hitung RMSE
+gs_rmse_value_svr_ubijalar_poly <- rmse(dataubijalar_test$Produksi, gs_predictions_svr_ubijalar_poly)
+
+# Hitung MAPE
+gs_mape_value_svr_ubijalar_poly <- mape(dataubijalar_test$Produksi, gs_predictions_svr_ubijalar_poly)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", gs_mae_value_svr_ubijalar_poly, "\n"))
+cat(paste("MSE: ", gs_mse_value_svr_ubijalar_poly, "\n"))
+cat(paste("RMSE: ", gs_rmse_value_svr_ubijalar_poly, "\n"))
+cat(paste("MAPE: ", gs_mape_value_svr_ubijalar_poly, "%\n"))
+```
+
+#### b. Random search
+```{r}
+# Melakukan random search
+rs_ubijalar_svr_poly <- train(Produksi ~ Produktivitas + Luas_Panen,
+                           data = dataubijalar_train,
+                           method = "svmPoly",
+                           trControl = ctrl,
+                           tuneGrid = hyper_grid_random_poly)
+
+# Melihat hasil random search
+print(rs_ubijalar_svr_poly)
+```
+The final values used for the model were degree = 2.00286, scale = 0.7608127 and C = 21.7318.
+
+```{r}
+# Membuat model SVR dengan hiperparameter terbaik
+rs_ubijalar_svr_model_poly <- svm(Produksi ~ Produktivitas + Luas_Panen, 
+                       data = dataubijalar_train, 
+                       kernel = "polynomial", 
+                       degree = 2.00286,
+                       cost = 21.7318,
+                       epsilon=  0.0001)
+
+# Melihat ringkasan dari model
+print(rs_ubijalar_svr_model_poly)
+```
+
+```{r}
+# Melakukan prediksi dengan Data Testing
+rs_predictions_svr_ubijalar_poly <- predict(rs_ubijalar_svr_model_poly, dataubijalar_test)
+rs_predictions_svr_ubijalar_poly
+```
+
+
+```{r}
+# Evaluasi SVR Model
+
+# Hitung MAE
+rs_mae_value_svr_ubijalar_poly <- mae(dataubijalar_test$Produksi, rs_predictions_svr_ubijalar_poly)
+
+# Hitung MSE
+rs_mse_value_svr_ubijalar_poly <- mse(dataubijalar_test$Produksi, rs_predictions_svr_ubijalar_poly)
+
+# Hitung RMSE
+rs_rmse_value_svr_ubijalar_poly <- rmse(dataubijalar_test$Produksi, rs_predictions_svr_ubijalar_poly)
+
+# Hitung MAPE
+rs_mape_value_svr_ubijalar_poly <- mape(dataubijalar_test$Produksi, rs_predictions_svr_ubijalar_poly)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", rs_mae_value_svr_ubijalar_poly, "\n"))
+cat(paste("MSE: ", rs_mse_value_svr_ubijalar_poly, "\n"))
+cat(paste("RMSE: ", rs_rmse_value_svr_ubijalar_poly, "\n"))
+cat(paste("MAPE: ", rs_mape_value_svr_ubijalar_poly, "%\n"))
+```
+
+
+
+### 6. Membuat Model SVR - Ubi Kayu
+#### a. Grid search
+```{r}
+# Melakukan grid search
+gs_ubikayu_svr_poly <- train(Produksi ~ Produktivitas + Luas_Panen,
+                         data = dataubikayu_train,
+                         method = "svmPoly",
+                         trControl = ctrl,
+                         tuneGrid = hyper_grid_poly)
+
+# Melihat hasil grid search
+print(gs_ubikayu_svr_poly)
+```
+The final values used for the model were degree = 2, scale = 0.1 and C = 1.
+```{r}
+# Membuat model SVR dengan hiperparameter terbaik
+gs_ubikayu_svr_model_poly <- svm(Produksi ~ Produktivitas + Luas_Panen, 
+                       data = dataubikayu_train, 
+                       kernel = "polynomial", 
+                       degree = 2,
+                       cost = 1,
+                       epsilon=  0.0001)
+
+# Melihat ringkasan dari model
+print(gs_ubikayu_svr_model_poly)
+
+```
+
+```{r}
+# Melakukan prediksi dengan Data Testing
+gs_predictions_svr_ubikayu_poly <- predict(gs_ubikayu_svr_model_poly, dataubikayu_test)
+gs_predictions_svr_ubikayu_poly
+```
+
+
+```{r}
+# Visualisasi hasil prediksi
+gs_result_dataubikayu_poly <- data.frame(Produksi = dataubikayu_test$Produksi, Predictions = gs_predictions_svr_ubikayu_poly)
+
+ggplot(data = gs_result_dataubikayu_poly, aes(x = Produksi, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
+  theme_minimal()
+```
+
+```{r}
+# Evaluasi SVR Model
+
+# Hitung MAE
+gs_mae_value_svr_ubikayu_poly <- mae(dataubikayu_test$Produksi, gs_predictions_svr_ubikayu_poly)
+
+# Hitung MSE
+gs_mse_value_svr_ubikayu_poly <- mse(dataubikayu_test$Produksi, gs_predictions_svr_ubikayu_poly)
+
+# Hitung RMSE
+gs_rmse_value_svr_ubikayu_poly <- rmse(dataubikayu_test$Produksi, gs_predictions_svr_ubikayu_poly)
+
+# Hitung MAPE
+gs_mape_value_svr_ubikayu_poly <- mape(dataubikayu_test$Produksi, gs_predictions_svr_ubikayu_poly)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", gs_mae_value_svr_ubikayu_poly, "\n"))
+cat(paste("MSE: ", gs_mse_value_svr_ubikayu_poly, "\n"))
+cat(paste("RMSE: ", gs_rmse_value_svr_ubikayu_poly, "\n"))
+cat(paste("MAPE: ", gs_mape_value_svr_ubikayu_poly, "%\n"))
+```
+
+#### b. Random search
+```{r}
+# Melakukan random search
+rs_ubikayu_svr_poly <- train(Produksi ~ Produktivitas + Luas_Panen,
+                           data = dataubikayu_train,
+                           method = "svmPoly",
+                           trControl = ctrl,
+                           tuneGrid = hyper_grid_random_poly)
+
+# Melihat hasil random search
+print(rs_ubikayu_svr_poly)
+```
+The final values used for the model were degree = 2.012855, scale = 0.8010565 and C = 13.3279.
+
+```{r}
+# Membuat model SVR dengan hiperparameter terbaik
+rs_ubikayu_svr_model_poly <- svm(Produksi ~ Produktivitas + Luas_Panen, 
+                       data = dataubikayu_train, 
+                       kernel = "polynomial", 
+                       degree = 2.012855,
+                       cost = 13.3279,
+                       epsilon=  0.0001)
+
+# Melihat ringkasan dari model
+print(rs_ubikayu_svr_model_poly)
+
+
+```
+
+```{r}
+# Melakukan prediksi dengan Data Testing
+rs_predictions_svr_ubikayu_poly <- predict(rs_ubikayu_svr_model_poly, dataubikayu_test)
+rs_predictions_svr_ubikayu_poly
+```
+
+
+```{r}
+# Evaluasi SVR Model
+
+# Hitung MAE
+rs_mae_value_svr_ubikayu_poly <- mae(dataubikayu_test$Produksi, rs_predictions_svr_ubikayu_poly)
+
+# Hitung MSE
+rs_mse_value_svr_ubikayu_poly <- mse(dataubikayu_test$Produksi, rs_predictions_svr_ubikayu_poly)
+
+# Hitung RMSE
+rs_rmse_value_svr_ubikayu_poly <- rmse(dataubikayu_test$Produksi, rs_predictions_svr_ubikayu_poly)
+
+# Hitung MAPE
+rs_mape_value_svr_ubikayu_poly <- mape(dataubikayu_test$Produksi, rs_predictions_svr_ubikayu_poly)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", rs_mae_value_svr_ubikayu_poly, "\n"))
+cat(paste("MSE: ", rs_mse_value_svr_ubikayu_poly, "\n"))
+cat(paste("RMSE: ", rs_rmse_value_svr_ubikayu_poly, "\n"))
+cat(paste("MAPE: ", rs_mape_value_svr_ubikayu_poly, "%\n"))
+```
+
+
+####c. Intepretasikan dan Membandingkan Model SVR dengan Grid Search dan Random Search
+###  - Intepretasikan dan Membandingkan Model SVR dengan Grid Search dan Random Search- Jagung
+```{r}
+model_performance_jagung_svr_poly <- data.frame(
+  No = c(1:2),
+  Model = c("Grid Search", "Random Search"),
+  MSE = c(gs_mse_value_svr_jagung_poly, rs_mse_value_svr_jagung_poly),
+  RSME = c(gs_rmse_value_svr_jagung_poly, rs_rmse_value_svr_jagung_poly),
+  MAE = c(gs_mae_value_svr_jagung_poly, rs_mae_value_svr_jagung_poly),
+  MAPE = c(gs_mape_value_svr_jagung_poly, rs_mape_value_svr_jagung_poly),
+  stringsAsFactors = FALSE
+  
+)
+model_performance_jagung_svr_poly
+```
+Berdasarkan hasil diatas, kalau dilihat dari performance matrik tingkat kesalahan yang paling rendah (MAE), maka model **SVR dengan Grid Search** yang dianggap sebagai model terbaik dalam hal akurasi prediksi produksi jagung.
+
+### - Intepretasikan dan Membandingkan Model SVR dengan Grid Search dan Random Search - Kacang Hijau
+```{r}
+model_performance_kacanghijau_svr_poly <- data.frame(
+  No = c(1:2),
+  Model = c("Grid Search", "Random Search"),
+  MSE = c(gs_mse_value_svr_kacanghijau_poly, rs_mse_value_svr_kacanghijau_poly),
+  RSME = c(gs_rmse_value_svr_kacanghijau_poly, rs_rmse_value_svr_kacanghijau_poly),
+  MAE = c(gs_mae_value_svr_kacanghijau_poly, rs_mae_value_svr_kacanghijau_poly),
+  MAPE = c(gs_mape_value_svr_kacanghijau_poly, rs_mape_value_svr_kacanghijau_poly),
+  stringsAsFactors = FALSE
+  
+)
+model_performance_kacanghijau_svr_poly
+```
+Berdasarkan hasil diatas, kalau dilihat dari performance matrik tingkat kesalahan yang paling rendah (MAE), maka model **SVR  dengan Random Search** yang dianggap sebagai model terbaik dalam hal akurasi prediksi produksi kacang hijau.
+
+### - Intepretasikan dan Membandingkan Model SVR dengan Grid Search dan Random Search - Kacang Kedelai
+```{r}
+model_performance_kacangkedelai_svr_poly <- data.frame(
+  No = c(1:2),
+  Model = c("Grid Search", "Random Search"),
+  MSE = c(gs_mse_value_svr_kacangkedelai_poly, rs_mse_value_svr_kacangkedelai_poly),
+  RSME = c(gs_rmse_value_svr_kacangkedelai_poly, rs_rmse_value_svr_kacangkedelai_poly),
+  MAE = c(gs_mae_value_svr_kacangkedelai_poly, rs_mae_value_svr_kacangkedelai_poly),
+  MAPE = c(gs_mape_value_svr_kacangkedelai_poly, rs_mape_value_svr_kacangkedelai_poly),
+  stringsAsFactors = FALSE
+  
+)
+model_performance_kacangkedelai_svr_poly
+```
+Berdasarkan hasil diatas, kalau dilihat dari performance matrik tingkat kesalahan yang paling rendah (MAE), maka model **SVR dengan Grid Search** yang dianggap sebagai model terbaik dalam hal akurasi prediksi produksi kacang kedelai
+
+### - Intepretasikan dan Membandingkan Model SVR dengan Grid Search dan Random Search - Kacang Tanah
+```{r}
+model_performance_kacangtanah_svr_poly <- data.frame(
+  No = c(1:2),
+  Model = c("Grid Search", "Random Search"),
+  MSE = c(gs_mse_value_svr_kacangtanah_poly, rs_mse_value_svr_kacangtanah_poly),
+  RSME = c(gs_rmse_value_svr_kacangtanah_poly, rs_rmse_value_svr_kacangtanah_poly),
+  MAE = c(gs_mae_value_svr_kacangtanah_poly, rs_mae_value_svr_kacangtanah_poly),
+  MAPE = c(gs_mape_value_svr_kacangtanah_poly, rs_mape_value_svr_kacangtanah_poly),
+  stringsAsFactors = FALSE
+  
+)
+model_performance_kacangtanah_svr_poly
+```
+Berdasarkan hasil diatas, kalau dilihat dari performance matrik tingkat kesalahan yang paling rendah (MAE), maka model **SVR dengan Grid Search** yang dianggap sebagai model terbaik dalam hal akurasi prediksi produksi kacang tanah
+
+### - Intepretasikan dan Membandingkan Model SVR dengan Grid Search dan Random Search - Ubi Jalar
+```{r}
+model_performance_ubijalar_svr_poly <- data.frame(
+  No = c(1:2),
+  Model = c("Grid Search", "Random Search"),
+  MSE = c(gs_mse_value_svr_ubijalar_poly, rs_mse_value_svr_ubijalar_poly),
+  RSME = c(gs_rmse_value_svr_ubijalar_poly, rs_rmse_value_svr_ubijalar_poly),
+  MAE = c(gs_mae_value_svr_ubijalar_poly, rs_mae_value_svr_ubijalar_poly),
+  MAPE = c(gs_mape_value_svr_ubijalar_poly, rs_mape_value_svr_ubijalar_poly),
+  stringsAsFactors = FALSE
+  
+)
+model_performance_ubijalar_svr_poly
+```
+Berdasarkan hasil diatas, kalau dilihat dari performance matrik tingkat kesalahan yang paling rendah (MAE), maka model **SVR dengan Grid Search** yang dianggap sebagai model terbaik dalam hal akurasi prediksi produksi ubi jalar
+
+### - Intepretasikan dan Membandingkan Model SVR dengan Grid Search dan Random Search - Ubi Kayu
+```{r}
+model_performance_ubikayu_svr_poly <- data.frame(
+  No = c(1:2),
+  Model = c("Grid Search", "Random Search"),
+  MSE = c(gs_mse_value_svr_ubikayu_poly, rs_mse_value_svr_ubikayu_poly),
+  RSME = c(gs_rmse_value_svr_ubikayu_poly, rs_rmse_value_svr_ubikayu_poly),
+  MAE = c(gs_mae_value_svr_ubikayu_poly, rs_mae_value_svr_ubikayu_poly),
+  MAPE = c(gs_mape_value_svr_ubikayu_poly, rs_mape_value_svr_ubikayu_poly),
+  stringsAsFactors = FALSE
+  
+)
+model_performance_ubikayu_svr_poly
+```
+Berdasarkan hasil diatas, kalau dilihat dari performance matrik tingkat kesalahan yang paling rendah (MAE), maka model **SVR dengan Grid Search** yang dianggap sebagai model terbaik dalam hal akurasi prediksi produksi ubi kayu
 
 
