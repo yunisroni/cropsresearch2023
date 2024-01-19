@@ -603,7 +603,7 @@ Hasil analisis regresi linear dari model regresi yang mencoba memprediksi variab
 *Kesimpulan* menunjukan bahwa avg_rainfall secara signifikan mempengaruhi produktivitas Jagung
 
 
-## Interpretasi Jagung 
+### Interpretasi Jagung 
 Berdasarkan hasil analisis dengan model VAR, analisis kausalitas, dan regresi linear ini, kita dapat menyimpulkan bahwa:
 
 1. Dalam model VAR, bahwa variabel avg_rainfall berdampak pada produktivitas jagung karena nilai P-Value dari 2 lag yaitu  Lag1 dan lag4lebih rendah dari 0,05. tetapi avg_rainfall tidak berdampak pada produksi jagung karena nilai P-Value lebih besar dari 0,05  
@@ -612,6 +612,106 @@ Berdasarkan hasil analisis dengan model VAR, analisis kausalitas, dan regresi li
 
 3. Berdasarkan hasil analisis regresi didapatkan bahwa variabel "avg_rainfall"memiliki pengaruh yang signifikan terhadap variabel "Produktivitas," 
 
+
+### Membuat Prediksi dengan Model VAR
+```{r}
+# Membuat prediksi untuk beberapa tahun ke depan
+future_years <- 2023:2028
+future_years
+```
+
+```{r}
+forecast_var_jagung_Sumatera <- predict(var_model_jagung_Sumatera, n.ahead = length(future_years))
+forecast_var_jagung_Sumatera
+```
+
+
+```{r}
+# Membuat data frame untuk hasil prediksi
+predicted_data <- as.data.frame(forecast_var_jagung_Sumatera$fcst)
+predicted_data
+```
+
+```{r}
+# Menambahkan nama kolom sesuai dengan variabel dan tahun
+colnames(predicted_data) <- c(
+  paste("Produksi", future_years, sep="_")[1:4],  # Sesuaikan panjangnya
+  paste("avg_rainfall", future_years, sep="_")[1:4],  # Sesuaikan panjangnya
+  paste("Produktivitas", future_years, sep="_")[1:4]  # Sesuaikan panjangnya
+)
+predicted_data
+```
+
+```{r}
+# Visualisasi hasil prediksi
+matplot(future_years, predicted_data, type = "l", col = 1:3, lty = 1:3, xlab = "Tahun", ylab = "Nilai", main = "Prediksi Variabel")
+legend("topright", legend = colnames(predicted_data), col = 1:3, lty = 1:3)
+
+```
+
+```{r}
+# Visualisasi hasil prediksi untuk Produksi Jagung
+plot(future_years, predicted_data$Produksi, type = "l", col = "blue", xlab = "Tahun", ylab = "Produksi Jagung", main = "Prediksi Produksi Jagung")
+```
+
+```{r}
+# Visualisasi hasil prediksi untuk Curah Hujan
+plot(future_years, predicted_data$avg_rainfall, type = "l", col = "green", xlab = "Tahun", ylab = "Curah Hujan", main = "Prediksi Curah Hujan")
+```
+
+```{r}
+# Visualisasi hasil prediksi untuk Produktivitas Jagung
+plot(future_years, predicted_data$Produktivitas, type = "l", col = "red", xlab = "Tahun", ylab = "Produktivitas Jagung", main = "Prediksi Produktivitas Jagung")
+```
+
+```{r}
+ts_data_jagung_Sumatera2 <- as.data.frame(ts_data_jagung_Sumatera)
+ts_data_jagung_Sumatera2
+```
+
+
+```{r}
+# Contoh: Menghitung RMSE untuk Produksi Jagung
+actual_data <- ts_data_jagung_Sumatera2$Produksi
+rmse <- sqrt(mean((predicted_data$Produksi - actual_data)^2))
+print(paste("RMSE untuk Produksi Jagung: ", rmse))
+```
+```{r}
+class(ts_data_jagung_Sumatera)
+```
+
+```{r}
+# Menghitung RMSE untuk Produksi Jagung
+actual_data <- ts_data_jagung_Sumatera[, "Produksi"]
+rmse <- sqrt(mean((predicted_data$Produksi - actual_data)^2))
+print(paste("RMSE untuk Produksi Jagung: ", rmse))
+```
+```{r}
+# Menetapkan properti waktu (tsp) pada actual_data
+tsp(actual_data) <- tsp(ts_data_jagung_Sumatera)
+```
+
+
+```{r}
+# Menghitung RMSE untuk Produksi Jagung
+rmse <- sqrt(mean((predicted_data$Produksi - actual_data)^2))
+print(paste("RMSE untuk Produksi Jagung: ", rmse))
+```
+```{r}
+# Install dan memuat paket metrics
+if (!requireNamespace("metrics", quietly = TRUE)) {
+  install.packages("metrics")
+}
+library(metrics)
+```
+
+
+```{r}
+# Menghitung RMSE untuk Produksi Jagung
+rmse_value <- rmse(predicted_data$Produksi, actual_data)
+print(paste("RMSE untuk Produksi Jagung: ", rmse_value))
+
+```
 
 
 ## b.VAR terhadap Kacang Kedelai Sumatera
