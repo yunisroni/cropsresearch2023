@@ -1087,7 +1087,6 @@ dim(dataubikayu_test)
 ```{r}
 set.seed(123)
 controlGS <- trainControl(method="cv", number=10, search="grid")
-controlRS <- trainControl(method="cv", number=10, search="random")
 tunegrid <- expand.grid(mtry=c(1,2))
 ```
 
@@ -1356,9 +1355,9 @@ gs_ubijalar_rf <- train(
 print(gs_ubijalar_rf)
 
 ```
-The final value used for the model was mtry = 2.
+The final value used for the model was mtry = 1.
 ```{r}
-gs_ubijalar_rf_model <- randomForest(Produksi ~ Produktivitas + Luas_Panen, data = dataubijalar_train, ntree = 1000,mtry=2)
+gs_ubijalar_rf_model <- randomForest(Produksi ~ Produktivitas + Luas_Panen, data = dataubijalar_train, ntree = 1000,mtry=1)
 gs_ubijalar_rf_model
 ```
 
@@ -1419,9 +1418,9 @@ gs_ubikayu_rf <- train(
 print(gs_ubikayu_rf)
 
 ```
-The final value used for the model was mtry = 2.
+The final value used for the model was mtry = 1.
 ```{r}
-gs_ubikayu_rf_model <- randomForest(Produksi ~ Produktivitas + Luas_Panen, data = dataubikayu_train, ntree = 1000,mtry=2 )
+gs_ubikayu_rf_model <- randomForest(Produksi ~ Produktivitas + Luas_Panen, data = dataubikayu_train, ntree = 1000,mtry=1 )
 gs_ubikayu_rf_model
 ```
 
@@ -1469,12 +1468,18 @@ cat(paste("MAPE: ", gs_mape_value_rf_ubikayu, "%\n"))
 
 
 #### b. Random Search
-
-
+```{r}
+set.seed(123)
+controlRS <- trainControl(method="cv", number=10, search="random")
+mtry_jagung <- sqrt(ncol(datajagung_train)-1)
+mtry_kacanghijau <- sqrt(ncol(datakacanghijau_train)-1)
+mtry_kacangkedelai <- sqrt(ncol(datakacangkedelai_train)-1)
+mtry_kacangtanah <- sqrt(ncol(datakacangtanah_train)-1)
+mtry_ubijalar <- sqrt(ncol(dataubijalar_train)-1)
+mtry_ubikayu <- sqrt(ncol(dataubikayu_train)-1)
+```
 #####- Jagung
 ```{r}
-mtry_jagung <- sqrt(ncol(datajagung_train)-1)
-
 rs_jagung_rf <- train(Produksi ~ Produktivitas + Luas_Panen, data=datajagung_train, method="rf", tuneLength=5, trControl=controlRS)
 
 print(rs_jagung_rf)
@@ -1527,7 +1532,6 @@ cat(paste("MAPE: ", rs_mape_value_rf_jagung, "%\n"))
 
 #####- Kacang Hijau
 ```{r}
-mtry_kacanghijau <- sqrt(ncol(datakacanghijau_train)-1)
 
 rs_kacanghijau_rf <- train(Produksi ~ Produktivitas + Luas_Panen, data=datakacanghijau_train, method="rf", tuneLength=5, trControl=controlRS)
 
@@ -1582,8 +1586,6 @@ cat(paste("MAPE: ", rs_mape_value_rf_kacanghijau, "%\n"))
 
 #####- Kacang Kedelai
 ```{r}
-mtry_kacangkedelai <- sqrt(ncol(datakacangkedelai_train)-1)
-
 rs_kacangkedelai_rf <- train(Produksi ~ Produktivitas + Luas_Panen, data=datakacangkedelai_train, method="rf", tuneLength=5, trControl=controlRS)
 
 print(rs_kacangkedelai_rf)
@@ -1636,8 +1638,6 @@ cat(paste("MAPE: ", rs_mape_value_rf_kacangkedelai, "%\n"))
 
 #####- Kacang Tanah
 ```{r}
-mtry_kacangtanah <- sqrt(ncol(datakacangtanah_train)-1)
-
 rs_kacangtanah_rf <- train(Produksi ~ Produktivitas + Luas_Panen, data=datakacangtanah_train, method="rf", tuneLength=5, trControl=controlRS)
 
 print(rs_kacangtanah_rf)
@@ -1690,16 +1690,14 @@ cat(paste("MAPE: ", rs_mape_value_rf_kacangtanah, "%\n"))
 
 #####- Ubi Jalar
 ```{r}
-mtry_ubijalar <- sqrt(ncol(dataubijalar_train)-1)
-
 rs_ubijalar_rf <- train(Produksi ~ Produktivitas + Luas_Panen, data=dataubijalar_train, method="rf", tuneLength=5, trControl=controlRS)
 
 print(rs_ubijalar_rf)
 ```
-The final value used for the model was mtry = 2.
+The final value used for the model was mtry = 1.
 ```{r}
 # Melakukan Prediksi terhadap Data Pengujian
-rs_ubijalar_rf_model <- randomForest(Produksi ~ Produktivitas + Luas_Panen, data = dataubijalar_train, ntree = 1000,mtry=2 )
+rs_ubijalar_rf_model <- randomForest(Produksi ~ Produktivitas + Luas_Panen, data = dataubijalar_train, ntree = 1000,mtry=1 )
 rs_ubijalar_rf_model
 ```
 ```{r}
@@ -1746,15 +1744,13 @@ cat(paste("MAPE: ", rs_mape_value_rf_ubijalar, "%\n"))
 
 #####- Ubi Kayu
 ```{r}
-mtry_ubikayu <- sqrt(ncol(dataubikayu_train)-1)
-
-rs_ubikayu_rf <- train(Produksi ~ Produktivitas + Luas_Panen, data=datakacanghijau_train, method="rf", tuneLength=5, trControl=controlRS)
+rs_ubikayu_rf <- train(Produksi ~ Produktivitas + Luas_Panen, data=dataubikayu_train, method="rf", tuneLength=5, trControl=controlRS)
 
 print(rs_ubikayu_rf)
 ```
-The final value used for the model was mtry = 2.
+The final value used for the model was mtry = 1.
 ```{r}
-rs_ubikayu_rf_model <- randomForest(Produksi ~ Produktivitas + Luas_Panen, data = dataubikayu_train, ntree = 1000,mtry=2 )
+rs_ubikayu_rf_model <- randomForest(Produksi ~ Produktivitas + Luas_Panen, data = dataubikayu_train, ntree = 1000,mtry=1 )
 rs_ubikayu_rf_model
 ```
 ```{r}
@@ -1991,17 +1987,16 @@ rs_jagung_svr_radial <- train(Produksi ~ Produktivitas + Luas_Panen,
 
 # Melihat hasil random search
 print(rs_jagung_svr_radial)
-print(rs_jagung_svr_radial$bestTune)
 ```
-The final values used for the model were sigma = 0.278943 and C = 15.61181.
+The final values used for the model were sigma = 0.303019 and C = 10.91573.
 
 ```{r}
 # Membuat model SVR dengan hiperparameter terbaik
 jagung_svr_model_radial <- svm(Produksi ~ Produktivitas + Luas_Panen, 
                        data = datajagung_train, 
                        kernel = "radial",
-                       cost = 15.61181, 
-                       sigma = 0.278943,
+                       cost = 10.91573, 
+                       sigma = 0.303019 ,
                        epsilon=  0.0001
                        )
 
@@ -2017,6 +2012,19 @@ rs_predictions_svr_jagung_radial <- predict(jagung_svr_model_radial, datajagung_
 rs_predictions_svr_jagung_radial
 ```
 
+```{r}
+# Visualisasi hasil prediksi
+rs_result_datajagung_svr_radial <- data.frame(Produksi = datajagung_test$Produksi, Predictions = rs_predictions_svr_jagung_radial)
+
+ggplot(data = rs_result_datajagung_svr_radial, aes(x = Produksi, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
+  theme_minimal()
+```
 
 ```{r}
 # Evaluasi SVR Model
@@ -2123,15 +2131,15 @@ rs_kacanghijau_svr_radial <- train(Produksi ~ Produktivitas + Luas_Panen,
 # Melihat hasil random search
 print(rs_kacanghijau_svr_radial)
 ```
-The final values used for the model were sigma = 0.1010994 and C = 18.92422.
+The final values used for the model were sigma = 0.303019 and C = 10.91573.
 
 ```{r}
 # Membuat model SVR dengan hiperparameter terbaik
 rs_kacanghijau_svr_model_radial <- svm(Produksi ~ Produktivitas + Luas_Panen, 
                        data = datakacanghijau_train, 
                        kernel = "radial", 
-                       cost = 18.92422, 
-                       sigma = 0.1010994,
+                       cost = 10.91573, 
+                       sigma = 0.303019,
                        epsilon=  0.0001)
 
 # Melihat ringkasan dari model
@@ -2144,6 +2152,20 @@ rs_predictions_svr_kacanghijau_radial <- predict(rs_kacanghijau_svr_model_radial
 rs_predictions_svr_kacanghijau_radial
 ```
 
+
+```{r}
+# Visualisasi hasil prediksi
+rs_result_datakacanghijau_svr_radial <- data.frame(Produksi = datakacanghijau_test$Produksi, Predictions = rs_predictions_svr_kacanghijau_radial)
+
+ggplot(data = rs_result_datakacanghijau_svr_radial, aes(x = Produksi, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
+  theme_minimal()
+```
 
 ```{r}
 # Evaluasi SVR Model
@@ -2250,15 +2272,15 @@ rs_kacangkedelai_svr_radial <- train(Produksi ~ Produktivitas + Luas_Panen,
 # Melihat hasil random search
 print(rs_kacangkedelai_svr_radial)
 ```
-The final values used for the model were sigma = 0.1009415 and C = 7.176436.
+The final values used for the model were sigma = 0.1000824 and C = 88.8122.
 
 ```{r}
 # Membuat model SVR dengan hiperparameter terbaik
 rs_kacangkedelai_svr_model_radial <- svm(Produksi ~ Produktivitas + Luas_Panen, 
                        data = datakacangkedelai_train, 
                        kernel = "radial", 
-                       cost = 7.176436, 
-                       sigma = 0.1009415,
+                       cost = 88.8122, 
+                       sigma = 0.1000824,
                        epsilon=  0.0001)
 
 # Melihat ringkasan dari model
@@ -2271,6 +2293,19 @@ rs_predictions_svr_kacangkedelai_radial <- predict(rs_kacangkedelai_svr_model_ra
 rs_predictions_svr_kacangkedelai_radial
 ```
 
+```{r}
+# Visualisasi hasil prediksi
+rs_result_datakacangkedelai_svr_radial <- data.frame(Produksi = datakacangkedelai_test$Produksi, Predictions = rs_predictions_svr_kacangkedelai_radial)
+
+ggplot(data = rs_result_datakacangkedelai_svr_radial, aes(x = Produksi, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
+  theme_minimal()
+```
 
 ```{r}
 # Evaluasi SVR Model
@@ -2377,14 +2412,15 @@ rs_kacangtanah_svr_radial <- train(Produksi ~ Produktivitas + Luas_Panen,
 # Melihat hasil random search
 print(rs_kacangtanah_svr_radial)
 ```
-The final values used for the model were sigma = 0.1009415 and C = 7.176436.
+The final values used for the model were sigma = 0.1271073 and C = 34.57035.
+
 ```{r}
 # Membuat model SVR dengan hiperparameter terbaik
 rs_kacangtanah_svr_model_radial <- svm(Produksi ~ Produktivitas + Luas_Panen, 
                        data = datakacangtanah_train, 
                        kernel = "radial", 
-                       cost = 7.176436, 
-                       sigma = 0.1009415,
+                       cost = 34.57035, 
+                       sigma = 0.1271073 ,
                        epsilon=  0.0001)
 
 # Melihat ringkasan dari model
@@ -2397,6 +2433,19 @@ rs_predictions_svr_kacangtanah_radial <- predict(rs_kacangtanah_svr_model_radial
 rs_predictions_svr_kacangtanah_radial
 ```
 
+```{r}
+# Visualisasi hasil prediksi
+rs_result_datakacangtanah_svr_radial<- data.frame(Produksi = datakacangtanah_test$Produksi, Predictions = rs_predictions_svr_kacangtanah_radial)
+
+ggplot(data = rs_result_datakacangtanah_svr_radial, aes(x = Produksi, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
+  theme_minimal()
+```
 
 ```{r}
 # Evaluasi SVR Model
@@ -2504,15 +2553,15 @@ rs_ubijalar_svr_radial <- train(Produksi ~ Produktivitas + Luas_Panen,
 # Melihat hasil random search
 print(rs_ubijalar_svr_radial)
 ```
-The final values used for the model were sigma = 0.8915413 and C = 1.36784.
+The final values used for the model were sigma = 0.4187884 and C = 1.775559.
 
 ```{r}
 # Membuat model SVR dengan hiperparameter terbaik
 rs_ubijalar_svr_model_radial <- svm(Produksi ~ Produktivitas + Luas_Panen, 
                        data = dataubijalar_train, 
                        kernel = "radial", 
-                       cost = 1.36784, 
-                       sigma = 0.8915413 ,
+                       cost = 1.775559, 
+                       sigma = 0.4187884 ,
                        epsilon=  0.0001)
 
 # Melihat ringkasan dari model
@@ -2525,6 +2574,21 @@ rs_predictions_svr_ubijalar_radial <- predict(rs_ubijalar_svr_model_radial, data
 rs_predictions_svr_ubijalar_radial
 ```
 
+
+
+```{r}
+# Visualisasi hasil prediksi
+rs_result_dataubijalar_svr_radial <- data.frame(Produksi = dataubijalar_test$Produksi, Predictions = rs_predictions_svr_ubijalar_radial)
+
+ggplot(data = rs_result_dataubijalar_svr_radial, aes(x = Produksi, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
+  theme_minimal()
+```
 
 ```{r}
 # Evaluasi SVR Model
@@ -2632,15 +2696,15 @@ rs_ubikayu_svr_radial <- train(Produksi ~ Produktivitas + Luas_Panen,
 # Melihat hasil random search
 print(rs_ubikayu_svr_radial)
 ```
-The final values used for the model were sigma = 0.1009415 and C = 7.176436.
+The final values used for the model were sigma = 0.1000824 and C = 88.8122.
 
 ```{r}
 # Membuat model SVR dengan hiperparameter terbaik
 rs_ubikayu_svr_model_radial <- svm(Produksi ~ Produktivitas + Luas_Panen, 
                        data = dataubikayu_train, 
                        kernel = "radial", 
-                       cost = 7.176436, 
-                       sigma = 0.1009415,
+                       cost = 88.8122, 
+                       sigma = 0.1000824,
                        epsilon=  0.0001)
 
 # Melihat ringkasan dari model
@@ -2655,6 +2719,20 @@ rs_predictions_svr_ubikayu_radial <- predict(rs_ubikayu_svr_model_radial, dataub
 rs_predictions_svr_ubikayu_radial
 ```
 
+
+```{r}
+# Visualisasi hasil prediksi
+rs_result_dataubikayu_radial <- data.frame(Produksi = dataubikayu_test$Produksi, Predictions = rs_predictions_svr_ubikayu_radial)
+
+ggplot(data = rs_result_dataubikayu_radial, aes(x = Produksi, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
+  theme_minimal()
+```
 
 ```{r}
 # Evaluasi SVR Model
@@ -2866,19 +2944,17 @@ rs_jagung_svr_linear <- train(Produksi ~ Produktivitas + Luas_Panen,
 
 # Melihat hasil random search
 print(rs_jagung_svr_linear)
-print(rs_jagung_svr_linear$bestTune)
 ```
 RMSE was used to select the optimal model
  using the smallest value.
-The final value used for the model was C
- = 0.877359.
+The final value used for the model was C = 4.50806.
 
 ```{r}
 # Membuat model SVR dengan hiperparameter terbaik
 jagung_svr_model_linear <- svm(Produksi ~ Produktivitas + Luas_Panen, 
                        data = datajagung_train, 
                        kernel = "linear",
-                       cost = 0.877359, 
+                       cost = 4.50806, 
                        epsilon=  0.001
                        
                        )
@@ -2895,6 +2971,20 @@ rs_predictions_svr_jagung_linear <- predict(jagung_svr_model_linear, datajagung_
 rs_predictions_svr_jagung_linear
 ```
 
+
+```{r}
+# Visualisasi hasil prediksi
+rs_result_datajagung_svr_linear <- data.frame(Produksi = datajagung_test$Produksi, Predictions = rs_predictions_svr_jagung_linear)
+
+ggplot(data = rs_result_datajagung_svr_linear, aes(x = Produksi, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
+  theme_minimal()
+```
 
 ```{r}
 # Evaluasi SVR Model
@@ -3000,15 +3090,14 @@ rs_kacanghijau_svr_linear <- train(Produksi ~ Produktivitas + Luas_Panen,
 # Melihat hasil random search
 print(rs_kacanghijau_svr_linear)
 ```
-The final value used for the model was C
- = 56.99969.
+The final value used for the model was C = 76.8322
 
 ```{r}
 # Membuat model SVR dengan hiperparameter terbaik
 rs_kacanghijau_svr_model_linear <- svm(Produksi ~ Produktivitas + Luas_Panen, 
                        data = datakacanghijau_train, 
                        kernel = "linear", 
-                       cost = 56.99969,
+                       cost = 76.8322,
                        epsilon=  0.001)
 
 # Melihat ringkasan dari model
@@ -3021,6 +3110,20 @@ rs_predictions_svr_kacanghijau_linear <- predict(rs_kacanghijau_svr_model_linear
 rs_predictions_svr_kacanghijau_linear
 ```
 
+
+```{r}
+# Visualisasi hasil prediksi
+rs_result_datakacanghijau_svr_linear <- data.frame(Produksi = datakacanghijau_test$Produksi, Predictions = rs_predictions_svr_kacanghijau_linear)
+
+ggplot(data = rs_result_datakacanghijau_svr_linear, aes(x = Produksi, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
+  theme_minimal()
+```
 
 ```{r}
 # Evaluasi SVR Model
@@ -3127,15 +3230,14 @@ rs_kacangkedelai_svr_linear <- train(Produksi ~ Produktivitas + Luas_Panen,
 # Melihat hasil random search
 print(rs_kacangkedelai_svr_linear)
 ```
-The final value used for the model was C
- = 0.877359.
+The final value used for the model was C = 7.018313.
 
 ```{r}
 # Membuat model SVR dengan hiperparameter terbaik
 rs_kacangkedelai_svr_model_linear <- svm(Produksi ~ Produktivitas + Luas_Panen, 
                        data = datakacangkedelai_train, 
                        kernel = "linear", 
-                       cost = 0.877359,
+                       cost = 7.018313,
                        epsilon=  0.001)
 
 # Melihat ringkasan dari model
@@ -3148,6 +3250,20 @@ rs_predictions_svr_kacangkedelai_linear <- predict(rs_kacangkedelai_svr_model_li
 rs_predictions_svr_kacangkedelai_linear
 ```
 
+
+```{r}
+# Visualisasi hasil prediksi
+rs_result_datakacangkedelai_svr_linear <- data.frame(Produksi = datakacangkedelai_test$Produksi, Predictions = rs_predictions_svr_kacangkedelai_linear)
+
+ggplot(data = rs_result_datakacangkedelai_svr_linear, aes(x = Produksi, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
+  theme_minimal()
+```
 
 ```{r}
 # Evaluasi SVR Model
@@ -3253,13 +3369,13 @@ rs_kacangtanah_svr_linear <- train(Produksi ~ Produktivitas + Luas_Panen,
 # Melihat hasil random search
 print(rs_kacangtanah_svr_linear)
 ```
-The final value used for the model was C = 0.1214563
+The final value used for the model was C = 58.43767.
 ```{r}
 # Membuat model SVR dengan hiperparameter terbaik
 rs_kacangtanah_svr_model_linear <- svm(Produksi ~ Produktivitas + Luas_Panen, 
                        data = datakacangtanah_train, 
                        kernel = "linear", 
-                       cost = 0.1214563,
+                       cost = 58.43767,
                         epsilon=  0.001)
 
 # Melihat ringkasan dari model
@@ -3272,6 +3388,20 @@ rs_predictions_svr_kacangtanah_linear <- predict(rs_kacangtanah_svr_model_linear
 rs_predictions_svr_kacangtanah_linear
 ```
 
+
+```{r}
+# Visualisasi hasil prediksi
+rs_result_datakacangtanah_svr_linear<- data.frame(Produksi = datakacangtanah_test$Produksi, Predictions = rs_predictions_svr_kacangtanah_linear)
+
+ggplot(data = rs_result_datakacangtanah_svr_linear, aes(x = Produksi, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
+  theme_minimal()
+```
 
 ```{r}
 # Evaluasi SVR Model
@@ -3379,14 +3509,14 @@ rs_ubijalar_svr_linear <- train(Produksi ~ Produktivitas + Luas_Panen,
 # Melihat hasil random search
 print(rs_ubijalar_svr_linear)
 ```
-The final value used for the model was C = 6.650893.
+The final value used for the model was C = 62.00529
 
 ```{r}
 # Membuat model SVR dengan hiperparameter terbaik
 rs_ubijalar_svr_model_linear <- svm(Produksi ~ Produktivitas + Luas_Panen, 
                        data = dataubijalar_train, 
                        kernel = "linear", 
-                       cost = 6.650893,
+                       cost = 62.00529,
                        epsilon=  0.001 )
 
 # Melihat ringkasan dari model
@@ -3399,6 +3529,20 @@ rs_predictions_svr_ubijalar_linear <- predict(rs_ubijalar_svr_model_linear, data
 rs_predictions_svr_ubijalar_linear
 ```
 
+
+```{r}
+# Visualisasi hasil prediksi
+rs_result_dataubijalar_svr_linear <- data.frame(Produksi = dataubijalar_test$Produksi, Predictions = rs_predictions_svr_ubijalar_linear)
+
+ggplot(data = rs_result_dataubijalar_svr_linear, aes(x = Produksi, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
+  theme_minimal()
+```
 
 ```{r}
 # Evaluasi SVR Model
@@ -3506,14 +3650,14 @@ rs_ubikayu_svr_linear <- train(Produksi ~ Produktivitas + Luas_Panen,
 # Melihat hasil random search
 print(rs_ubikayu_svr_linear)
 ```
-The final value used for the model was C = 47.93008
+The final value used for the model was C = 74.44849
 
 ```{r}
 # Membuat model SVR dengan hiperparameter terbaik
 rs_ubikayu_svr_model_linear <- svm(Produksi ~ Produktivitas + Luas_Panen, 
                        data = dataubikayu_train, 
                        kernel = "linear", 
-                       cost = 47.93008,
+                       cost = 74.44849,
                         epsilon=  0.001)
 
 # Melihat ringkasan dari model
@@ -3528,6 +3672,21 @@ rs_predictions_svr_ubikayu_linear <- predict(rs_ubikayu_svr_model_linear, dataub
 rs_predictions_svr_ubikayu_linear
 ```
 
+
+
+```{r}
+# Visualisasi hasil prediksi
+rs_result_dataubikayu_linear <- data.frame(Produksi = dataubikayu_test$Produksi, Predictions = rs_predictions_svr_ubikayu_linear)
+
+ggplot(data = rs_result_dataubikayu_linear, aes(x = Produksi, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
+  theme_minimal()
+```
 
 ```{r}
 # Evaluasi SVR Model
@@ -3747,7 +3906,6 @@ rs_jagung_svr_poly <- train(Produksi ~ Produktivitas + Luas_Panen,
 
 # Melihat hasil random search
 print(rs_jagung_svr_poly)
-print(rs_jagung_svr_poly$bestTune)
 ```
 The final values used for the model were degree = 2.01564, scale = 0.3638907 and C = 4.888363.
 ```{r}
