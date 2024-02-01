@@ -30,6 +30,7 @@ library(caret)
 library(Metrics)
 # library untuk model Prophet
 library (prophet)
+library(caret)
 ```
 
 
@@ -81,7 +82,7 @@ head(pangan)
 glimpse(pangan)
 colSums(is.na(pangan))
 ```
-Jumlah data : 6,426 Record. Dari 6 variabel terhadap 3 buah variabel dengan data NA'S
+Jumlah data : 7,140 Record. Dari 6 variabel terhadap 3 buah variabel dengan data NA'S
 
 ```{r}
 # Menghapus data NA'S
@@ -94,7 +95,7 @@ yang kosong atau NA'
 ```{r}
 glimpse(pangan_clean)
 ```
-Jumlah data setelah dihapus data NA' menjadi 5,564 baris observasi dengan
+Jumlah data setelah dihapus data NA' menjadi 6,232 baris observasi dengan
 6 variabel.
 
 
@@ -108,281 +109,14 @@ glimpse(pangan_clean)
 descr(pangan_clean)
 ```
 
-## c. Filter data jagung, kacang hijau, kacang kedelai, kacang tanah, ubi jalar, ubi kayu, dan padi
-### - Filter data jagung
-```{r}
-Jagung <- filter(pangan_clean, Jenis_Komoditi == "Jagung")
-Jagung
-
-```
-### - Filter data kacang hijau
-```{r}
-KacangHijau <- filter(pangan_clean, Jenis_Komoditi == "Kacang Hijau")
-KacangHijau
-```
-### - Filter data kacang kedelai
-```{r}
-KacangKedelai <- filter(pangan_clean, Jenis_Komoditi == "Kedelai")
-KacangKedelai
-```
-### - Filter data kacang tanah
-```{r}
-KacangTanah <- filter(pangan_clean, Jenis_Komoditi == "Kacang Tanah")
-KacangTanah
-```
-### - Filter data ubi jalar
-```{r}
-UbiJalar <- filter(pangan_clean, Jenis_Komoditi == "Ubi Jalar")
-UbiJalar
-
-```
-### - Filter data ubi kayu
-```{r}
-UbiKayu <- filter(pangan_clean, Jenis_Komoditi == "Ubi Kayu")
-UbiKayu
-```
+## c. Filter data
 ### - Filter data padi
 ```{r}
 Padi <- filter(pangan_clean, Jenis_Komoditi == "Padi")
 Padi
 ```
 
-
-## d. Jumlah Produksi Tanaman Pangan Per Provinsi
-### - Jumlah Produksi Jagung Per Provinsi
-```{r}
-plot_jagung_1 <- ggplot(Jagung, aes(x = Tahun, y = Produksi, group = Provinsi, color = Provinsi)) +
-  geom_line() +
-  labs(title = "Jumlah Produksi Jagung", x = "Tahun", y = "Produksi Jagung (Ton)") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal() +
-  theme(legend.position = "right")
-plot_jagung_1
-
-```
-
-```{r}
-# Hitung total produksi per provinsi
-totproduksi_jagung <- Jagung %>% 
-  #mutate(first_date_month = floor_date(Tahun, unit = "year")) %>% 
-  group_by(Provinsi) %>% 
-  summarise(JumlahProduksi = sum(Produksi)) %>% 
-  arrange(JumlahProduksi)
-totproduksi_jagung
-```
-
-```{r}
-# Turn off dplyr summarise() warning
-options(dplyr.summarise.inform = FALSE)
-
-# Hitung total produksi per provinsi/tahun
-totproduksi_jagung <- Jagung %>% 
-  group_by(Tahun, Provinsi, .drop = FALSE) %>%  # Add .drop argument
-  summarise(TotalProduksi = sum(Produksi))
-
-totproduksi_jagung
-```
-
-```{r}
-summary(totproduksi_jagung)
-```
-
-
-### - Jumlah Produksi Kacang Hijau Per Provinsi
-```{r}
-plot_kacanghijau_1 <- ggplot(KacangHijau, aes(x = Tahun, y = Produksi, group = Provinsi, color = Provinsi)) +
-  geom_line() +
-  labs(title = "Jumlah Produksi Kacang Hijau", x = "Tahun", y = "Produksi Kacang Hijau (Ton)") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal() +
-  theme(legend.position = "right")
-plot_kacanghijau_1
-
-```
-
-```{r}
-# Hitung total produksi per provinsi
-totproduksi_kacanghijau <- KacangHijau %>% 
-  #mutate(first_date_month = floor_date(Tahun, unit = "year")) %>% 
-  group_by(Provinsi) %>% 
-  summarise(JumlahProduksi = sum(Produksi)) %>% 
-  arrange(JumlahProduksi)
-totproduksi_kacanghijau
-```
-
-```{r}
-# Turn off dplyr summarise() warning
-options(dplyr.summarise.inform = FALSE)
-
-# Hitung total produksi per provinsi/tahun
-totproduksi_kacanghijau <- KacangHijau %>% 
-  group_by(Tahun, Provinsi, .drop = FALSE) %>%  # Add .drop argument
-  summarise(TotalProduksi = sum(Produksi))
-
-totproduksi_kacanghijau
-```
-
-```{r}
-summary(totproduksi_kacanghijau)
-```
-
-
-
-### - Jumlah Produksi Kacang Kedelai Per Provinsi
-```{r}
-plot_kacangkedelai_1 <- ggplot(KacangKedelai, aes(x = Tahun, y = Produksi, group = Provinsi, color = Provinsi)) +
-  geom_line() +
-  labs(title = "Jumlah Produksi Kacang Kedelai", x = "Tahun", y = "Produksi Kacang Kedelai (Ton)") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal() +
-  theme(legend.position = "right")
-plot_kacangkedelai_1
-
-```
-
-```{r}
-# Hitung total produksi per provinsi
-totproduksi_kacangkedelai <- KacangKedelai %>% 
-  #mutate(first_date_month = floor_date(Tahun, unit = "year")) %>% 
-  group_by(Provinsi) %>% 
-  summarise(JumlahProduksi = sum(Produksi)) %>% 
-  arrange(JumlahProduksi)
-totproduksi_kacangkedelai
-```
-
-```{r}
-# Turn off dplyr summarise() warning
-options(dplyr.summarise.inform = FALSE)
-
-# Hitung total produksi per provinsi/tahun
-totproduksi_kacangkedelai <- KacangKedelai %>% 
-  group_by(Tahun, Provinsi, .drop = FALSE) %>%  # Add .drop argument
-  summarise(TotalProduksi = sum(Produksi))
-
-totproduksi_kacangkedelai
-```
-
-```{r}
-summary(totproduksi_kacangkedelai)
-```
-
-
-### - Jumlah Produksi Kacang Tanah Per Provinsi
-```{r}
-plot_kacangtanah_1 <- ggplot(KacangTanah, aes(x = Tahun, y = Produksi, group = Provinsi, color = Provinsi)) +
-  geom_line() +
-  labs(title = "Jumlah Produksi Kacang Tanah", x = "Tahun", y = "Produksi Kacang Tanah (Ton)") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal() +
-  theme(legend.position = "right")
-plot_kacangtanah_1
-
-```
-
-```{r}
-# Hitung total produksi per provinsi
-totproduksi_kacangtanah <- KacangTanah %>% 
-  #mutate(first_date_month = floor_date(Tahun, unit = "year")) %>% 
-  group_by(Provinsi) %>% 
-  summarise(JumlahProduksi = sum(Produksi)) %>% 
-  arrange(JumlahProduksi)
-totproduksi_kacangtanah
-```
-
-```{r}
-# Turn off dplyr summarise() warning
-options(dplyr.summarise.inform = FALSE)
-
-# Hitung total produksi per provinsi/tahun
-totproduksi_kacangtanah <- KacangTanah %>% 
-  group_by(Tahun, Provinsi, .drop = FALSE) %>%  # Add .drop argument
-  summarise(TotalProduksi = sum(Produksi))
-
-totproduksi_kacangtanah
-```
-
-```{r}
-summary(totproduksi_kacangtanah)
-```
-
-
-### - Jumlah Produksi Ubi Jalar Per Provinsi
-```{r}
-plot_ubijalar_1 <- ggplot(UbiJalar, aes(x = Tahun, y = Produksi, group = Provinsi, color = Provinsi)) +
-  geom_line() +
-  labs(title = "Jumlah Produksi Ubi Jalar", x = "Tahun", y = "Produksi Ubi Jalar (Ton)") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal() +
-  theme(legend.position = "right")
-plot_ubijalar_1
-
-```
-
-```{r}
-# Hitung total produksi per provinsi
-totproduksi_ubijalar <- UbiJalar %>% 
-  #mutate(first_date_month = floor_date(Tahun, unit = "year")) %>% 
-  group_by(Provinsi) %>% 
-  summarise(JumlahProduksi = sum(Produksi)) %>% 
-  arrange(JumlahProduksi)
-totproduksi_ubijalar
-```
-
-```{r}
-# Turn off dplyr summarise() warning
-options(dplyr.summarise.inform = FALSE)
-
-# Hitung total produksi per provinsi/tahun
-totproduksi_ubijalar <- UbiJalar %>% 
-  group_by(Tahun, Provinsi, .drop = FALSE) %>%  # Add .drop argument
-  summarise(TotalProduksi = sum(Produksi))
-
-totproduksi_ubijalar
-```
-
-```{r}
-summary(totproduksi_ubijalar)
-```
-
-
-### - Jumlah Produksi Ubi Kayu Per Provinsi
-```{r}
-plot_ubikayu_1 <- ggplot(UbiKayu, aes(x = Tahun, y = Produksi, group = Provinsi, color = Provinsi)) +
-  geom_line() +
-  labs(title = "Jumlah Produksi Ubi Kayu", x = "Tahun", y = "Produksi Ubi Kayu (Ton)") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal() +
-  theme(legend.position = "right")
-plot_ubikayu_1
-
-```
-
-```{r}
-# Hitung total produksi per provinsi
-totproduksi_ubikayu <- UbiKayu %>% 
-  #mutate(first_date_month = floor_date(Tahun, unit = "year")) %>% 
-  group_by(Provinsi) %>% 
-  summarise(JumlahProduksi = sum(Produksi)) %>% 
-  arrange(JumlahProduksi)
-totproduksi_ubikayu
-```
-
-```{r}
-# Turn off dplyr summarise() warning
-options(dplyr.summarise.inform = FALSE)
-
-# Hitung total produksi per provinsi/tahun
-totproduksi_ubikayu <- UbiKayu %>% 
-  group_by(Tahun, Provinsi, .drop = FALSE) %>%  # Add .drop argument
-  summarise(TotalProduksi = sum(Produksi))
-
-totproduksi_ubikayu
-```
-
-```{r}
-summary(totproduksi_ubikayu)
-```
-
+## d. Jumlah Produksi Tanaman Padi Per Provinsi
 ### - Jumlah Produksi Padi Per Provinsi
 ```{r}
 plot_padi_1 <- ggplot(Padi, aes(x = Tahun, y = Produksi, group = Provinsi, color = Provinsi)) +
@@ -422,83 +156,7 @@ summary(totproduksi_padi)
 ```
 
 
-## e. Tren Produksi Tanaman Pangan Per Provinsi
-### - Tren Produksi Jagung Per Provinsi
-```{r}
-# Visualisasi Tren Produksi Jagung
-plot_jagung_2 <- ggplot(totproduksi_jagung, aes(x = Tahun, y = TotalProduksi, color = Provinsi)) +
-  geom_line() +
-  geom_point() +
-  labs(title = "Tren Produksi Jagung", x = "Tahun", y = "Total Produksi (Ton)") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal() +
-  theme(legend.position = "right")
-plot_jagung_2
-```
-### - Tren Produksi Kacang Hijau Per Provinsi
-```{r}
-# Visualisasi Tren Produksi Kacang Hijau
-plot_kacanghijau_2 <- ggplot(totproduksi_kacanghijau, aes(x = Tahun, y = TotalProduksi, color = Provinsi)) +
-  geom_line() +
-  geom_point() +
-  labs(title = "Tren Produksi Kacang Hijau", x = "Tahun", y = "Total Produksi (Ton)") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal() +
-  theme(legend.position = "right")
-plot_kacanghijau_2
-```
-
-### - Tren Produksi Kacang Kedelai Per Provinsi
-```{r}
-# Visualisasi Tren Produksi Kacang Kedelai
-plot_kacangkedelai_2 <- ggplot(totproduksi_kacangkedelai, aes(x = Tahun, y = TotalProduksi, color = Provinsi)) +
-  geom_line() +
-  geom_point() +
-  labs(title = "Tren Produksi Kacang Kedelai", x = "Tahun", y = "Total Produksi (Ton)") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal() +
-  theme(legend.position = "right")
-plot_kacangkedelai_2
-```
-
-### - Tren Produksi Kacang Tanah Per Provinsi
-```{r}
-# Visualisasi Tren Produksi Kacang Tanah
-plot_kacangtanah_2 <- ggplot(totproduksi_kacangtanah, aes(x = Tahun, y = TotalProduksi, color = Provinsi)) +
-  geom_line() +
-  geom_point() +
-  labs(title = "Tren Produksi Kacang Tanah", x = "Tahun", y = "Total Produksi (Ton)") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal() +
-  theme(legend.position = "right")
-plot_kacangtanah_2
-```
-
-### - Tren Produksi Ubi Jalar Per Provinsi
-```{r}
-# Visualisasi Tren Produksi Ubi Jalar
-plot_ubijalar_2 <- ggplot(totproduksi_ubijalar, aes(x = Tahun, y = TotalProduksi, color = Provinsi)) +
-  geom_line() +
-  geom_point() +
-  labs(title = "Tren Produksi Ubi Jalar", x = "Tahun", y = "Total Produksi (Ton)") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal() +
-  theme(legend.position = "right")
-plot_ubijalar_2
-```
-
-### - Tren Produksi Ubi Kayu Per Provinsi
-```{r}
-# Visualisasi Tren Produksi Ubi Kayu
-plot_ubikayu_2 <- ggplot(totproduksi_ubikayu, aes(x = Tahun, y = TotalProduksi, color = Provinsi)) +
-  geom_line() +
-  geom_point() +
-  labs(title = "Tren Produksi Ubi Kayu", x = "Tahun", y = "Total Produksi (Ton)") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal() +
-  theme(legend.position = "right")
-plot_ubikayu_2
-```
+## e. Tren Produksi Tanaman Padi Per Provinsi
 ### - Tren Produksi Padi Per Provinsi
 ```{r}
 # Visualisasi Tren Produksi Padi
@@ -513,139 +171,7 @@ plot_padi_2
 ```
 
 
-## f. Perbandingan Produksi Tanaman Pangan Per Provinsi
-### - Perbandingan Produksi Jagung Per Provinsi
-```{r}
-# Hitung total produksi Jagung per Provinsi
-totproduksi_jagung_provinsi <- Jagung %>% 
-  group_by(Provinsi) %>% 
-  summarise(TotalProduksi = sum(Produksi))
-totproduksi_jagung_provinsi
-
-# Visualisasi dengan barplot
-plot_jagung_3 <- ggplot(totproduksi_jagung_provinsi, aes(x = Provinsi, y = TotalProduksi, fill = Provinsi)) +
-  geom_bar(stat = "identity") +
-  labs(title = "Perbandingan Produksi Jagung antara Provinsi", x = "Provinsi", y = "Total Produksi (Ton)") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal() +
-  theme(legend.position = "none")  # hilangkan legend
-
-# Rotasi sumbu x agar mudah dibaca
-plot_jagung_3 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
-```
-Perbandingan produksi Jagung dalam kurun waktu 1993 - 2019 adalah dari provinsi Jawa Timur yang terbanyak dengan Jumlah Produksi Jagung sebesar 120610019 Ton.
-
-
-### - Perbandingan Produksi Kacang Hijau Per Provinsi
-```{r}
-# Hitung total produksi Kacang Hijau per Provinsi
-totproduksi_kacanghijau_provinsi <- KacangHijau %>% 
-  group_by(Provinsi) %>% 
-  summarise(TotalProduksi = sum(Produksi))
-totproduksi_kacanghijau_provinsi
-
-# Visualisasi dengan barplot
-plot_kacanghijau_3 <- ggplot(totproduksi_kacanghijau_provinsi, aes(x = Provinsi, y = TotalProduksi, fill = Provinsi)) +
-  geom_bar(stat = "identity") +
-  labs(title = "Perbandingan Produksi Kacang Hijau antara Provinsi", x = "Provinsi", y = "Total Produksi (Ton)") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal() +
-  theme(legend.position = "none")  # hilangkan legend
-
-# Rotasi sumbu x agar mudah dibaca
-plot_kacanghijau_3 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
-```
-Perbandingan produksi Kacang Hijau dalam kurun waktu 1993 - 2019 adalah dari provinsi Jawa Tengah yang terbanyak dengan Jumlah Produksi Kacang Hijau sebesar 1987021 Ton.
-
-
-### - Perbandingan Produksi Kacang Kedelai Per Provinsi
-```{r}
-# Hitung total produksi Kacang Kedelai per Provinsi
-totproduksi_kacangkedelai_provinsi <- KacangKedelai %>% 
-  group_by(Provinsi) %>% 
-  summarise(TotalProduksi = sum(Produksi))
-totproduksi_kacangkedelai_provinsi
-
-# Visualisasi dengan barplot
-plot_kacangkedelai_3 <- ggplot(totproduksi_kacangkedelai_provinsi, aes(x = Provinsi, y = TotalProduksi, fill = Provinsi)) +
-  geom_bar(stat = "identity") +
-  labs(title = "Perbandingan Produksi Kacang Kedelai antara Provinsi", x = "Provinsi", y = "Total Produksi (Ton)") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal() +
-  theme(legend.position = "none")  # hilangkan legend
-
-# Rotasi sumbu x agar mudah dibaca
-plot_kacangkedelai_3 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
-```
-Perbandingan produksi Kacang Kedelai dalam kurun waktu 1993 - 2019 adalah dari provinsi Jawa Timur yang terbanyak dengan Jumlah Produksi Kacang Kedelai sebesar 9503483 Ton.
-
-
-### - Perbandingan Produksi Kacang Tanah Per Provinsi
-```{r}
-# Hitung total produksi Kacang Tanah per Provinsi
-totproduksi_kacangtanah_provinsi <- KacangTanah %>% 
-  group_by(Provinsi) %>% 
-  summarise(TotalProduksi = sum(Produksi))
-totproduksi_kacangtanah_provinsi
-
-# Visualisasi dengan barplot
-plot_kacangtanah_3 <- ggplot(totproduksi_kacangtanah_provinsi, aes(x = Provinsi, y = TotalProduksi, fill = Provinsi)) +
-  geom_bar(stat = "identity") +
-  labs(title = "Perbandingan Produksi Kacang Tanah antara Provinsi", x = "Provinsi", y = "Total Produksi (Ton)") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal() +
-  theme(legend.position = "none")  # hilangkan legend
-
-# Rotasi sumbu x agar mudah dibaca
-plot_kacangtanah_3 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
-```
-Perbandingan produksi Kacang Tanah dalam kurun waktu 1993 - 2019 adalah dari provinsi Jawa Timur yang terbanyak dengan Jumlah Produksi Kacang Tanah sebesar 4901935 Ton.
-
-
-### - Perbandingan Produksi Ubi Jalar Per Provinsi
-```{r}
-# Hitung total produksi Ubi Jalar per Provinsi
-totproduksi_ubijalar_provinsi <- UbiJalar %>% 
-  group_by(Provinsi) %>% 
-  summarise(TotalProduksi = sum(Produksi))
-totproduksi_ubijalar_provinsi
-
-# Visualisasi dengan barplot
-plot_ubijalar_3 <- ggplot(totproduksi_ubijalar_provinsi, aes(x = Provinsi, y = TotalProduksi, fill = Provinsi)) +
-  geom_bar(stat = "identity") +
-  labs(title = "Perbandingan Produksi Ubi Jalar antara Provinsi", x = "Provinsi", y = "Total Produksi (Ton)") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal() +
-  theme(legend.position = "none")  # hilangkan legend
-
-# Rotasi sumbu x agar mudah dibaca
-plot_ubijalar_3 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
-```
-Perbandingan produksi Ubi Jalar dalam kurun waktu 1993 - 2019 adalah dari provinsi Jawa Barat yang terbanyak dengan Jumlah Produksi Ubi Jalar sebesar 11531604.00 Ton.
-
-
-### - Perbandingan Produksi Ubi Kayu Per Provinsi
-```{r}
-# Hitung total produksi Ubi Kayu per Provinsi
-totproduksi_ubikayu_provinsi <- UbiKayu %>% 
-  group_by(Provinsi) %>% 
-  summarise(TotalProduksi = sum(Produksi))
-totproduksi_ubikayu_provinsi
-
-# Visualisasi dengan barplot
-plot_ubikayu_3 <- ggplot(totproduksi_ubikayu_provinsi, aes(x = Provinsi, y = TotalProduksi, fill = Provinsi)) +
-  geom_bar(stat = "identity") +
-  labs(title = "Perbandingan Produksi Ubi Kayu antara Provinsi", x = "Provinsi", y = "Total Produksi (Ton)") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal() +
-  theme(legend.position = "none")  # hilangkan legend
-
-# Rotasi sumbu x agar mudah dibaca
-plot_ubikayu_3 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
-```
-Perbandingan produksi Ubi Kayu dalam kurun waktu 1993 - 2019 adalah dari provinsi Lampung yang terbanyak dengan Jumlah Produksi Ubi Kayu sebesar 139324040 Ton.
-
-
+## f. Perbandingan Produksi Tanaman Padi Per Provinsi
 ### - Perbandingan Produksi Padi Per Provinsi
 ```{r}
 # Hitung total produksi Padi per Provinsi
@@ -665,214 +191,11 @@ plot_padi_3 <- ggplot(totproduksi_padi_provinsi, aes(x = Provinsi, y = TotalProd
 # Rotasi sumbu x agar mudah dibaca
 plot_padi_3 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
-Perbandingan produksi Padi dalam kurun waktu 1993 - 2015 adalah dari provinsi Jawa Barat yang terbanyak dengan Jumlah Produksi Padi sebesar 283696591 Ton.
+Perbandingan produksi Padi dalam kurun waktu 1993 - 2015 adalah dari provinsi Jawa Barat yang terbanyak dengan Jumlah Produksi Padi sebesar 311260660 Ton.
 
 
 
-## g. Perbandingan Produktivitas Tanaman Pangan Per Provinsi
-### - Perbandingan Produktivitas Jagung Per Provinsi
-```{r}
-# Turn off dplyr summarise() warning
-options(dplyr.summarise.inform = FALSE)
-
-# Melihat tren produktivitas jagung
-produktivitas_jagung <- Jagung %>% 
-  group_by(Tahun, Provinsi, .drop = FALSE) %>%  # Add .drop argument
-  summarise(Produktivitas = sum(Produktivitas))
-produktivitas_jagung
-```
-
-```{r}
-
-# Hitung total produktivitas Jagung per provinsi
-totproduktivitas_jagung_provinsi <- Jagung %>% 
-  group_by(Provinsi) %>% 
-  summarise(Total_Produktivitas = sum(Produktivitas))
-
-# Visualisasi dengan barplot
-plot_jagung_4 <- ggplot(totproduktivitas_jagung_provinsi, aes(x = Provinsi, y = Total_Produktivitas, fill = Provinsi)) +
-  geom_bar(stat = "identity") +
-  labs(title = "Perbandingan Produktivitas Jagung antar Provinsi", x = "Provinsi", y = "Produktivitas (Kuintal/Hektar)") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal() +
-  theme(legend.position = "none")  # hilangkan legend
-
-# Rotasi sumbu x agar mudah dibaca
-plot_jagung_4 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
-
-```
-
-
-### - Perbandingan Produktivitas Kacang Hijau Per Provinsi
-```{r}
-# Turn off dplyr summarise() warning
-options(dplyr.summarise.inform = FALSE)
-
-# Melihat tren produktivitas Kacang Hijau
-produktivitas_kacanghijau <- KacangHijau %>% 
-  group_by(Tahun, Provinsi, .drop = FALSE) %>%  # Add .drop argument
-  summarise(Produktivitas = sum(Produktivitas))
-produktivitas_kacanghijau
-```
-
-```{r}
-
-# Hitung total produktivitas Kacang Hijau per provinsi
-totproduktivitas_kacanghijau_provinsi <- KacangHijau %>% 
-  group_by(Provinsi) %>% 
-  summarise(Total_Produktivitas = sum(Produktivitas))
-
-# Visualisasi dengan barplot
-plot_kacanghijau_4 <- ggplot(totproduktivitas_kacanghijau_provinsi, aes(x = Provinsi, y = Total_Produktivitas, fill = Provinsi)) +
-  geom_bar(stat = "identity") +
-  labs(title = "Perbandingan Produktivitas Kacang Hijau antar Provinsi", x = "Provinsi", y = "Produktivitas (Kuintal/Hektar)") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal() +
-  theme(legend.position = "none")  # hilangkan legend
-
-# Rotasi sumbu x agar mudah dibaca
-plot_kacanghijau_4 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
-
-```
-
-
-### - Perbandingan Produktivitas Kacang Kedelai Per Provinsi
-```{r}
-# Turn off dplyr summarise() warning
-options(dplyr.summarise.inform = FALSE)
-
-# Melihat tren produktivitas Kacang Kedelai
-produktivitas_kacangkedelai <- KacangKedelai %>% 
-  group_by(Tahun, Provinsi, .drop = FALSE) %>%  # Add .drop argument
-  summarise(Produktivitas = sum(Produktivitas))
-produktivitas_kacangkedelai
-```
-
-```{r}
-
-# Hitung total produktivitas Kacang Kedelai per provinsi
-totproduktivitas_kacangkedelai_provinsi <- KacangKedelai %>% 
-  group_by(Provinsi) %>% 
-  summarise(Total_Produktivitas = sum(Produktivitas))
-
-# Visualisasi dengan barplot
-plot_kacangkedelai_4 <- ggplot(totproduktivitas_kacangkedelai_provinsi, aes(x = Provinsi, y = Total_Produktivitas, fill = Provinsi)) +
-  geom_bar(stat = "identity") +
-  labs(title = "Perbandingan Produktivitas Kacang Kedelai antar Provinsi", x = "Provinsi", y = "Produktivitas (Kuintal/Hektar)") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal() +
-  theme(legend.position = "none")  # hilangkan legend
-
-# Rotasi sumbu x agar mudah dibaca
-plot_kacangkedelai_4 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
-
-```
-
-
-### - Perbandingan Produktivitas Kacang Tanah Per Provinsi
-```{r}
-# Turn off dplyr summarise() warning
-options(dplyr.summarise.inform = FALSE)
-
-# Melihat tren produktivitas Kacang Tanah
-produktivitas_kacangtanah <- KacangTanah %>% 
-  group_by(Tahun, Provinsi, .drop = FALSE) %>%  # Add .drop argument
-  summarise(Produktivitas = sum(Produktivitas))
-produktivitas_kacangtanah
-```
-
-```{r}
-
-# Hitung total produktivitas Kacang Tanah per provinsi
-totproduktivitas_kacangtanah_provinsi <- KacangTanah %>% 
-  group_by(Provinsi) %>% 
-  summarise(Total_Produktivitas = sum(Produktivitas))
-
-# Visualisasi dengan barplot
-plot_kacangtanah_4 <- ggplot(totproduktivitas_kacangtanah_provinsi, aes(x = Provinsi, y = Total_Produktivitas, fill = Provinsi)) +
-  geom_bar(stat = "identity") +
-  labs(title = "Perbandingan Produktivitas Kacang Tanah antar Provinsi", x = "Provinsi", y = "Produktivitas (Kuintal/Hektar)") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal() +
-  theme(legend.position = "none")  # hilangkan legend
-
-# Rotasi sumbu x agar mudah dibaca
-plot_kacangtanah_4 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
-
-```
-
-
-### - Perbandingan Produktivitas Ubi Jalar Per Provinsi
-```{r}
-# Turn off dplyr summarise() warning
-options(dplyr.summarise.inform = FALSE)
-
-# Melihat tren produktivitas Ubi Jalar
-produktivitas_ubijalar <- UbiJalar %>% 
-  group_by(Tahun, Provinsi, .drop = FALSE) %>%  # Add .drop argument
-  summarise(Produktivitas = sum(Produktivitas))
-produktivitas_ubijalar
-```
-
-```{r}
-
-# Hitung total produkstivitas Ubi Jalar per provinsi
-totproduktivitas_ubijalar_provinsi <- UbiJalar %>% 
-  group_by(Provinsi) %>% 
-  summarise(Total_Produktivitas = sum(Produktivitas))
-
-# Visualisasi dengan barplot
-plot_ubijalar_4 <- ggplot(totproduktivitas_ubijalar_provinsi, aes(x = Provinsi, y = Total_Produktivitas, fill = Provinsi)) +
-  geom_bar(stat = "identity") +
-  labs(title = "Perbandingan Produktivitas Ubi Jalar antar Provinsi", x = "Provinsi", y = "Produktivitas (Kuintal/Hektar)") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal() +
-  theme(legend.position = "none")  # hilangkan legend
-
-# Rotasi sumbu x agar mudah dibaca
-plot_ubijalar_4 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
-
-```
-
-
-### - Perbandingan Produktivitas Ubi Kayu Per Provinsi
-```{r}
-# Turn off dplyr summarise() warning
-options(dplyr.summarise.inform = FALSE)
-
-# Melihat tren produktivitas Ubi Kayu
-produktivitas_ubikayu <- UbiKayu %>% 
-  group_by(Tahun, Provinsi, .drop = FALSE) %>%  # Add .drop argument
-  summarise(Produktivitas = sum(Produktivitas))
-produktivitas_ubikayu
-```
-
-```{r}
-
-# Hitung total produkstivitas Ubi Kayu per provinsi
-totproduktivitas_ubikayu_provinsi <- UbiKayu %>% 
-  group_by(Provinsi) %>% 
-  summarise(Total_Produktivitas = sum(Produktivitas))
-
-# Visualisasi dengan barplot
-plot_ubikayu_4 <- ggplot(totproduktivitas_ubikayu_provinsi, aes(x = Provinsi, y = Total_Produktivitas, fill = Provinsi)) +
-  geom_bar(stat = "identity") +
-  labs(title = "Perbandingan Produktivitas Ubi Kayu antar Provinsi", x = "Provinsi", y = "Produktivitas (Kuintal/Hektar)") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal() +
-  theme(legend.position = "none")  # hilangkan legend
-
-# Rotasi sumbu x agar mudah dibaca
-plot_ubikayu_4 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
-
-```
-
+## g. Perbandingan Produktivitas Tanaman Padi Per Provinsi
 ### - Perbandingan Produktivitas Padi Per Provinsi
 ```{r}
 # Turn off dplyr summarise() warning
@@ -891,6 +214,7 @@ produktivitas_padi
 totproduktivitas_padi_provinsi <- Padi %>% 
   group_by(Provinsi) %>% 
   summarise(Total_Produktivitas = sum(Produktivitas))
+totproduktivitas_padi_provinsi
 
 # Visualisasi dengan barplot
 plot_padi_4 <- ggplot(totproduktivitas_padi_provinsi, aes(x = Provinsi, y = Total_Produktivitas, fill = Provinsi)) +
@@ -907,141 +231,7 @@ plot_padi_4 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
 
-## h. Korelasi Luas Panen dan Produksi Tanaman Pangan
-### - Korelasi Luas Panen dan Produksi Jagung
-```{r}
-# Visualisasi korelasi luas panen dan produksi Jagung
-plot_jagung_5 <- ggplot(Jagung, aes(x = Luas_Panen, y = Produksi, color = Provinsi)) +
-  geom_point() +
-  labs(title = "Korelasi Produksi dan Luas Panen", x = "Luas Panen (Ha)", y = "Produksi (Ton)") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal() +
-  theme(legend.position = "right")
-plot_jagung_5
-```
-
-```{r}
-# Hitung Pearson correlation coefficient
-correlation_jagung <- cor(Jagung$Luas_Panen, Jagung$Produksi)
-
-# Nilai correlation coefficient
-cat("Koefisien Korelasi Pearson Luas Panen dan Produksi:", correlation_jagung)
-```
-
-Berdasarkan grafik diatas bisa lihat bahwa ada korelasi antara luas panen dan produksi. Hubungan korelasi adalah positif dengan nilai korelasi sebesar 0,94; sehingga bisa disimpulkan bahwa jika semakin banyak luas panen maka akan meningkat jumlah produksi jagung.
-
-### - Korelasi Luas Panen dan Produksi Kacang Hijau
-```{r}
-# Visualisasi korelasi luas panen dan produksi Kacang Hijau
-plot_kacanghijau_5 <- ggplot(KacangHijau, aes(x = Luas_Panen, y = Produksi, color = Provinsi)) +
-  geom_point() +
-  labs(title = "Korelasi Produksi dan Luas Panen", x = "Luas Panen (Ha)", y = "Produksi (Ton)") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal() +
-  theme(legend.position = "right")
-plot_kacanghijau_5
-```
-
-```{r}
-# Hitung Pearson correlation coefficient
-correlation_kacanghijau <- cor(KacangHijau$Luas_Panen, KacangHijau$Produksi)
-
-# Nilai correlation coefficient
-cat("Koefisien Korelasi Pearson Luas Panen dan Produksi:", correlation_kacanghijau)
-```
-
-Berdasarkan grafik diatas bisa lihat bahwa ada korelasi antara luas panen dan produksi. Hubungan korelasi adalah positif dengan nilai korelasi sebesar 0,96; sehingga bisa disimpulkan bahwa jika semakin banyak luas panen maka akan meningkat jumlah produksi kacang hijau.
-
-
-### - Korelasi Luas Panen dan Produksi Kacang Kedelai
-```{r}
-# Visualisasi korelasi luas panen dan produksi Kacang Kedelai
-plot_kacangkedelai_5 <- ggplot(KacangKedelai, aes(x = Luas_Panen, y = Produksi, color = Provinsi)) +
-  geom_point() +
-  labs(title = "Korelasi Produksi dan Luas Panen", x = "Luas Panen (Ha)", y = "Produksi (Ton)") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal() +
-  theme(legend.position = "right")
-plot_kacangkedelai_5
-```
-
-```{r}
-# Hitung Pearson correlation coefficient
-correlation_kacangkedelai <- cor(KacangKedelai$Luas_Panen, KacangKedelai$Produksi)
-
-# Nilai correlation coefficient
-cat("Koefisien Korelasi Pearson Luas Panen dan Produksi:", correlation_kacangkedelai)
-```
-
-Berdasarkan grafik diatas bisa lihat bahwa ada korelasi antara luas panen dan produksi. Hubungan korelasi adalah positif dengan nilai korelasi sebesar 0,99; sehingga bisa disimpulkan bahwa jika semakin banyak luas panen maka akan meningkat jumlah produksi kacang kedelai.
-
-
-### - Korelasi Luas Panen dan Produksi Kacang Tanah
-```{r}
-# Visualisasi korelasi luas panen dan produksi Kacang Tanah
-plot_kacangtanah_5 <- ggplot(KacangTanah, aes(x = Luas_Panen, y = Produksi, color = Provinsi)) +
-  geom_point() +
-  labs(title = "Korelasi Produksi dan Luas Panen", x = "Luas Panen (Ha)", y = "Produksi (Ton)") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal() +
-  theme(legend.position = "right")
-plot_kacangtanah_5
-```
-
-```{r}
-# Hitung Pearson correlation coefficient
-correlation_kacangtanah <- cor(KacangTanah$Luas_Panen, KacangTanah$Produksi)
-
-# Nilai correlation coefficient
-cat("Koefisien Korelasi Pearson Luas Panen dan Produksi:", correlation_kacangtanah)
-```
-
-Berdasarkan grafik diatas bisa lihat bahwa ada korelasi antara luas panen dan produksi. Hubungan korelasi adalah positif dengan nilai korelasi sebesar 0,99; sehingga bisa disimpulkan bahwa jika semakin banyak luas panen maka akan meningkat jumlah produksi kacang tanah.
-
-
-### - Korelasi Luas Panen dan Produksi Ubi Jalar
-```{r}
-# Visualisasi korelasi luas panen dan produksi Ubi Jalar
-plot_ubijalar_5 <- ggplot(UbiJalar, aes(x = Luas_Panen, y = Produksi, color = Provinsi)) +
-  geom_point() +
-  labs(title = "Korelasi Produksi dan Luas Panen", x = "Luas Panen (Ha)", y = "Produksi (Ton)") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal() +
-  theme(legend.position = "right")
-plot_ubijalar_5
-```
-
-```{r}
-# Hitung Pearson correlation coefficient
-correlation_ubijalar <- cor(UbiJalar$Luas_Panen, UbiJalar$Produksi)
-
-# Nilai correlation coefficient
-cat("Koefisien Korelasi Pearson Luas Panen dan Produksi:", correlation_ubijalar)
-```
-Berdasarkan grafik diatas bisa lihat bahwa ada korelasi antara luas panen dan produksi. Hubungan korelasi adalah positif dengan nilai korelasi sebesar 0,87; sehingga bisa disimpulkan bahwa jika semakin banyak luas panen maka akan meningkat jumlah produksi ubi jalar.
-
-
-### - Korelasi Luas Panen dan Produksi Ubi Kayu
-```{r}
-# Visualisasi korelasi luas panen dan produksi Ubi Kayu
-plot_ubikayu_5 <- ggplot(UbiKayu, aes(x = Luas_Panen, y = Produksi, color = Provinsi)) +
-  geom_point() +
-  labs(title = "Korelasi Produksi dan Luas Panen", x = "Luas Panen (Ha)", y = "Produksi (Ton)") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal() +
-  theme(legend.position = "right")
-plot_ubikayu_5
-```
-
-```{r}
-# Hitung Pearson correlation coefficient
-correlation_ubikayu <- cor(UbiKayu$Luas_Panen, UbiKayu$Produksi)
-
-# Nilai correlation coefficient
-cat("Koefisien Korelasi Pearson Luas Panen dan Produksi:", correlation_ubikayu)
-```
-Berdasarkan grafik diatas bisa lihat bahwa ada korelasi antara luas panen dan produksi. Hubungan korelasi adalah positif dengan nilai korelasi sebesar 0,94; sehingga bisa disimpulkan bahwa jika semakin banyak luas panen maka akan meningkat jumlah produksi ubi kayu.
-
+## h. Korelasi Luas Panen dan Produksi Tanaman Padi
 ### - Korelasi Luas Panen dan Produksi Padi
 ```{r}
 # Visualisasi korelasi luas panen dan produksi Padi
@@ -1066,91 +256,7 @@ Berdasarkan grafik diatas bisa lihat bahwa ada korelasi antara luas panen dan pr
 
 
 
-## i. Perbandingan Produktivitas dengan Produksi Tanaman Pangan 
-### - Perbandingan Produktivitas dengan Produksi Jagung 
-```{r}
-# Create a boxplot using ggplot2
-plot_jagung_6 <- ggplot(Jagung, aes(x = Provinsi, y = Produksi - Produktivitas, fill = Provinsi)) +
-  geom_boxplot() +
-  labs(title = "Perbandingan Produksi dan Produktivitas Jagung per Provinsi", x = "Provinsi", y = "Selisih Produksi") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal() +
-  theme(legend.position = "none")
-
-# Rotasi sumbu x agar mudah dibaca
-plot_jagung_6 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
-```
-
-### - Perbandingan Produktivitas dengan Produksi Kacang Hijau
-```{r}
-# Create a boxplot using ggplot2
-plot_kacanghijau_6 <- ggplot(KacangHijau, aes(x = Provinsi, y = Produksi - Produktivitas, fill = Provinsi)) +
-  geom_boxplot() +
-  labs(title = "Perbandingan Produksi dan Produktivitas Kacang Hijau per Provinsi", x = "Provinsi", y = "Selisih Produksi") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal() +
-  theme(legend.position = "none")
-
-# Rotasi sumbu x agar mudah dibaca
-plot_kacanghijau_6 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
-```
-
-### - Perbandingan Produktivitas dengan Produksi Kacang Kedelai 
-```{r}
-# Create a boxplot using ggplot2
-plot_kacangkedelai_6 <- ggplot(KacangKedelai, aes(x = Provinsi, y = Produksi - Produktivitas, fill = Provinsi)) +
-  geom_boxplot() +
-  labs(title = "Perbandingan Produksi dan Produktivitas Kacang Kedelai per Provinsi", x = "Provinsi", y = "Selisih Produksi") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal() +
-  theme(legend.position = "none")
-
-# Rotasi sumbu x agar mudah dibaca
-plot_kacangkedelai_6 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
-```
-
-### - Perbandingan Produktivitas dengan Produksi Kacang Tanah 
-```{r}
-# Create a boxplot using ggplot2
-plot_kacangtanah_6 <- ggplot(KacangTanah, aes(x = Provinsi, y = Produksi - Produktivitas, fill = Provinsi)) +
-  geom_boxplot() +
-  labs(title = "Perbandingan Produksi dan Produktivitas Kacang Tanah per Provinsi", x = "Provinsi", y = "Selisih Produksi") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal() +
-  theme(legend.position = "none")
-
-# Rotasi sumbu x agar mudah dibaca
-plot_kacangtanah_6 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
-```
-
-### - Perbandingan Produktivitas dengan Produksi Ubi Jalar 
-```{r}
-# Create a boxplot using ggplot2
-plot_ubijalar_6 <- ggplot(UbiJalar, aes(x = Provinsi, y = Produksi - Produktivitas, fill = Provinsi)) +
-  geom_boxplot() +
-  labs(title = "Perbandingan Produksi dan Produktivitas Ubi Jalar per Provinsi", x = "Provinsi", y = "Selisih Produksi") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal() +
-  theme(legend.position = "none")
-
-# Rotasi sumbu x agar mudah dibaca
-plot_ubijalar_6 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
-```
-
-### - Perbandingan Produktivitas dengan Produksi Ubi Kayu
-```{r}
-# Create a boxplot using ggplot2
-plot_ubikayu_6 <- ggplot(UbiKayu, aes(x = Provinsi, y = Produksi - Produktivitas, fill = Provinsi)) +
-  geom_boxplot() +
-  labs(title = "Perbandingan Produksi dan Produktivitas Ubi Kayu per Provinsi", x = "Provinsi", y = "Selisih Produksi") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal() +
-  theme(legend.position = "none")
-
-# Rotasi sumbu x agar mudah dibaca
-plot_ubikayu_6 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
-```
-
+## i. Perbandingan Produktivitas dengan Produksi Tanaman Padi 
 ### - Perbandingan Produktivitas dengan Produksi Padi
 ```{r}
 # Create a boxplot using ggplot2
@@ -1167,62 +273,7 @@ plot_padi_6 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 
 # 5. Prediksi Produksi Tanaman Pangan dengan ML
-
 ##a. Partisi Dataset
-```{r}
-# Jagung
-set.seed(123)  # Untuk hasil yang dapat direproduksi
-jagung_splitIndex <- createDataPartition(Jagung$Produksi, p = 0.7, list = FALSE)
-datajagung_train <- Jagung[jagung_splitIndex, ]  # Data pelatihan (70%)
-datajagung_test <- Jagung[-jagung_splitIndex, ]  # Data pengujian (30%)
-dim(datajagung_train)
-dim(datajagung_test)
-```
-```{r}
-# Kacang Hijau
-set.seed(123)  # Untuk hasil yang dapat direproduksi
-kacanghijau_splitIndex <- createDataPartition(KacangHijau$Produksi, p = 0.7, list = FALSE)
-datakacanghijau_train <- KacangHijau[kacanghijau_splitIndex, ]  # Data pelatihan (70%)
-datakacanghijau_test <- KacangHijau[-kacanghijau_splitIndex, ]  # Data pengujian (30%)
-dim(datakacanghijau_train)
-dim(datakacanghijau_test)
-```
-```{r}
-# Kacang Kedelai
-set.seed(123)  # Untuk hasil yang dapat direproduksi
-kacangkedelai_splitIndex <- createDataPartition(KacangKedelai$Produksi, p = 0.7, list = FALSE)
-datakacangkedelai_train <- KacangKedelai[kacangkedelai_splitIndex, ]  # Data pelatihan (70%)
-datakacangkedelai_test <- KacangKedelai[-kacangkedelai_splitIndex, ]  # Data pengujian (30%)
-dim(datakacangkedelai_train)
-dim(datakacangkedelai_test)
-```
-```{r}
-# Kacang Tanah
-set.seed(123)  # Untuk hasil yang dapat direproduksi
-kacangtanah_splitIndex <- createDataPartition(KacangTanah$Produksi, p = 0.7, list = FALSE)
-datakacangtanah_train <- KacangTanah[kacangtanah_splitIndex, ]  # Data pelatihan (70%)
-datakacangtanah_test <- KacangTanah[-kacangtanah_splitIndex, ]  # Data pengujian (30%)
-dim(datakacangtanah_train)
-dim(datakacangtanah_test)
-```
-```{r}
-# Ubi Jalar
-set.seed(123)  # Untuk hasil yang dapat direproduksi
-ubijalar_splitIndex <- createDataPartition(UbiJalar$Produksi, p = 0.7, list = FALSE)
-dataubijalar_train <- UbiJalar[ubijalar_splitIndex, ]  # Data pelatihan (70%)
-dataubijalar_test <- UbiJalar[-ubijalar_splitIndex, ]  # Data pengujian (30%)
-dim(dataubijalar_train)
-dim(dataubijalar_test)
-```
-```{r}
-# Ubi Kayu
-set.seed(123)  # Untuk hasil yang dapat direproduksi
-ubikayu_splitIndex <- createDataPartition(UbiKayu$Produksi, p = 0.7, list = FALSE)
-dataubikayu_train <- UbiKayu[ubikayu_splitIndex, ]  # Data pelatihan (70%)
-dataubikayu_test <- UbiKayu[-ubikayu_splitIndex, ]  # Data pengujian (30%)
-dim(dataubikayu_train)
-dim(dataubikayu_test)
-```
 ```{r}
 # Padi
 set.seed(123)  # Untuk hasil yang dapat direproduksi
@@ -1235,22 +286,99 @@ dim(datapadi_test)
 
 
 ##b. Model Random Forest
-
-### 1. Membuat Model Random Forest - Jagung
+### - Membuat Model Random Forest - Padi
+#### a. Grid Search
 ```{r}
-# Membuat model RF
-jagung_rf_model <- randomForest(Produksi ~ Produktivitas + Luas_Panen, data = datajagung_train, ntree = 1000)
+set.seed(123)
+controlGS <- trainControl(method="cv", number=10, search="grid")
+controlRS <- trainControl(method="cv", number=10, search="random")
+tunegrid <- expand.grid(mtry=c(1,2))
 ```
+
+```{r}
+gs_padi_rf <- train(
+  Produksi ~ Produktivitas + Luas_Panen,
+  data = datapadi_train,
+  method = "rf",
+  tuneGrid=tunegrid, 
+  trControl=controlGS
+)
+
+# Menampilkan hasil
+print(gs_padi_rf)
+```
+The final value used for the model was mtry = 2.
+```{r}
+gs_padi_rf_model <- randomForest(Produksi ~ Produktivitas + Luas_Panen, data = datapadi_train, ntree = 1000,mtry=2 )
+gs_padi_rf_model
+```
+
 ```{r}
 # Melakukan Prediksi terhadap Data Pengujian
-predictions_rf_jagung <- predict(jagung_rf_model, datajagung_test)
+gs_predictions_rf_padi <- predict(gs_padi_rf_model, datapadi_test)
+gs_predictions_rf_padi
 ```
 ```{r}
 # Visualisasi Hasil
-result_datajagung_rf <- data.frame(Produksi = datajagung_test$Produksi, Predictions = predictions_rf_jagung)
+gs_result_datapadi_rf <- data.frame(Produksi = datapadi_test$Produksi, Predictions = gs_predictions_rf_padi)
 
 # Visualisasi Perbandingan Produksi Aktual dengan Hasil Prediksi
-ggplot(data = result_datajagung_rf, aes(x = Produksi, y = Predictions)) +
+ggplot(data = gs_result_datapadi_rf, aes(x = Produksi, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
+  theme_minimal()
+```
+
+```{r}
+# Evaluasi RF Model
+
+# Hitung MAE
+gs_mae_value_rf_padi <- mae(datapadi_test$Produksi, gs_predictions_rf_padi)
+
+# Hitung MSE
+gs_mse_value_rf_padi <- mse(datapadi_test$Produksi, gs_predictions_rf_padi)
+
+# Hitung RMSE
+gs_rmse_value_rf_padi <- rmse(datapadi_test$Produksi, gs_predictions_rf_padi)
+
+# Hitung MAPE
+gs_mape_value_rf_padi <- mape(datapadi_test$Produksi, gs_predictions_rf_padi)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", gs_mae_value_rf_padi, "\n"))
+cat(paste("MSE: ", gs_mse_value_rf_padi, "\n"))
+cat(paste("RMSE: ", gs_rmse_value_rf_padi, "\n"))
+cat(paste("MAPE: ", gs_mape_value_rf_padi, "%\n"))
+```
+
+#### b. Random Search
+```{r}
+mtry_padi <- sqrt(ncol(datapadi_train)-1)
+
+rs_padi_rf <- train(Produksi ~ Produktivitas + Luas_Panen, data=datapadi_train, method="rf", tuneLength=5, trControl=controlRS)
+
+print(rs_padi_rf)
+```
+The final value used for the model was mtry = 2.
+```{r}
+rs_padi_rf_model <- randomForest(Produksi ~ Produktivitas + Luas_Panen, data = datapadi_train, ntree = 1000,mtry=2 )
+rs_padi_rf_model
+```
+```{r}
+# Melakukan Prediksi terhadap Data Pengujian
+rs_predictions_rf_padi <- predict(rs_padi_rf_model, datapadi_test)
+rs_predictions_rf_padi
+```
+```{r}
+# Visualisasi Hasil
+rs_result_datapadi_rf <- data.frame(Produksi = datapadi_test$Produksi, Predictions = rs_predictions_rf_padi)
+
+# Visualisasi Perbandingan Produksi Aktual dengan Hasil Prediksi
+ggplot(data = rs_result_datapadi_rf, aes(x = Produksi, y = Predictions)) +
   geom_point() +
   geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
   scale_x_continuous(labels = scales::comma) +
@@ -1260,484 +388,98 @@ ggplot(data = result_datajagung_rf, aes(x = Produksi, y = Predictions)) +
   theme_minimal()
 ```
 ```{r}
-# Visualisasi Produksi Aktual dengan Hasil Prediksi
-ggplot(data = result_datajagung_rf, aes(x = 1:length(Produksi))) +
-  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
-  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
-  labs(x = "Observasi", y = "Produksi (Ton)") +
-  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
-  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
-  theme_minimal()
-```
-
-```{r}
-# Visualisasi hasil prediksi dengan sumbu x adalah tahun
-result_datajagung_rf2 <- data.frame(Tahun = datajagung_test$Tahun, Produksi = datajagung_test$Produksi, Predictions = predictions_rf_jagung)
-
-ggplot(data = result_datajagung_rf2, aes(x = Tahun)) +
-  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
-  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
-  labs(x = "Tahun", y = "Produksi (Ton)") +
-  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
-  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal()
-```
-```{r}
 # Evaluasi RF Model
 
 # Hitung MAE
-mae_value_rf_jagung <- mae(datajagung_test$Produksi, predictions_rf_jagung)
+rs_mae_value_rf_padi <- mae(datapadi_test$Produksi, rs_predictions_rf_padi)
 
 # Hitung MSE
-mse_value_rf_jagung <- mse(datajagung_test$Produksi, predictions_rf_jagung)
+rs_mse_value_rf_padi <- mse(datapadi_test$Produksi, rs_predictions_rf_padi)
 
 # Hitung RMSE
-rmse_value_rf_jagung <- rmse(datajagung_test$Produksi, predictions_rf_jagung)
+rs_rmse_value_rf_padi <- rmse(datapadi_test$Produksi, rs_predictions_rf_padi)
 
 # Hitung MAPE
-mape_value_rf_jagung <- mape(datajagung_test$Produksi, predictions_rf_jagung)
+rs_mape_value_rf_padi <- mape(datapadi_test$Produksi, rs_predictions_rf_padi)
 
 # Tampilkan hasil evaluasi
-cat(paste("MAE: ", mae_value_rf_jagung, "\n"))
-cat(paste("MSE: ", mse_value_rf_jagung, "\n"))
-cat(paste("RMSE: ", rmse_value_rf_jagung, "\n"))
-cat(paste("MAPE: ", mape_value_rf_jagung, "%\n"))
+cat(paste("MAE: ", rs_mae_value_rf_padi, "\n"))
+cat(paste("MSE: ", rs_mse_value_rf_padi, "\n"))
+cat(paste("RMSE: ", rs_rmse_value_rf_padi, "\n"))
+cat(paste("MAPE: ", rs_mape_value_rf_padi, "%\n"))
 ```
 
-### 2. Membuat Model Random Forest - Kacang Hijau
+#### c. Intepretasikan dan Membandingkan Model Random Forest dengan Grid Search dan Random Search - Padi
 ```{r}
-# Membuat model RF
-kacanghijau_rf_model <- randomForest(Produksi ~ Produktivitas + Luas_Panen, data = datakacanghijau_train, ntree = 1000)
+model_performance_padi_rf <- data.frame(
+  No = c(1:2),
+  Model = c("Grid Search", "Random Search"),
+  MSE = c(gs_mse_value_rf_padi, rs_mse_value_rf_padi),
+  RSME = c(gs_rmse_value_rf_padi, rs_rmse_value_rf_padi),
+  MAE = c(gs_mae_value_rf_padi, rs_mae_value_rf_padi),
+  MAPE = c(gs_mape_value_rf_padi, rs_mape_value_rf_padi),
+  stringsAsFactors = FALSE
+  
+)
+model_performance_padi_rf
 ```
-```{r}
-# Melakukan Prediksi terhadap Data Pengujian
-predictions_rf_kacanghijau <- predict(kacanghijau_rf_model, datakacanghijau_test)
-```
-```{r}
-# Visualisasi Hasil
-result_datakacanghijau_rf <- data.frame(Produksi = datakacanghijau_test$Produksi, Predictions = predictions_rf_kacanghijau)
-
-# Visualisasi Perbandingan Produksi Aktual dengan Hasil Prediksi
-ggplot(data = result_datakacanghijau_rf, aes(x = Produksi, y = Predictions)) +
-  geom_point() +
-  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
-  scale_x_continuous(labels = scales::comma) +
-  scale_y_continuous(labels = scales::comma) +
-  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
-  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
-  theme_minimal()
-```
-```{r}
-# Visualisasi Produksi Aktual dengan Hasil Prediksi
-ggplot(data = result_datakacanghijau_rf, aes(x = 1:length(Produksi))) +
-  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
-  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
-  labs(x = "Observasi", y = "Produksi (Ton)") +
-  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
-  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
-  theme_minimal()
-```
-
-```{r}
-# Visualisasi hasil prediksi dengan sumbu x adalah tahun
-result_datakacanghijau_rf2 <- data.frame(Tahun = datakacanghijau_test$Tahun, Produksi = datakacanghijau_test$Produksi, Predictions = predictions_rf_kacanghijau)
-
-ggplot(data = result_datakacanghijau_rf2, aes(x = Tahun)) +
-  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
-  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
-  labs(x = "Tahun", y = "Produksi (Ton)") +
-  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
-  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal()
-```
-```{r}
-# Evaluasi RF Model
-
-# Hitung MAE
-mae_value_rf_kacanghijau <- mae(datakacanghijau_test$Produksi, predictions_rf_kacanghijau)
-
-# Hitung MSE
-mse_value_rf_kacanghijau <- mse(datakacanghijau_test$Produksi, predictions_rf_kacanghijau)
-
-# Hitung RMSE
-rmse_value_rf_kacanghijau <- rmse(datakacanghijau_test$Produksi, predictions_rf_kacanghijau)
-
-# Hitung MAPE
-mape_value_rf_kacanghijau <- mape(datakacanghijau_test$Produksi, predictions_rf_kacanghijau)
-
-# Tampilkan hasil evaluasi
-cat(paste("MAE: ", mae_value_rf_kacanghijau, "\n"))
-cat(paste("MSE: ", mse_value_rf_kacanghijau, "\n"))
-cat(paste("RMSE: ", rmse_value_rf_kacanghijau, "\n"))
-cat(paste("MAPE: ", mape_value_rf_kacanghijau, "%\n"))
-```
-
-### 3. Membuat Model Random Forest - Kacang Kedelai
-```{r}
-# Membuat model RF
-kacangkedelai_rf_model <- randomForest(Produksi ~ Produktivitas + Luas_Panen, data = datakacangkedelai_train, ntree = 1000)
-```
-```{r}
-# Melakukan Prediksi terhadap Data Pengujian
-predictions_rf_kacangkedelai <- predict(kacangkedelai_rf_model, datakacangkedelai_test)
-```
-```{r}
-# Visualisasi Hasil
-result_datakacangkedelai_rf <- data.frame(Produksi = datakacangkedelai_test$Produksi, Predictions = predictions_rf_kacangkedelai)
-
-# Visualisasi Perbandingan Produksi Aktual dengan Hasil Prediksi
-ggplot(data = result_datakacangkedelai_rf, aes(x = Produksi, y = Predictions)) +
-  geom_point() +
-  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
-  scale_x_continuous(labels = scales::comma) +
-  scale_y_continuous(labels = scales::comma) +
-  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
-  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
-  theme_minimal()
-```
-```{r}
-# Visualisasi Produksi Aktual dengan Hasil Prediksi
-ggplot(data = result_datakacangkedelai_rf, aes(x = 1:length(Produksi))) +
-  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
-  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
-  labs(x = "Observasi", y = "Produksi (Ton)") +
-  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
-  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
-  theme_minimal()
-```
-
-```{r}
-# Visualisasi hasil prediksi dengan sumbu x adalah tahun
-result_datakacangkedelai_rf2 <- data.frame(Tahun = datakacangkedelai_test$Tahun, Produksi = datakacangkedelai_test$Produksi, Predictions = predictions_rf_kacangkedelai)
-
-ggplot(data = result_datakacangkedelai_rf2, aes(x = Tahun)) +
-  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
-  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
-  labs(x = "Tahun", y = "Produksi (Ton)") +
-  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
-  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal()
-```
-```{r}
-# Evaluasi RF Model
-
-# Hitung MAE
-mae_value_rf_kacangkedelai <- mae(datakacangkedelai_test$Produksi, predictions_rf_kacangkedelai)
-
-# Hitung MSE
-mse_value_rf_kacangkedelai <- mse(datakacangkedelai_test$Produksi, predictions_rf_kacangkedelai)
-
-# Hitung RMSE
-rmse_value_rf_kacangkedelai <- rmse(datakacangkedelai_test$Produksi, predictions_rf_kacangkedelai)
-
-# Hitung MAPE
-mape_value_rf_kacangkedelai <- mape(datakacangkedelai_test$Produksi, predictions_rf_kacangkedelai)
-
-# Tampilkan hasil evaluasi
-cat(paste("MAE: ", mae_value_rf_kacangkedelai, "\n"))
-cat(paste("MSE: ", mse_value_rf_kacangkedelai, "\n"))
-cat(paste("RMSE: ", rmse_value_rf_kacangkedelai, "\n"))
-cat(paste("MAPE: ", mape_value_rf_kacangkedelai, "%\n"))
-```
-
-### 4. Membuat Model Random Forest - Kacang Tanah
-```{r}
-# Membuat model RF
-kacangtanah_rf_model <- randomForest(Produksi ~ Produktivitas + Luas_Panen, data = datakacangtanah_train, ntree = 1000)
-```
-```{r}
-# Melakukan Prediksi terhadap Data Pengujian
-predictions_rf_kacangtanah <- predict(kacangtanah_rf_model, datakacangtanah_test)
-```
-```{r}
-# Visualisasi Hasil
-result_datakacangtanah_rf <- data.frame(Produksi = datakacangtanah_test$Produksi, Predictions = predictions_rf_kacangtanah)
-
-# Visualisasi Perbandingan Produksi Aktual dengan Hasil Prediksi
-ggplot(data = result_datakacangtanah_rf, aes(x = Produksi, y = Predictions)) +
-  geom_point() +
-  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
-  scale_x_continuous(labels = scales::comma) +
-  scale_y_continuous(labels = scales::comma) +
-  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
-  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
-  theme_minimal()
-```
-```{r}
-# Visualisasi Produksi Aktual dengan Hasil Prediksi
-ggplot(data = result_datakacangtanah_rf, aes(x = 1:length(Produksi))) +
-  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
-  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
-  labs(x = "Observasi", y = "Produksi (Ton)") +
-  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
-  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
-  theme_minimal()
-```
-
-```{r}
-# Visualisasi hasil prediksi dengan sumbu x adalah tahun
-result_datakacangtanah_rf2 <- data.frame(Tahun = datakacangtanah_test$Tahun, Produksi = datakacangtanah_test$Produksi, Predictions = predictions_rf_kacangtanah)
-
-ggplot(data = result_datakacangtanah_rf2, aes(x = Tahun)) +
-  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
-  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
-  labs(x = "Tahun", y = "Produksi (Ton)") +
-  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
-  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal()
-```
-```{r}
-# Evaluasi RF Model
-
-# Hitung MAE
-mae_value_rf_kacangtanah <- mae(datakacangtanah_test$Produksi, predictions_rf_kacangtanah)
-
-# Hitung MSE
-mse_value_rf_kacangtanah <- mse(datakacangtanah_test$Produksi, predictions_rf_kacangtanah)
-
-# Hitung RMSE
-rmse_value_rf_kacangtanah <- rmse(datakacangtanah_test$Produksi, predictions_rf_kacangtanah)
-
-# Hitung MAPE
-mape_value_rf_kacangtanah <- mape(datakacangtanah_test$Produksi, predictions_rf_kacangtanah)
-
-# Tampilkan hasil evaluasi
-cat(paste("MAE: ", mae_value_rf_kacangtanah, "\n"))
-cat(paste("MSE: ", mse_value_rf_kacangtanah, "\n"))
-cat(paste("RMSE: ", rmse_value_rf_kacangtanah, "\n"))
-cat(paste("MAPE: ", mape_value_rf_kacangtanah, "%\n"))
-```
-
-### 5. Membuat Model Random Forest - Ubi Jalar
-```{r}
-# Membuat model RF
-ubijalar_rf_model <- randomForest(Produksi ~ Produktivitas + Luas_Panen, data = dataubijalar_train, ntree = 1000)
-```
-```{r}
-# Melakukan Prediksi terhadap Data Pengujian
-predictions_rf_ubijalar <- predict(ubijalar_rf_model, dataubijalar_test)
-```
-```{r}
-# Visualisasi Hasil
-result_dataubijalar_rf <- data.frame(Produksi = dataubijalar_test$Produksi, Predictions = predictions_rf_ubijalar)
-
-# Visualisasi Perbandingan Produksi Aktual dengan Hasil Prediksi
-ggplot(data = result_dataubijalar_rf, aes(x = Produksi, y = Predictions)) +
-  geom_point() +
-  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
-  scale_x_continuous(labels = scales::comma) +
-  scale_y_continuous(labels = scales::comma) +
-  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
-  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
-  theme_minimal()
-```
-```{r}
-# Visualisasi Produksi Aktual dengan Hasil Prediksi
-ggplot(data = result_dataubijalar_rf, aes(x = 1:length(Produksi))) +
-  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
-  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
-  labs(x = "Observasi", y = "Produksi (Ton)") +
-  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
-  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
-  theme_minimal()
-```
-
-```{r}
-# Visualisasi hasil prediksi dengan sumbu x adalah tahun
-result_dataubijalar_rf2 <- data.frame(Tahun = dataubijalar_test$Tahun, Produksi = dataubijalar_test$Produksi, Predictions = predictions_rf_ubijalar)
-
-ggplot(data = result_dataubijalar_rf2, aes(x = Tahun)) +
-  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
-  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
-  labs(x = "Tahun", y = "Produksi (Ton)") +
-  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
-  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal()
-```
-```{r}
-# Evaluasi RF Model
-
-# Hitung MAE
-mae_value_rf_ubijalar <- mae(dataubijalar_test$Produksi, predictions_rf_ubijalar)
-
-# Hitung MSE
-mse_value_rf_ubijalar <- mse(dataubijalar_test$Produksi, predictions_rf_ubijalar)
-
-# Hitung RMSE
-rmse_value_rf_ubijalar <- rmse(dataubijalar_test$Produksi, predictions_rf_ubijalar)
-
-# Hitung MAPE
-mape_value_rf_ubijalar <- mape(dataubijalar_test$Produksi, predictions_rf_ubijalar)
-
-# Tampilkan hasil evaluasi
-cat(paste("MAE: ", mae_value_rf_ubijalar, "\n"))
-cat(paste("MSE: ", mse_value_rf_ubijalar, "\n"))
-cat(paste("RMSE: ", rmse_value_rf_ubijalar, "\n"))
-cat(paste("MAPE: ", mape_value_rf_ubijalar, "%\n"))
-```
-
-### 6. Membuat Model Random Forest - Ubi Kayu
-```{r}
-# Membuat model RF
-ubikayu_rf_model <- randomForest(Produksi ~ Produktivitas + Luas_Panen, data = dataubikayu_train, ntree = 1000)
-```
-```{r}
-# Melakukan Prediksi terhadap Data Pengujian
-predictions_rf_ubikayu <- predict(ubikayu_rf_model, dataubikayu_test)
-```
-```{r}
-# Visualisasi Hasil
-result_dataubikayu_rf <- data.frame(Produksi = dataubikayu_test$Produksi, Predictions = predictions_rf_ubikayu)
-
-# Visualisasi Perbandingan Produksi Aktual dengan Hasil Prediksi
-ggplot(data = result_dataubikayu_rf, aes(x = Produksi, y = Predictions)) +
-  geom_point() +
-  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
-  scale_x_continuous(labels = scales::comma) +
-  scale_y_continuous(labels = scales::comma) +
-  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
-  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
-  theme_minimal()
-```
-```{r}
-# Visualisasi Produksi Aktual dengan Hasil Prediksi
-ggplot(data = result_dataubikayu_rf, aes(x = 1:length(Produksi))) +
-  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
-  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
-  labs(x = "Observasi", y = "Produksi (Ton)") +
-  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
-  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
-  theme_minimal()
-```
-
-```{r}
-# Visualisasi hasil prediksi dengan sumbu x adalah tahun
-result_dataubikayu_rf2 <- data.frame(Tahun = dataubikayu_test$Tahun, Produksi = dataubikayu_test$Produksi, Predictions = predictions_rf_ubikayu)
-
-ggplot(data = result_dataubikayu_rf2, aes(x = Tahun)) +
-  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
-  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
-  labs(x = "Tahun", y = "Produksi (Ton)") +
-  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
-  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal()
-```
-```{r}
-# Evaluasi RF Model
-
-# Hitung MAE
-mae_value_rf_ubikayu <- mae(dataubikayu_test$Produksi, predictions_rf_ubikayu)
-
-# Hitung MSE
-mse_value_rf_ubikayu <- mse(dataubikayu_test$Produksi, predictions_rf_ubikayu)
-
-# Hitung RMSE
-rmse_value_rf_ubikayu <- rmse(dataubikayu_test$Produksi, predictions_rf_ubikayu)
-
-# Hitung MAPE
-mape_value_rf_ubikayu <- mape(dataubikayu_test$Produksi, predictions_rf_ubikayu)
-
-# Tampilkan hasil evaluasi
-cat(paste("MAE: ", mae_value_rf_ubikayu, "\n"))
-cat(paste("MSE: ", mse_value_rf_ubikayu, "\n"))
-cat(paste("RMSE: ", rmse_value_rf_ubikayu, "\n"))
-cat(paste("MAPE: ", mape_value_rf_ubikayu, "%\n"))
-```
-
-
-### 7. Membuat Model Random Forest - Padi
-```{r}
-# Membuat model RF
-padi_rf_model <- randomForest(Produksi ~ Produktivitas + Luas_Panen, data = datapadi_train, ntree = 1000)
-```
-```{r}
-# Melakukan Prediksi terhadap Data Pengujian
-predictions_rf_padi <- predict(padi_rf_model, datapadi_test)
-```
-```{r}
-# Visualisasi Hasil
-result_datapadi_rf <- data.frame(Produksi = datapadi_test$Produksi, Predictions = predictions_rf_padi)
-
-# Visualisasi Perbandingan Produksi Aktual dengan Hasil Prediksi
-ggplot(data = result_datapadi_rf, aes(x = Produksi, y = Predictions)) +
-  geom_point() +
-  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
-  scale_x_continuous(labels = scales::comma) +
-  scale_y_continuous(labels = scales::comma) +
-  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
-  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
-  theme_minimal()
-```
-```{r}
-# Visualisasi Produksi Aktual dengan Hasil Prediksi
-ggplot(data = result_datapadi_rf, aes(x = 1:length(Produksi))) +
-  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
-  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
-  labs(x = "Observasi", y = "Produksi (Ton)") +
-  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
-  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
-  theme_minimal()
-```
-
-```{r}
-# Visualisasi hasil prediksi dengan sumbu x adalah tahun
-result_datapadi_rf2 <- data.frame(Tahun = datapadi_test$Tahun, Produksi = datapadi_test$Produksi, Predictions = predictions_rf_padi)
-
-ggplot(data = result_datapadi_rf2, aes(x = Tahun)) +
-  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
-  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
-  labs(x = "Tahun", y = "Produksi (Ton)") +
-  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
-  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal()
-```
-```{r}
-# Evaluasi RF Model
-
-# Hitung MAE
-mae_value_rf_padi <- mae(datapadi_test$Produksi, predictions_rf_padi)
-
-# Hitung MSE
-mse_value_rf_padi <- mse(datapadi_test$Produksi, predictions_rf_padi)
-
-# Hitung RMSE
-rmse_value_rf_padi <- rmse(datapadi_test$Produksi, predictions_rf_padi)
-
-# Hitung MAPE
-mape_value_rf_padi <- mape(datapadi_test$Produksi, predictions_rf_padi)
-
-# Tampilkan hasil evaluasi
-cat(paste("MAE: ", mae_value_rf_padi, "\n"))
-cat(paste("MSE: ", mse_value_rf_padi, "\n"))
-cat(paste("RMSE: ", rmse_value_rf_padi, "\n"))
-cat(paste("MAPE: ", mape_value_rf_padi, "%\n"))
-```
+Berdasarkan hasil diatas, kalau dilihat dari performance matrik tingkat kesalahan yang paling rendah (MAPE), maka model **Random Forest dengan Grid Search** yang dianggap sebagai model terbaik dalam hal akurasi prediksi produksi padi.
 
 
 ##c. Model SVR
-### 1. Membuat Model SVR - Jagung
+### - Kernel Radial
+### Mengatur Optimisasi hyperparameter
 ```{r}
-# Membuat model SVR
-jagung_svr_model <- svm(Produksi ~ Produktivitas + Luas_Panen, data = datajagung_train, kernel = "radial", cost = 1)
+# Mengatur Optimisasi hyperparameter
+## grid search
+hyper_grid <- expand.grid(sigma = seq(0.1, 1, by = 0.1),
+                          C = c(0.1, 1, 10, 100))
+
+## random search
+hyper_grid_random <- data.frame(sigma = runif(50, 0.1, 1),
+                                C = runif(50, 0.1, 100))
+
+# Membuat kontrol untuk cross-validation
+ctrl <- trainControl(method = "cv", number = 10)
 ```
 
+### Membuat Model SVR - Padi
+#### a. Grid search
+```{r}
+# Melakukan grid search
+gs_padi_svr_radial <- train(Produksi ~ Produktivitas + Luas_Panen,
+                         data = datapadi_train,
+                          method = "svmRadial",
+                         trControl = ctrl,
+                         tuneGrid = hyper_grid)
+
+# Melihat hasil grid search
+print(gs_padi_svr_radial)
+```
+The final values used for the model were sigma = 0.2 and C = 10.
+```{r}
+# Membuat model SVR dengan hiperparameter terbaik
+gs_padi_svr_model_radial <- svm(Produksi ~ Produktivitas + Luas_Panen, 
+                       data = datapadi_train, 
+                       kernel = "radial", 
+                       cost = 10,
+                       sigma = 0.2,
+                        epsilon=  0.0001)
+
+# Melihat ringkasan dari model
+print(gs_padi_svr_model_radial)
+```
 ```{r}
 # Melakukan prediksi dengan Data Testing
-predictions_svr_jagung <- predict(jagung_svr_model, datajagung_test)
+gs_predictions_svr_padi_radial <- predict(gs_padi_svr_model_radial, datapadi_test)
+gs_predictions_svr_padi_radial
 ```
 
 ```{r}
 # Visualisasi hasil prediksi
-result_datajagung_svr <- data.frame(Produksi = datajagung_test$Produksi, Predictions = predictions_svr_jagung)
+gs_result_datapadi_svr_radial <- data.frame(Produksi = datapadi_test$Produksi, Predictions = gs_predictions_svr_padi_radial)
 
-ggplot(data = result_datajagung_svr, aes(x = Produksi, y = Predictions)) +
+ggplot(data = gs_result_datapadi_svr_radial, aes(x = Produksi, y = Predictions)) +
   geom_point() +
   geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
   labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
@@ -1746,73 +488,154 @@ ggplot(data = result_datajagung_svr, aes(x = Produksi, y = Predictions)) +
   ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
   theme_minimal()
 ```
+```{r}
+# Evaluasi SVR Model
+
+# Hitung MAE
+gs_mae_value_svr_padi_radial <- mae(datapadi_test$Produksi, gs_predictions_svr_padi_radial)
+
+# Hitung MSE
+gs_mse_value_svr_padi_radial <- mse(datapadi_test$Produksi, gs_predictions_svr_padi_radial)
+
+# Hitung RMSE
+gs_rmse_value_svr_padi_radial <- rmse(datapadi_test$Produksi, gs_predictions_svr_padi_radial)
+
+# Hitung MAPE
+gs_mape_value_svr_padi_radial <- mape(datapadi_test$Produksi, gs_predictions_svr_padi_radial)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", gs_mae_value_svr_padi_radial, "\n"))
+cat(paste("MSE: ", gs_mse_value_svr_padi_radial, "\n"))
+cat(paste("RMSE: ", gs_rmse_value_svr_padi_radial, "\n"))
+cat(paste("MAPE: ", gs_mape_value_svr_padi_radial, "%\n"))
+```
+
+#### b. Random search
+```{r}
+# Melakukan random search
+rs_padi_svr_radial <- train(Produksi ~ Produktivitas + Luas_Panen,
+                           data = datapadi_train,
+                           method = "svmRadial",
+                           trControl = ctrl,
+                           tuneGrid = hyper_grid_random)
+
+# Melihat hasil random search
+print(rs_padi_svr_radial)
+print(rs_padi_svr_radial$bestTune)
+```
+The final values used for the model were sigma
+ = 0.1450313 and C = 65.30462.
 
 ```{r}
-# Buat grafik garis dengan ggplot2
-ggplot(data = result_datajagung_svr, aes(x = 1:length(Produksi))) +
-  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
-  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
-  labs(x = "Observasi", y = "Produksi (Ton)") +
-  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
-  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal()
+# Membuat model SVR dengan hiperparameter terbaik
+padi_svr_model_radial <- svm(Produksi ~ Produktivitas + Luas_Panen, 
+                       data = datapadi_train, 
+                       kernel = "radial",
+                       cost = 65.30462, 
+                       sigma = 0.1450313,
+                       epsilon=  0.0001
+                       )
+
+# Melihat ringkasan dari model
+print(padi_svr_model_radial)
+
+
 ```
 
 ```{r}
-# Visualisasi hasil prediksi dengan sumbu x adalah tahun
-result_datajagung_svr2 <- data.frame(Tahun = datajagung_test$Tahun, Produksi = datajagung_test$Produksi, Predictions = predictions_svr_jagung)
-
-ggplot(data = result_datajagung_svr2, aes(x = Tahun)) +
-  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
-  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
-  labs(x = "Tahun", y = "Produksi (Ton)") +
-  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
-  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal()
+# Melakukan prediksi dengan Data Testing
+rs_predictions_svr_padi_radial <- predict(padi_svr_model_radial, datapadi_test)
+rs_predictions_svr_padi_radial
 ```
 
 ```{r}
 # Evaluasi SVR Model
 
 # Hitung MAE
-mae_value_svr_jagung <- mae(datajagung_test$Produksi, predictions_svr_jagung)
+rs_mae_value_svr_padi_radial <- mae(datapadi_test$Produksi, rs_predictions_svr_padi_radial)
 
 # Hitung MSE
-mse_value_svr_jagung <- mse(datajagung_test$Produksi, predictions_svr_jagung)
+rs_mse_value_svr_padi_radial <- mse(datapadi_test$Produksi, rs_predictions_svr_padi_radial)
 
 # Hitung RMSE
-rmse_value_svr_jagung <- rmse(datajagung_test$Produksi, predictions_svr_jagung)
+rs_rmse_value_svr_padi_radial <- rmse(datapadi_test$Produksi, rs_predictions_svr_padi_radial)
 
 # Hitung MAPE
-mape_value_svr_jagung <- mape(datajagung_test$Produksi, predictions_svr_jagung)
+rs_mape_value_svr_padi_radial <- mape(datapadi_test$Produksi, rs_predictions_svr_padi_radial)
 
 # Tampilkan hasil evaluasi
-cat(paste("MAE: ", mae_value_svr_jagung, "\n"))
-cat(paste("MSE: ", mse_value_svr_jagung, "\n"))
-cat(paste("RMSE: ", rmse_value_svr_jagung, "\n"))
-cat(paste("MAPE: ", mape_value_svr_jagung, "%\n"))
+cat(paste("MAE: ", rs_mae_value_svr_padi_radial, "\n"))
+cat(paste("MSE: ", rs_mse_value_svr_padi_radial, "\n"))
+cat(paste("RMSE: ", rs_rmse_value_svr_padi_radial, "\n"))
+cat(paste("MAPE: ", rs_mape_value_svr_padi_radial, "%\n"))
 ```
 
-
-
-### 2. Membuat Model SVR - Kacang Hijau
+####c. Intepretasikan dan Membandingkan Model SVR dengan Grid Search dan Random Search - Padi
 ```{r}
-# Membuat model SVR
-kacanghijau_svr_model <- svm(Produksi ~ Produktivitas + Luas_Panen, data = datakacanghijau_train, kernel = "radial", cost = 1)
+model_performance_padi_svr_radial <- data.frame(
+  No = c(1:2),
+  Model = c("Grid Search", "Random Search"),
+  MSE = c(gs_mse_value_svr_padi_radial, rs_mse_value_svr_padi_radial),
+  RSME = c(gs_rmse_value_svr_padi_radial, rs_rmse_value_svr_padi_radial),
+  MAE = c(gs_mae_value_svr_padi_radial, rs_mae_value_svr_padi_radial),
+  MAPE = c(gs_mape_value_svr_padi_radial, rs_mape_value_svr_padi_radial),
+  stringsAsFactors = FALSE
+  
+)
+model_performance_padi_svr_radial
 ```
+Berdasarkan hasil diatas, kalau dilihat dari performance matrik tingkat kesalahan yang paling rendah (MAPE), maka model **SVR dengan Random Search** yang dianggap sebagai model terbaik dalam hal akurasi prediksi produksi padi.
 
+
+###- Kernel Linear
+### Mengatur Optimisasi hyperparameter
+```{r}
+# Mengatur Optimisasi hyperparameter
+## grid search
+hyper_grid_linear <- expand.grid(C = c(0.1, 1, 10, 100))
+
+## random search
+hyper_grid_random_linear <- data.frame(C = runif(50, 0.1, 100))
+
+# Membuat kontrol untuk cross-validation
+ctrl <- trainControl(method = "cv", number = 10)
+```
+### Membuat Model SVR - Padi
+#### a. Grid search
+```{r}
+# Melakukan grid search
+gs_padi_svr_linear <- train(Produksi ~ Produktivitas + Luas_Panen,
+                         data = datapadi_train,
+                          method = "svmLinear",
+                         trControl = ctrl,
+                         tuneGrid = hyper_grid_linear)
+
+# Melihat hasil grid search
+print(gs_padi_svr_linear)
+```
+The final value used for the model was C = 10.
+```{r}
+# Membuat model SVR dengan hiperparameter terbaik
+gs_padi_svr_model_linear <- svm(Produksi ~ Produktivitas + Luas_Panen, 
+                       data = datapadi_train, 
+                       kernel = "linear", 
+                       cost = 10,
+                        epsilon=  0.00001)
+
+# Melihat ringkasan dari model
+print(gs_padi_svr_model_linear)
+```
 ```{r}
 # Melakukan prediksi dengan Data Testing
-predictions_svr_kacanghijau <- predict(kacanghijau_svr_model, datakacanghijau_test)
+gs_predictions_svr_padi_linear <- predict(gs_padi_svr_model_linear, datapadi_test)
+gs_predictions_svr_padi_linear
 ```
 
 ```{r}
 # Visualisasi hasil prediksi
-result_datakacanghijau_svr <- data.frame(Produksi = datakacanghijau_test$Produksi, Predictions = predictions_svr_kacanghijau)
+gs_result_datapadi_svr_linear <- data.frame(Produksi = datapadi_test$Produksi, Predictions = gs_predictions_svr_padi_linear)
 
-ggplot(data = result_datakacanghijau_svr, aes(x = Produksi, y = Predictions)) +
+ggplot(data = gs_result_datapadi_svr_linear, aes(x = Produksi, y = Predictions)) +
   geom_point() +
   geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
   labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
@@ -1821,541 +644,115 @@ ggplot(data = result_datakacanghijau_svr, aes(x = Produksi, y = Predictions)) +
   ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
   theme_minimal()
 ```
-
-```{r}
-# Buat grafik garis dengan ggplot2
-ggplot(data = result_datakacanghijau_svr, aes(x = 1:length(Produksi))) +
-  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
-  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
-  labs(x = "Observasi", y = "Produksi (Ton)") +
-  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
-  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal()
-```
-
-```{r}
-# Visualisasi hasil prediksi dengan sumbu x adalah tahun
-result_datakacanghijau_svr2 <- data.frame(Tahun = datakacanghijau_test$Tahun, Produksi = datakacanghijau_test$Produksi, Predictions = predictions_svr_kacanghijau)
-
-ggplot(data = result_datakacanghijau_svr2, aes(x = Tahun)) +
-  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
-  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
-  labs(x = "Tahun", y = "Produksi (Ton)") +
-  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
-  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal()
-```
-
 ```{r}
 # Evaluasi SVR Model
 
 # Hitung MAE
-mae_value_svr_kacanghijau <- mae(datakacanghijau_test$Produksi, predictions_svr_kacanghijau)
+gs_mae_value_svr_padi_linear <- mae(datapadi_test$Produksi, gs_predictions_svr_padi_linear)
 
 # Hitung MSE
-mse_value_svr_kacanghijau <- mse(datakacanghijau_test$Produksi, predictions_svr_kacanghijau)
+gs_mse_value_svr_padi_linear <- mse(datapadi_test$Produksi, gs_predictions_svr_padi_linear)
 
 # Hitung RMSE
-rmse_value_svr_kacanghijau <- rmse(datakacanghijau_test$Produksi, predictions_svr_kacanghijau)
+gs_rmse_value_svr_padi_linear <- rmse(datapadi_test$Produksi, gs_predictions_svr_padi_linear)
 
 # Hitung MAPE
-mape_value_svr_kacanghijau <- mape(datakacanghijau_test$Produksi, predictions_svr_kacanghijau)
+gs_mape_value_svr_padi_linear <- mape(datapadi_test$Produksi, gs_predictions_svr_padi_linear)
 
 # Tampilkan hasil evaluasi
-cat(paste("MAE: ", mae_value_svr_kacanghijau, "\n"))
-cat(paste("MSE: ", mse_value_svr_kacanghijau, "\n"))
-cat(paste("RMSE: ", rmse_value_svr_kacanghijau, "\n"))
-cat(paste("MAPE: ", mape_value_svr_kacanghijau, "%\n"))
+cat(paste("MAE: ", gs_mae_value_svr_padi_linear, "\n"))
+cat(paste("MSE: ", gs_mse_value_svr_padi_linear, "\n"))
+cat(paste("RMSE: ", gs_rmse_value_svr_padi_linear, "\n"))
+cat(paste("MAPE: ", gs_mape_value_svr_padi_linear, "%\n"))
 ```
 
-
-
-### 3. Membuat Model SVR - Kacang Kedelai
+#### b. Random search
 ```{r}
-# Membuat model SVR
-kacangkedelai_svr_model <- svm(Produksi ~ Produktivitas + Luas_Panen, data = datakacangkedelai_train, kernel = "radial", cost = 1)
+# Melakukan random search
+rs_padi_svr_linear <- train(Produksi ~ Produktivitas + Luas_Panen,
+                           data = datapadi_train,
+                           method = "svmLinear",
+                           trControl = ctrl,
+                           tuneGrid = hyper_grid_random_linear)
+
+# Melihat hasil random search
+print(rs_padi_svr_linear)
+print(rs_padi_svr_linear$bestTune)
+```
+The final value used for the model was C = 15.35662.
+
+```{r}
+# Membuat model SVR dengan hiperparameter terbaik
+padi_svr_model_linear <- svm(Produksi ~ Produktivitas + Luas_Panen, 
+                       data = datapadi_train, 
+                       kernel = "linear",
+                       cost = 15.35662, 
+                       epsilon=  0.00001
+                       
+                       )
+
+# Melihat ringkasan dari model
+print(padi_svr_model_linear)
 ```
 
 ```{r}
 # Melakukan prediksi dengan Data Testing
-predictions_svr_kacangkedelai <- predict(kacangkedelai_svr_model, datakacangkedelai_test)
-```
-
-```{r}
-# Visualisasi hasil prediksi
-result_datakacangkedelai_svr <- data.frame(Produksi = datakacangkedelai_test$Produksi, Predictions = predictions_svr_kacangkedelai)
-
-ggplot(data = result_datakacangkedelai_svr, aes(x = Produksi, y = Predictions)) +
-  geom_point() +
-  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
-  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
-  scale_x_continuous(labels = scales::comma) +
-  scale_y_continuous(labels = scales::comma) +
-  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
-  theme_minimal()
-```
-
-```{r}
-# Buat grafik garis dengan ggplot2
-ggplot(data = result_datakacangkedelai_svr, aes(x = 1:length(Produksi))) +
-  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
-  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
-  labs(x = "Observasi", y = "Produksi (Ton)") +
-  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
-  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal()
-```
-
-```{r}
-# Visualisasi hasil prediksi dengan sumbu x adalah tahun
-result_datakacangkedelai_svr2 <- data.frame(Tahun = datakacangkedelai_test$Tahun, Produksi = datakacangkedelai_test$Produksi, Predictions = predictions_svr_kacangkedelai)
-
-ggplot(data = result_datakacangkedelai_svr2, aes(x = Tahun)) +
-  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
-  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
-  labs(x = "Tahun", y = "Produksi (Ton)") +
-  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
-  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal()
+rs_predictions_svr_padi_linear <- predict(padi_svr_model_linear, datapadi_test)
+rs_predictions_svr_padi_linear
 ```
 
 ```{r}
 # Evaluasi SVR Model
 
 # Hitung MAE
-mae_value_svr_kacangkedelai <- mae(datakacangkedelai_test$Produksi, predictions_svr_kacangkedelai)
+rs_mae_value_svr_padi_linear <- mae(datapadi_test$Produksi, rs_predictions_svr_padi_linear)
 
 # Hitung MSE
-mse_value_svr_kacangkedelai <- mse(datakacangkedelai_test$Produksi, predictions_svr_kacangkedelai)
+rs_mse_value_svr_padi_linear <- mse(datapadi_test$Produksi, rs_predictions_svr_padi_linear)
 
 # Hitung RMSE
-rmse_value_svr_kacangkedelai <- rmse(datakacangkedelai_test$Produksi, predictions_svr_kacangkedelai)
+rs_rmse_value_svr_padi_linear <- rmse(datapadi_test$Produksi, rs_predictions_svr_padi_linear)
 
 # Hitung MAPE
-mape_value_svr_kacangkedelai <- mape(datakacangkedelai_test$Produksi, predictions_svr_kacangkedelai)
+rs_mape_value_svr_padi_linear <- mape(datapadi_test$Produksi, rs_predictions_svr_padi_linear)
 
 # Tampilkan hasil evaluasi
-cat(paste("MAE: ", mae_value_svr_kacangkedelai, "\n"))
-cat(paste("MSE: ", mse_value_svr_kacangkedelai, "\n"))
-cat(paste("RMSE: ", rmse_value_svr_kacangkedelai, "\n"))
-cat(paste("MAPE: ", mape_value_svr_kacangkedelai, "%\n"))
+cat(paste("MAE: ", rs_mae_value_svr_padi_linear, "\n"))
+cat(paste("MSE: ", rs_mse_value_svr_padi_linear, "\n"))
+cat(paste("RMSE: ", rs_rmse_value_svr_padi_linear, "\n"))
+cat(paste("MAPE: ", rs_mape_value_svr_padi_linear, "%\n"))
 ```
 
-
-
-### 4. Membuat Model SVR - Kacang Tanah
+####c. Intepretasikan dan Membandingkan Model SVR dengan Grid Search dan Random Search - Padi
 ```{r}
-# Membuat model SVR
-kacangtanah_svr_model <- svm(Produksi ~ Produktivitas + Luas_Panen, data = datakacangtanah_train, kernel = "radial", cost = 1)
-```
-
-```{r}
-# Melakukan prediksi dengan Data Testing
-predictions_svr_kacangtanah <- predict(kacangtanah_svr_model, datakacangtanah_test)
-```
-
-```{r}
-# Visualisasi hasil prediksi
-result_datakacangtanah_svr <- data.frame(Produksi = datakacangtanah_test$Produksi, Predictions = predictions_svr_kacangtanah)
-
-ggplot(data = result_datakacangtanah_svr, aes(x = Produksi, y = Predictions)) +
-  geom_point() +
-  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
-  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
-  scale_x_continuous(labels = scales::comma) +
-  scale_y_continuous(labels = scales::comma) +
-  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
-  theme_minimal()
-```
-
-```{r}
-# Buat grafik garis dengan ggplot2
-ggplot(data = result_datakacangtanah_svr, aes(x = 1:length(Produksi))) +
-  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
-  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
-  labs(x = "Observasi", y = "Produksi (Ton)") +
-  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
-  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal()
-```
-
-```{r}
-# Visualisasi hasil prediksi dengan sumbu x adalah tahun
-result_datakacangtanah_svr2 <- data.frame(Tahun = datakacangtanah_test$Tahun, Produksi = datakacangtanah_test$Produksi, Predictions = predictions_svr_kacangtanah)
-
-ggplot(data = result_datakacangtanah_svr2, aes(x = Tahun)) +
-  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
-  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
-  labs(x = "Tahun", y = "Produksi (Ton)") +
-  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
-  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal()
-```
-
-```{r}
-# Evaluasi SVR Model
-
-# Hitung MAE
-mae_value_svr_kacangtanah <- mae(datakacangtanah_test$Produksi, predictions_svr_kacangtanah)
-
-# Hitung MSE
-mse_value_svr_kacangtanah <- mse(datakacangtanah_test$Produksi, predictions_svr_kacangtanah)
-
-# Hitung RMSE
-rmse_value_svr_kacangtanah <- rmse(datakacangtanah_test$Produksi, predictions_svr_kacangtanah)
-
-# Hitung MAPE
-mape_value_svr_kacangtanah <- mape(datakacangtanah_test$Produksi, predictions_svr_kacangtanah)
-
-# Tampilkan hasil evaluasi
-cat(paste("MAE: ", mae_value_svr_kacangtanah, "\n"))
-cat(paste("MSE: ", mse_value_svr_kacangtanah, "\n"))
-cat(paste("RMSE: ", rmse_value_svr_kacangtanah, "\n"))
-cat(paste("MAPE: ", mape_value_svr_kacangtanah, "%\n"))
-```
-
-
-### 5. Membuat Model SVR - Ubi Jalar
-```{r}
-# Membuat model SVR
-ubijalar_svr_model <- svm(Produksi ~ Produktivitas + Luas_Panen, data = dataubijalar_train, kernel = "radial", cost = 1)
-```
-
-```{r}
-# Melakukan prediksi dengan Data Testing
-predictions_svr_ubijalar <- predict(ubijalar_svr_model, dataubijalar_test)
-```
-
-```{r}
-# Visualisasi hasil prediksi
-result_dataubijalar_svr <- data.frame(Produksi = dataubijalar_test$Produksi, Predictions = predictions_svr_ubijalar)
-
-ggplot(data = result_dataubijalar_svr, aes(x = Produksi, y = Predictions)) +
-  geom_point() +
-  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
-  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
-  scale_x_continuous(labels = scales::comma) +
-  scale_y_continuous(labels = scales::comma) +
-  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
-  theme_minimal()
-```
-
-```{r}
-# Buat grafik garis dengan ggplot2
-ggplot(data = result_dataubijalar_svr, aes(x = 1:length(Produksi))) +
-  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
-  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
-  labs(x = "Observasi", y = "Produksi (Ton)") +
-  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
-  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal()
-```
-
-```{r}
-# Visualisasi hasil prediksi dengan sumbu x adalah tahun
-result_dataubijalar_svr2 <- data.frame(Tahun = dataubijalar_test$Tahun, Produksi = dataubijalar_test$Produksi, Predictions = predictions_svr_ubijalar)
-
-ggplot(data = result_dataubijalar_svr2, aes(x = Tahun)) +
-  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
-  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
-  labs(x = "Tahun", y = "Produksi (Ton)") +
-  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
-  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal()
-```
-
-```{r}
-# Evaluasi SVR Model
-
-# Hitung MAE
-mae_value_svr_ubijalar <- mae(dataubijalar_test$Produksi, predictions_svr_ubijalar)
-
-# Hitung MSE
-mse_value_svr_ubijalar <- mse(dataubijalar_test$Produksi, predictions_svr_ubijalar)
-
-# Hitung RMSE
-rmse_value_svr_ubijalar <- rmse(dataubijalar_test$Produksi, predictions_svr_ubijalar)
-
-# Hitung MAPE
-mape_value_svr_ubijalar <- mape(dataubijalar_test$Produksi, predictions_svr_ubijalar)
-
-# Tampilkan hasil evaluasi
-cat(paste("MAE: ", mae_value_svr_ubijalar, "\n"))
-cat(paste("MSE: ", mse_value_svr_ubijalar, "\n"))
-cat(paste("RMSE: ", rmse_value_svr_ubijalar, "\n"))
-cat(paste("MAPE: ", mape_value_svr_ubijalar, "%\n"))
-```
-
-
-### 6. Membuat Model SVR - Ubi Kayu
-```{r}
-# Membuat model SVR
-ubikayu_svr_model <- svm(Produksi ~ Produktivitas + Luas_Panen, data = dataubikayu_train, kernel = "radial", cost = 1)
-```
-
-```{r}
-# Melakukan prediksi dengan Data Testing
-predictions_svr_ubikayu <- predict(ubikayu_svr_model, dataubikayu_test)
-```
-
-```{r}
-# Visualisasi hasil prediksi
-result_dataubikayu_svr <- data.frame(Produksi = dataubikayu_test$Produksi, Predictions = predictions_svr_ubikayu)
-
-ggplot(data = result_dataubikayu_svr, aes(x = Produksi, y = Predictions)) +
-  geom_point() +
-  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
-  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
-  scale_x_continuous(labels = scales::comma) +
-  scale_y_continuous(labels = scales::comma) +
-  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
-  theme_minimal()
-```
-
-```{r}
-# Buat grafik garis dengan ggplot2
-ggplot(data = result_dataubikayu_svr, aes(x = 1:length(Produksi))) +
-  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
-  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
-  labs(x = "Observasi", y = "Produksi (Ton)") +
-  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
-  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal()
-```
-
-```{r}
-# Visualisasi hasil prediksi dengan sumbu x adalah tahun
-result_dataubikayu_svr2 <- data.frame(Tahun = dataubikayu_test$Tahun, Produksi = dataubikayu_test$Produksi, Predictions = predictions_svr_ubikayu)
-
-ggplot(data = result_dataubikayu_svr2, aes(x = Tahun)) +
-  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
-  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
-  labs(x = "Tahun", y = "Produksi (Ton)") +
-  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
-  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal()
-```
-
-```{r}
-# Evaluasi SVR Model
-
-# Hitung MAE
-mae_value_svr_ubikayu <- mae(dataubikayu_test$Produksi, predictions_svr_ubikayu)
-
-# Hitung MSE
-mse_value_svr_ubikayu <- mse(dataubikayu_test$Produksi, predictions_svr_ubikayu)
-
-# Hitung RMSE
-rmse_value_svr_ubikayu <- rmse(dataubikayu_test$Produksi, predictions_svr_ubikayu)
-
-# Hitung MAPE
-mape_value_svr_ubikayu <- mape(dataubikayu_test$Produksi, predictions_svr_ubikayu)
-
-# Tampilkan hasil evaluasi
-cat(paste("MAE: ", mae_value_svr_ubikayu, "\n"))
-cat(paste("MSE: ", mse_value_svr_ubikayu, "\n"))
-cat(paste("RMSE: ", rmse_value_svr_ubikayu, "\n"))
-cat(paste("MAPE: ", mape_value_svr_ubikayu, "%\n"))
-```
-
-
-
-### 7. Membuat Model SVR - Padi
-```{r}
-# Membuat model SVR
-padi_svr_model <- svm(Produksi ~ Produktivitas + Luas_Panen, data = datapadi_train, kernel = "radial", cost = 1)
-```
-
-```{r}
-# Melakukan prediksi dengan Data Testing
-predictions_svr_padi <- predict(padi_svr_model, datapadi_test)
-```
-
-```{r}
-# Visualisasi hasil prediksi
-result_datapadi_svr <- data.frame(Produksi = datapadi_test$Produksi, Predictions = predictions_svr_padi)
-
-ggplot(data = result_datapadi_svr, aes(x = Produksi, y = Predictions)) +
-  geom_point() +
-  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
-  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
-  scale_x_continuous(labels = scales::comma) +
-  scale_y_continuous(labels = scales::comma) +
-  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
-  theme_minimal()
-```
-
-```{r}
-# Buat grafik garis dengan ggplot2
-ggplot(data = result_datapadi_svr, aes(x = 1:length(Produksi))) +
-  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
-  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
-  labs(x = "Observasi", y = "Produksi (Ton)") +
-  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
-  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal()
-```
-
-```{r}
-# Visualisasi hasil prediksi dengan sumbu x adalah tahun
-result_datapadi_svr2 <- data.frame(Tahun = datapadi_test$Tahun, Produksi = datapadi_test$Produksi, Predictions = predictions_svr_padi)
-
-ggplot(data = result_datapadi_svr2, aes(x = Tahun)) +
-  geom_line(aes(y = Produksi, color = "Aktual"), size = 1) +
-  geom_line(aes(y = Predictions, color = "Prediksi"), size = 1) +
-  labs(x = "Tahun", y = "Produksi (Ton)") +
-  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
-  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal()
-```
-
-```{r}
-# Evaluasi SVR Model
-
-# Hitung MAE
-mae_value_svr_padi <- mae(datapadi_test$Produksi, predictions_svr_padi)
-
-# Hitung MSE
-mse_value_svr_padi <- mse(datapadi_test$Produksi, predictions_svr_padi)
-
-# Hitung RMSE
-rmse_value_svr_padi <- rmse(datapadi_test$Produksi, predictions_svr_padi)
-
-# Hitung MAPE
-mape_value_svr_padi <- mape(datapadi_test$Produksi, predictions_svr_padi)
-
-# Tampilkan hasil evaluasi
-cat(paste("MAE: ", mae_value_svr_padi, "\n"))
-cat(paste("MSE: ", mse_value_svr_padi, "\n"))
-cat(paste("RMSE: ", rmse_value_svr_padi, "\n"))
-cat(paste("MAPE: ", mape_value_svr_padi, "%\n"))
-```
-
-
-##d. Intepretasikan dan Membandingkan Model Random Forest dan SVR
-### - Intepretasikan dan Membandingkan Model Random Forest dan SVR - Jagung
-```{r}
-model_performance_jagung <- data.frame(
+model_performance_padi_svr_linear <- data.frame(
   No = c(1:2),
-  Model = c("Random Forest", "SVR"),
-  MSE = c(mse_value_rf_jagung, mse_value_svr_jagung),
-  RSME = c(rmse_value_rf_jagung, rmse_value_svr_jagung),
-  MAE = c(mae_value_rf_jagung, mae_value_svr_jagung),
-  MAPE = c(mape_value_rf_jagung, mape_value_svr_jagung),
+  Model = c("Grid Search", "Random Search"),
+  MSE = c(gs_mse_value_svr_padi_linear, rs_mse_value_svr_padi_linear),
+  RSME = c(gs_rmse_value_svr_padi_linear, rs_rmse_value_svr_padi_linear),
+  MAE = c(gs_mae_value_svr_padi_linear, rs_mae_value_svr_padi_linear),
+  MAPE = c(gs_mape_value_svr_padi_linear, rs_mape_value_svr_padi_linear),
   stringsAsFactors = FALSE
   
 )
-model_performance_jagung
+model_performance_padi_svr_linear
 ```
-Berdasarkan hasil diatas, kalau dilihat dari performance matrik tingkat kesalahan yang paling rendah (MAE), maka model **Random Forest** yang dianggap sebagai model terbaik dalam hal akurasi prediksi produksi jagung.
+Berdasarkan hasil diatas, kalau dilihat dari performance matrik tingkat kesalahan yang paling rendah (MAPE), maka model **SVR dengan Random Search** yang dianggap sebagai model terbaik dalam hal akurasi prediksi produksi padi.
 
-### - Intepretasikan dan Membandingkan Model Random Forest dan SVR - Kacang Hijau
-```{r}
-model_performance_kacanghijau <- data.frame(
-  No = c(1:2),
-  Model = c("Random Forest", "SVR"),
-  MSE = c(mse_value_rf_kacanghijau, mse_value_svr_kacanghijau),
-  RSME = c(rmse_value_rf_kacanghijau, rmse_value_svr_kacanghijau),
-  MAE = c(mae_value_rf_kacanghijau, mae_value_svr_kacanghijau),
-  MAPE = c(mape_value_rf_kacanghijau, mape_value_svr_kacanghijau),
-  stringsAsFactors = FALSE
-  
-)
-model_performance_kacanghijau
-```
-Berdasarkan hasil diatas, kalau dilihat dari performance matrik tingkat kesalahan yang paling rendah (MAE), maka model **Random Forest** yang dianggap sebagai model terbaik dalam hal akurasi prediksi produksi kacang hijau.
 
-### - Intepretasikan dan Membandingkan Model Random Forest dan SVR - Kacang Kedelai
-```{r}
-model_performance_kacangkedelai <- data.frame(
-  No = c(1:2),
-  Model = c("Random Forest", "SVR"),
-  MSE = c(mse_value_rf_kacangkedelai, mse_value_svr_kacangkedelai),
-  RSME = c(rmse_value_rf_kacangkedelai, rmse_value_svr_kacangkedelai),
-  MAE = c(mae_value_rf_kacangkedelai, mae_value_svr_kacangkedelai),
-  MAPE = c(mape_value_rf_kacangkedelai, mape_value_svr_kacangkedelai),
-  stringsAsFactors = FALSE
-  
-)
-model_performance_kacangkedelai
-```
-Berdasarkan hasil diatas, kalau dilihat dari performance matrik tingkat kesalahan yang paling rendah (MAE), maka model **Random Forest** yang dianggap sebagai model terbaik dalam hal akurasi prediksi produksi kacang kedelai
 
-### - Intepretasikan dan Membandingkan Model Random Forest dan SVR - Kacang Tanah
-```{r}
-model_performance_kacangtanah <- data.frame(
-  No = c(1:2),
-  Model = c("Random Forest", "SVR"),
-  MSE = c(mse_value_rf_kacangtanah, mse_value_svr_kacangtanah),
-  RSME = c(rmse_value_rf_kacangtanah, rmse_value_svr_kacangtanah),
-  MAE = c(mae_value_rf_kacangtanah, mae_value_svr_kacangtanah),
-  MAPE = c(mape_value_rf_kacangtanah, mape_value_svr_kacangtanah),
-  stringsAsFactors = FALSE
-  
-)
-model_performance_kacangtanah
-```
-Berdasarkan hasil diatas, kalau dilihat dari performance matrik tingkat kesalahan yang paling rendah (MAE), maka model **Random Forest** yang dianggap sebagai model terbaik dalam hal akurasi prediksi produksi kacang tanah
 
-### - Intepretasikan dan Membandingkan Model Random Forest dan SVR - Ubi Jalar
-```{r}
-model_performance_ubijalar <- data.frame(
-  No = c(1:2),
-  Model = c("Random Forest", "SVR"),
-  MSE = c(mse_value_rf_ubijalar, mse_value_svr_ubijalar),
-  RSME = c(rmse_value_rf_ubijalar, rmse_value_svr_ubijalar),
-  MAE = c(mae_value_rf_ubijalar, mae_value_svr_ubijalar),
-  MAPE = c(mape_value_rf_ubijalar, mape_value_svr_ubijalar),
-  stringsAsFactors = FALSE
-  
-)
-model_performance_ubijalar
-```
-Berdasarkan hasil diatas, kalau dilihat dari performance matrik tingkat kesalahan yang paling rendah (MAE), maka model **Random Forest** yang dianggap sebagai model terbaik dalam hal akurasi prediksi produksi ubi jalar
 
-### - Intepretasikan dan Membandingkan Model Random Forest dan SVR - Ubi Kayu
-```{r}
-model_performance_ubikayu <- data.frame(
-  No = c(1:2),
-  Model = c("Random Forest", "SVR"),
-  MSE = c(mse_value_rf_ubikayu, mse_value_svr_ubikayu),
-  RSME = c(rmse_value_rf_ubikayu, rmse_value_svr_ubikayu),
-  MAE = c(mae_value_rf_ubikayu, mae_value_svr_ubikayu),
-  MAPE = c(mape_value_rf_ubikayu, mape_value_svr_ubikayu),
-  stringsAsFactors = FALSE
-  
-)
-model_performance_ubikayu
-```
-Berdasarkan hasil diatas, kalau dilihat dari performance matrik tingkat kesalahan yang paling rendah (MAE), maka model **Random Forest** yang dianggap sebagai model terbaik dalam hal akurasi prediksi produksi ubi kayu
 
-### - Intepretasikan dan Membandingkan Model Random Forest dan SVR - Padi
-```{r}
-model_performance_padi <- data.frame(
-  No = c(1:2),
-  Model = c("Random Forest", "SVR"),
-  MSE = c(mse_value_rf_padi, mse_value_svr_padi),
-  RSME = c(rmse_value_rf_padi, rmse_value_svr_padi),
-  MAE = c(mae_value_rf_padi, mae_value_svr_padi),
-  MAPE = c(mape_value_rf_padi, mape_value_svr_padi),
-  stringsAsFactors = FALSE
-  
-)
-model_performance_padi
-```
-Berdasarkan hasil diatas, kalau dilihat dari performance matrik tingkat kesalahan yang paling rendah (MAE), maka model **Random Forest** yang dianggap sebagai model terbaik dalam hal akurasi prediksi produksi padi
+
+
+
+
+
+
+
+
+
 
 
 

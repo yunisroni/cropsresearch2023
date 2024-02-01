@@ -261,8 +261,6 @@ JagungAceh
 
 ```
 
-
-
 # 5. Prediksi Luas Panen Jagung di Masa Depan - Model Prophet
 ```{r}
 # membagi data berdasarkan variabel Produksi
@@ -470,6 +468,7 @@ train_yearly_pr <- yearly_pr_train %>%
   )
 glimpse(train_yearly_pr)
 ```
+
 ```{r}
 # Membuat model Prophet dengan data training
 prophet_ts_pr <- prophet(yearly.seasonality = TRUE, seasonality.prior.scale = 0.1) %>% 

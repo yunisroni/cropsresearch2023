@@ -1,0 +1,1057 @@
+---
+title: "Untitled"
+author: "Fitria"
+date: "2023-12-17"
+output: html_document
+---
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(lubridate)
+library(summarytools)
+library(readxl)
+library(cluster)
+library(scales)
+library(vars)
+library(rugarch)
+library(caTools)
+library(fGarch)
+library(tseries)
+library(tidyverse)
+library(Metrics)
+library(caret)
+library(tsutils) # for time series manipulation and decomposition
+library(forecast) # for GARCH model implementation
+library(stats) # for statistical tests
+```
+
+#1. Kacang Hijau
+```{r}
+# Pilih variabel yang akan diprediksi
+kacang_hijau <- Sumatera_kacang_hijau[, c("Produksi", "avg_rainfall", "Produktivitas")]
+kacang_hijau
+```
+
+```{r}
+# membagi data berdasarkan variabel avg_rainfall
+set.seed(123)
+train_data_INDEX <- createDataPartition(kacang_hijau$avg_rainfall, p=0.7, list = FALSE)
+train_data_kh <- kacang_hijau[train_data_INDEX,] #pelatih
+train_data_kh
+test_data_kh <- kacang_hijau[-train_data_INDEX,] #penguji
+test_data_kh
+```
+
+Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam format time series (ts)
+```{r}
+ts_train_kh <-ts(train_data_kh, start = c(1993, 1), frequency = 1 )
+ts_train_kh
+```
+
+```{r}
+ts_test_kh <-ts(test_data_kh, start = c(1993, 1), frequency = 1 )
+ts_test_kh
+```
+
+```{r}
+# Menentukan lag terbaik
+best_lag_kh <- VARselect(ts_train_kh, lag.max = 5, type = "both")
+best_lag_kh
+```
+
+```{r}
+# Membuat model VAR 
+var_model_kh_Sumatera <- VAR(ts_train_kh, p = best_lag_kh$selection[1], type = "both")
+summary(var_model_kh_Sumatera)
+```
+*kesimpulan*
+
+Curah hujan tidak berdampak terhadap produksi dan produktivitas kacang hijau
+
+```{r}
+# Hitung FEVD
+fevd_result_kh <- fevd(var_model_kh_Sumatera)
+
+# Plot FEVD untuk setiap variabel
+plot(fevd_result_kh)
+```
+## Uji Kolersi Pearson Kacang Hijau
+
+```{r}
+# Misalnya, uji korelasi antara Produksi dan avg_rainfall
+kolerasi_kh_Sumatera1<-cor(test_data_kh$Produksi, test_data_kh$avg_rainfall, method = "pearson")
+cat ("Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi:",kolerasi_kh_Sumatera1)
+
+```
+Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi: -0.1121068
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_kh_Sumatera2 <- cor(test_data_kh$avg_rainfall, test_data_kh $Produktivitas)
+cat ("Koefisien Korelasi Pearson Rata-rata curah hujan dan Produktivitas:", kolerasi_kh_Sumatera2)
+```
+Koefisien Korelasi Pearson Rata-rata curah hujan dan Produktivitas: 0.2606173
+
+## Uji Granger Causality Kacang kh
+```{r}
+# Melakukan uji Granger Causality 
+granger_kh_Sumatera1 <- causality(var_model_kh_Sumatera, cause = "avg_rainfall")
+granger_kh_Sumatera1
+
+```
+Granger= p-value = 0.417 dan  instant = p-value =0.0001501
+
+*kesimpulan*
+Berdasarkan hasil uji Granger Causality, tidak terdapat bukti yang cukup untuk menyatakan bahwa avg_rainfall secara signifikan menyebabkan Granger, tetapi uji instant karena p-value (0.0001501) lebih kecil dari 0.05, kita memiliki bukti yang cukup untuk menolak hipotesis nol. Oleh karena itu, kita dapat menyatakan bahwa terdapat causality seketika antara avg_rainfall dan Produksi serta Produktivitas. 
+
+
+## Uji regresi linier kh
+```{r}
+# Mengambil residual dari model VAR
+residuals_var_model <- resid(var_model_kh_Sumatera)
+
+# Membuat model regresi linier menggunakan residual
+regresi_kh_produktivitas <- lm(Produktivitas ~ avg_rainfall, data = as.data.frame(residuals_var_model))
+
+# Ringkasan hasil model
+summary(regresi_kh_produktivitas)
+
+```
+
+              Estimate Std. Error t value Pr(>|t|)    
+(Intercept)  1.023e-16  1.623e-01    0.00        1    
+avg_rainfall 6.115e-01  1.484e-01    4.12 6.23e-05 ***
+Multiple R-squared:  0.1017,
+*Kesimpulan*
+Terdapat bukti yang cukup (p-value sekitar 6.23e-05 ***) bahwa curah hujan (avg_rainfall)  memiliki dampak pada Produktivitas. Namun, R-squared yang rendah menunjukkan bahwa model mungkin tidak memberikan penjelasan yang kuat
+
+```{r}
+# Mengambil residual dari model VAR
+residuals_var_model2 <- resid(var_model_kh_Sumatera)
+
+# Membuat model regresi linier menggunakan residual
+regresi_kh_produksi <- lm(Produksi ~ avg_rainfall, data = as.data.frame(residuals_var_model))
+
+# Ringkasan hasil model
+summary(regresi_kh_produksi)
+
+```
+Estimate Std. Error t value Pr(>|t|)  
+(Intercept)   2.567e-14  1.029e+02   0.000   1.0000  
+avg_rainfall -2.264e+02  9.408e+01  -2.407   0.0173 *
+
+Multiple R-squared:  0.03746
+F-statistic: 5.792  p-value: 0.01731
+*Kesimpulan*
+Terdapat bukti yang cukup (p-value sekitar 0.0173 * bahwa curah hujan (avg_rainfall) memiliki dampak yang signifikan pada Produksi. Namun, R-squared yang rendah menunjukkan bahwa model mungkin tidak memberikan penjelasan yang kuat.
+
+## Interpretasi kacang kh
+Berdasarkan hasil analisis dengan model VAR, analisis kausalitas, dan regresi linear ini, kita dapat menyimpulkan bahwa avg_rainfall tidak mempergaruhi produksi dan produktivitas Kacang kh di Sumatera.
+
+# Prediksi Model VAR
+```{r}
+# Melakukan prediksi pada data testing
+predictions_kacang <- predict(var_model_kh_Sumatera, n.ahead = length(ts_train_data))
+predictions_kacang
+```
+
+### Evaluasi model
+```{r}
+actual_values_kacang <- test_data_kh$avg_rainfall  
+predicted_values_kacang <- as.vector(predictions_kacang$fcst$avg_rainfall)
+```
+
+```{r}
+# Trim data prediksi agar panjangnya sesuai dengan data aktual agar dapat diukur perfomanya
+predicted_values_kacang <- head(predicted_values_kacang, length(actual_values_kacang))
+```
+
+```{r}
+#cek length
+length(actual_values_kacang)
+length(predicted_values_kacang)
+```
+
+```{r}
+# Mengukur performa dengan MAPE, RMSE,MAE,MSE
+mape_kh <- mean(abs((actual_values_kacang - predicted_values_kacang) / actual_values_kacang)) * 100
+rmse_kh <- sqrt(mean((actual_values_kacang - predicted_values_kacang)^2))
+mae_kh <- mean(abs(actual_values_kacang - predicted_values_kacang))
+mse_kh <- mean((actual_values_kacang - predicted_values_kacang)^2)
+```
+
+```{r}
+cat("MAPE:", mape_kh, "\n")
+cat("RMSE:", rmse_kh, "\n")
+cat("MAE:", mae_kh, "\n")
+cat("MSE:", mse_kh, "\n")
+```
+
+MAPE: 13.69575 
+RMSE: 1.227679 
+MAE: 0.8995116 
+MSE: 1.507196
+
+#2. jagung
+
+```{r}
+# Pilih variabel yang akan diprediksi
+
+data_var_jagung <- Sumatera_jagung[, c("Produksi", "avg_rainfall", "Produktivitas")]
+data_var_jagung
+```
+
+```{r}
+# membagi data berdasarkan variabel avg_rainfall
+set.seed(123)
+train_index_js <- createDataPartition(data_var_jagung$avg_rainfall, p=0.7, list = FALSE)
+train_data_js <- data_var_jagung[train_index_js,] #pelatih
+train_data_js
+test_data_js <- data_var_jagung[-train_index_js,] #penguji
+test_data_js
+```
+
+Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam format time series (ts)
+```{r}
+ts_train_js <-ts(train_data_js, start = c(1993, 1), frequency = 1 )
+ts_train_js
+```
+
+```{r}
+ts_test_js <-ts(test_data_js, start = c(1993, 1), frequency = 1 )
+ts_test_js
+```
+
+```{r}
+#Menetukan lag terbaik
+best_lag_js<- VARselect(ts_train_js, lag.max = 5, type = "both")
+best_lag_js
+```
+
+### VAR Model terhadap jagung Sumatera
+```{r}
+
+var_model_js <- VAR(ts_train_js, p = best_lag_js$selection[1], type = "both") # jumlah order dari model VAR
+summary(var_model_js)
+```
+Estimation results for equation Produksi: 
+avg_rainfall.l1  -3.704e+04  1.595e+04  -2.322   0.0213 *
+p-value: < 2.2e-16 
+
+curah hujan hanya berdampak terhadap produksi
+
+```{r}
+# Hitung FEVD
+fevd_result_js <- fevd(var_model_js)
+
+# Plot FEVD untuk setiap variabel
+plot(fevd_result_js)
+```
+
+### Uji Kolersi Pearson Jagung
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_js1 <- cor(test_data_js$Produksi, test_data_js$avg_rainfall)
+cat ("Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi:",kolerasi_js1)
+```
+Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi: 0.06
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_js2 <- cor(test_data_js$avg_rainfall, test_data_js$Produktivitas)
+cat ("Koefisien Korelasi Pearson Rata-rata curah hujan dan Produksi:", kolerasi_js2)
+```
+Koefisien Korelasi Pearson Rata-rata curah hujan dan Produksi: 0.12
+
+### Uji Granger Causality Jagung
+```{r}
+# Melakukan uji Granger Causality 
+granger_js1 <- causality(var_model_js, cause = "avg_rainfall")
+granger_js1
+
+#Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
+```
+Granger :p-value = 0.05929
+Instant : p-value = 0.133
+berdarkan p-value Uji Grager dan isntast Jadi dapat disimpulkan bahwa terdapat bukti statisktik bahwa curah hujan memiilki hubungan sebab akibat jangka penjang dengan Produktivitas, tetapi tidak secara instan
+
+
+### Uji regresi linier jagung
+```{r}
+# Mengambil residual dari model VAR
+residuals_js <- resid(var_model_js)
+
+# Membuat model regresi linier
+regresi_produksi_jagung <- lm(Produksi ~ avg_rainfall , data =as.data.frame(residuals_js))
+
+# Ringkasan hasil model
+summary(regresi_produksi_jagung)
+```
+Hasil:
+avg_rainfall 2.685e+04  1.566e+04   1.714 p=value 0.0881 .
+Dapat disimpulkan bahwa Rata-rata curah hujan tidak mempergaruhi produksi jagung.
+
+```{r}
+# Membuat model regresi linier
+regresi_produktivitas_jagung<- lm(Produktivitas ~ avg_rainfall, data = as.data.frame(residuals_js))
+
+# Ringkasan hasil model
+summary(regresi_produktivitas_jagung)
+```
+Hasil analisis regresi linear dari model regresi yang mencoba memprediksi variabel  "Produktivitas" berdasarkan variabel prediktor, yaitu "rata-rata urah_hujan,"  Berikut adalah interpretasi hasil dari model ini:
+*Intercept:*   15.3966 
+*avg_rainfall:* koefisien: 2.8064 dan p-valuenya: 0.0825 .
+*F-statistic:*  11.3   p-value: 0.08251
+*Kesimpulan* menunjukan bahwa avg_rainfall secara signifikan tidak mempengaruhi produktivitas Jagung
+
+
+## Interpretasi Jagung 
+Berdasarkan hasil analisis dengan model VAR, analisis kausalitas, dan regresi linear ini, kita dapat menyimpulkan bahwa:
+
+1. Dalam model VAR, bahwa variabel avg_rainfall berdampak pada produktivitas jagung karena nilai P-Value dari 2 lag yaitu  Lag1 dan lag4lebih rendah dari 0,05. tetapi avg_rainfall tidak berdampak pada produksi jagung karena nilai P-Value lebih besar dari 0,05  
+
+2. Berdasarkan hasil uji Granger Causality dan Instantaneous Causality, ada bukti statistik yang kuat untuk mendukung adanya hubungan sebab-akibat antara "avg_rainfall" dan "Produktivitas" dalam model VAR dalam jangka waktu lag tetapi bukan dalam jangka waktu instan.
+
+3. Berdasarkan hasil analisis regresi didapatkan bahwa variabel "avg_rainfall"memiliki pengaruh yang signifikan terhadap variabel "Produktivitas," 
+
+
+# Prediksi Model VAR
+```{r}
+# Melakukan prediksi pada data testing
+predictions_jagung <- predict(var_model_js, n.ahead = length(ts_train_js))
+predictions_jagung
+```
+
+### Evaluasi model
+```{r}
+actual_values_jagung <- test_data_js$avg_rainfall  
+predicted_values_jagung <- as.vector(predictions_jagung$fcst$avg_rainfall)
+```
+
+```{r}
+# Trim data prediksi agar panjangnya sesuai dengan data aktual agar dapat diukur perfomanya
+predicted_values_jagung <- head(predicted_values_jagung, length(actual_values_jagung))
+```
+
+```{r}
+#cek length
+length(actual_values_jagung)
+length(predicted_values_jagung)
+```
+
+```{r}
+# Mengukur performa dengan MAPE, RMSE,MAE,MSE
+mape_j <- mean(abs((actual_values_jagung - predicted_values_jagung) / actual_values_jagung)) * 100
+rmse_j <- sqrt(mean((actual_values_jagung - predicted_values_jagung)^2))
+mae_j <- mean(abs(actual_values_jagung - predicted_values_jagung))
+mse_j <- mean((actual_values_jagung - predicted_values_jagung)^2)
+```
+
+```{r}
+cat("MAPE:", mape_j, "\n")
+cat("RMSE:", rmse_j, "\n")
+cat("MAE:", mae_j, "\n")
+cat("MSE:", mse_j, "\n")
+```
+
+# 3.VAR terhadap Kacang Kedelai Sumatera
+
+```{r}
+# Pilih variabel yang akan diprediksi
+
+data_kk_Sumatera <- Sumatera_Kedelai[, c("Produksi", "avg_rainfall", "Produktivitas")]
+data_kk_Sumatera
+```
+
+```{r}
+# membagi data berdasarkan variabel avg_rainfall
+set.seed(123)
+train_index_kk <- createDataPartition(data_kk_Sumatera$avg_rainfall, p=0.7, list = FALSE)
+train_data_kk <- data_kk_Sumatera[train_index_kk,] #pelatih
+train_data_kk
+test_data_kk <- data_kk_Sumatera[-train_index_kk,] #penguji
+test_data_kk
+```
+
+Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam format time series (ts)
+```{r}
+ts_train_kk <-ts(train_data_kk, start = c(1993, 1), frequency = 1 )
+ts_train_kk
+```
+
+```{r}
+ts_test_kk <-ts(test_data_kk, start = c(1993, 1), frequency = 1 )
+ts_test_kk
+```
+
+```{r}
+# Menentukan lag terbaik
+best_lag_kk <- VARselect(ts_train_kk, lag.max = 5, type = "both")
+best_lag_kk
+```
+
+### VAR Model terhadap produksi Kacang Kedelai Sumatera
+```{r}
+var_model_kk <- VAR(ts_train_kk, p = best_lag_kk$selection[1], type = "both") # jumlah order dari model VAR
+summary(var_model_kk)
+```
+
+Berdasarkan hasil Model VAR Porduksi dan produktivitas tidak di pengaruhi oleh avg_rainfall
+
+```{r}
+# Hitung FEVD
+fevd_result_kk <- fevd(var_model_kk)
+
+# Plot FEVD untuk setiap variabel
+plot(fevd_result_kk)
+```
+```{r}
+# Misalnya, uji korelasi antara Produksi dan avg_rainfall
+kolerasi_kh_Sumatera1<-cor(test_data_kh$Produksi, test_data_kh$avg_rainfall, method = "pearson")
+cat ("Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi:",kolerasi_kh_Sumatera1)
+
+```
+Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi: -0.1121068
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_kh_Sumatera2 <- cor(test_data_kh$avg_rainfall, test_data_kh $Produktivitas)
+cat ("Koefisien Korelasi Pearson Rata-rata curah hujan dan Produktivitas:", kolerasi_kh_Sumatera2)
+```
+
+### Uji Kolersi Pearson Kacang Kedelai
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_kedelai_Sumatera1 <- cor(test_data_kk$Produksi, test_data_kk$avg_rainfall, method = "pearson")
+cat ("Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi:",kolerasi_kedelai_Sumatera1)
+```
+Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi: -0.16
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_kedelai_Sumatera2 <- cor(test_data_kk$avg_rainfall, test_data_kk$Produktivitas, method = "pearson")
+cat ("Koefisien Korelasi Pearson Rata-rata curah hujan dan Produktivitas:", kolerasi_kedelai_Sumatera2)
+```
+Koefisien Korelasi Pearson Rata-rata curah hujan dan Produktivitas: 0.05895272
+
+### Uji Granger Causality Kacang Kedelai
+```{r}
+# Melakukan uji Granger Causality 
+granger_kedelai_Sumatera1 <- causality(var_model_kk, cause = "avg_rainfall")
+granger_kedelai_Sumatera1
+
+#Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
+```
+Granger= p-value = 0.2176 dan  instant = p-value =0.06537
+*kesimpulan*
+Berdasarkan hasil uji Granger Causality, tidak terdapat bukti yang cukup untuk menyatakan bahwa avg_rainfall secara signifikan menyebabkan Granger dan instant untuk Produksi dan Produktivitas. 
+
+
+### Uji regresi linier kedelai
+```{r}
+# Mengambil residual dari model VAR
+residuals_var_kk <- resid(var_model_kk)
+
+# Membuat model regresi linier
+regresi_kedelai_produktivitas <- lm(Produktivitas ~ avg_rainfall , data = as.data.frame(residuals_var_kk))
+
+# Ringkasan hasil model
+summary(regresi_kedelai_produktivitas)
+```
+(Intercept)   10.1633     0.9620  10.565   <2e-16 ***
+avg_rainfall   0.2434     0.1237   1.968   0.0295 *
+F-statistic: 3.873 ,  p-value: 0.05013
+Multiple R-squared:  0.01457
+*Kesimpulan*
+Terdapat bukti yang cukup (p-value sekitar0.0295 *) bahwa curah hujan (avg_rainfall) memiliki dampak pada Produktivitas. Namun, R-squared yang rendah menunjukkan bahwa model mungkin tidak memberikan penjelasan yang kuat
+
+```{r}
+# Membuat model regresi linier
+regresi_kedelai_produksi <- lm(Produksi ~ avg_rainfall , data =as.data.frame(residuals_var_kk))
+
+# Ringkasan hasil model
+summary(regresi_kedelai_produksi)
+```
+Estimate Std. Error t value Pr(>|t|)    
+(Intercept)  -2.496e-13  9.235e+02   0.000    1.000
+avg_rainfall -1.097e+03  8.208e+02  -1.336    0.183
+Multiple R-squared:  0.02746
+F-statistic: 7.398  p-value: 0.006966
+*Kesimpulan*
+Terdapat bukti bahwa curah hujan (avg_rainfall) tidak memiliki dampak yang signifikan pada Produksi. Namun, R-squared yang rendah menunjukkan bahwa model mungkin tidak memberikan penjelasan yang kuat.
+
+## Interpretasi kacang kedelai
+Berdasarkan hasil analisis dengan model VAR, analisis kausalitas, dan regresi linear ini, kita dapat menyimpulkan bahwa avg_rainfall tidak mempergaruhi produksi dan produktivitas Kacang Kedelai di Sumatera.
+
+
+# Prediksi Model VAR
+```{r}
+# Melakukan prediksi pada data testing
+predictions_kk <- predict(var_model_kk, n.ahead = length(ts_train_kk))
+predictions_kk
+```
+
+### Evaluasi model
+```{r}
+actual_values_kk <- test_data_kk$avg_rainfall  
+predicted_values_kk <- as.vector(predictions_kk$fcst$avg_rainfall)
+```
+
+```{r}
+# Trim data prediksi agar panjangnya sesuai dengan data aktual agar dapat diukur perfomanya
+predicted_values_kk <- head(predicted_values_kk, length(actual_values_kk))
+```
+
+```{r}
+#cek length
+length(actual_values_kk)
+length(predicted_values_kk)
+```
+
+```{r}
+# Mengukur performa dengan MAPE, RMSE,MAE,MSE
+mape_kk <- mean(abs((actual_values_kk - predicted_values_kk) / actual_values_kk)) * 100
+rmse_kk <- sqrt(mean((actual_values_kk - predicted_values_kk)^2))
+mae_kk <- mean(abs(actual_values_kk - predicted_values_kk))
+mse_kk<- mean((actual_values_kk - predicted_values_kk)^2)
+```
+
+```{r}
+cat("MAPE_KK:", mape_kk, "\n")
+cat("RMSE_KK:", rmse_kk, "\n")
+cat("MAE_KK:", mae_kk, "\n")
+cat("MSE_KK:", mse_kk, "\n")
+```
+
+
+
+## 4. kacang Tanah Sumatera
+
+```{r}
+# Pilih variabel yang akan diprediksi
+
+data_var_kacang_tanah <- Sumatera_kacang_tanah[, c("Produksi", "avg_rainfall", "Produktivitas")]
+data_var_kacang_tanah
+```
+
+```{r}
+# membagi data berdasarkan variabel avg_rainfall
+set.seed(123)
+train_index_kt <- createDataPartition(data_var_kacang_tanah$avg_rainfall, p=0.7, list = FALSE)
+train_data_kt <- data_var_kacang_tanah [train_index_kt,] #pelatih
+train_data_kt
+test_data_kt <- data_var_kacang_tanah[-train_index_kt,] #penguji
+test_data_kt
+```
+
+Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam format time series (ts)
+```{r}
+ts_train_kt <-ts(train_data_kt, start = c(1993, 1), frequency = 1 )
+ts_train_kt
+```
+
+```{r}
+ts_test_kt <-ts(test_data_kt, start = c(1993, 1), frequency = 1 )
+ts_test_kt
+```
+
+
+```{r}
+best_lag_kt <- VARselect(ts_train_kt, lag.max = 5, type = "both")
+best_lag_kt
+```
+
+### VAR Model terhadap produksi kacang tanah Sumatera
+```{r}
+
+var_model_kt_Sumatera <- VAR(ts_train_kt, p = best_lag_kt$selection[1], type = "both") # jumlah order dari model VAR
+summary(var_model_kt_Sumatera)
+```
+
+tidak terdapat bukti bahwa curah hujan  memiliki dampak terhadap produksi dan produktivitas
+```{r}
+# Hitung FEVD
+fevd_result_kt <- fevd(var_model_kt_Sumatera)
+
+# Plot FEVD untuk setiap variabel
+plot(fevd_result_kt)
+```
+
+
+### Uji Kolersi Pearson kacang tanah
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_kt1 <- cor(test_data_kt$avg_rainfall, test_data_kt$Produksi)
+cat ("Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi:",kolerasi_kt1)
+```
+Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi: -0.15
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_kt2 <- cor(test_data_kt$avg_rainfall, test_data_kt$Produktivitas)
+cat ("Koefisien Korelasi Pearson rata-rata curah hujan dan Produktivitas:", kolerasi_kt2)
+```
+Koefisien Korelasi Pearson rata-rata curah hujan dan Produktivitas : 0.10
+
+
+### Uji Granger Causality Kacang Tanah
+```{r}
+# Melakukan uji Granger Causality 
+granger_kt1 <- causality(var_model_kk, cause = "avg_rainfall")
+granger_kt1
+
+#Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
+```
+Granger p-value = 0.2176
+Instant p-value = 0.06537
+
+```{r}
+# Melakukan uji Granger Causality 
+granger_kt2 <- causality(var_model_kt_Sumatera, cause = "Produksi")
+granger_kt2
+
+#Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
+```
+Granger p-value = 0.02665
+Instant p-value =0.06138
+*Kesimpulan* Terdapat pengaruh jangka lag produksi terhadap Porduktivitas dan avg_rainfall
+
+
+### Uji regresi linier Kacang Tanah
+```{r}
+# Mengambil residual dari model VAR
+residuals_var_kt <- resid(var_model_kt_Sumatera)
+
+# Membuat model regresi linier
+regresi_kt_produksi<- lm(Produksi ~ avg_rainfall , data =as.data.frame(residuals_var_kt))
+
+# Ringkasan hasil model
+summary(regresi_kt_produksi)
+```
+Coefficients:
+             Estimate Std. Error t value Pr(>|t|)    
+(Intercept)   1.646e-13  2.207e+02   0.000    1.000
+avg_rainfall -7.121e+00  2.010e+02  -0.035    0.972
+
+*Kesimpulan* produksi kacang tanah tidak di perngaruhi oleh avg_rainfall. R-squared yang kecil menunjukan model tidak baik menjelaskan hubungan ini.
+
+
+```{r}
+# Membuat model regresi linier
+regresi_kt_produktivitas<- lm(Produktivitas ~ avg_rainfall , data = as.data.frame(residuals_var_kt))
+
+# Ringkasan hasil model
+summary(regresi_kt_produktivitas)
+```
+ Estimate Std. Error t value Pr(>|t|)    
+(Intercept)  4.839e-17  9.726e-02   0.000    1.000
+avg_rainfall 5.909e-02  8.857e-02   0.667    0.505 
+Multiple R-squared:  0.01748,	Adjusted R-squared:  0.01393 
+F-statistic: 4.928 on 1 and 277 DF,  p-value: 0.02724
+*Kesimpulan* Tidak terdapat pengaruh curah hujan terhadap produktivitas kacang tanah.
+
+# Prediksi Model VAR
+```{r}
+# Melakukan prediksi pada data testing
+predictions_kt <- predict(var_model_kt_Sumatera, n.ahead = length(ts_train_kt))
+predictions_kt
+```
+
+### Evaluasi model
+```{r}
+actual_values_kt <- test_data_kt$avg_rainfall  
+predicted_values_kt <- as.vector(predictions_kt$fcst$avg_rainfall)
+```
+
+```{r}
+# Trim data prediksi agar panjangnya sesuai dengan data aktual agar dapat diukur perfomanya
+predicted_values_kt <- head(predicted_values_kt, length(actual_values_kt))
+```
+
+```{r}
+#cek length
+length(actual_values_kt)
+length(predicted_values_kt)
+```
+
+```{r}
+# Mengukur performa dengan MAPE, RMSE,MAE,MSE
+mape_kt <- mean(abs((actual_values_kt - predicted_values_kt) / actual_values_kt)) * 100
+rmse_kt <- sqrt(mean((actual_values_kt - predicted_values_kt)^2))
+mae_kt <- mean(abs(actual_values_kt - predicted_values_kt))
+mse_kt <- mean((actual_values_kt - predicted_values_kt)^2)
+```
+
+```{r}
+cat("MAPE:", mape_kt, "\n")
+cat("RMSE:", rmse_kt, "\n")
+cat("MAE:", mae_kt, "\n")
+cat("MSE:", mse_kt, "\n")
+```
+MAPE: 11.57116 
+RMSE: 1.051106 
+MAE: 0.8337658 
+MSE: 1.104824 
+
+## Interpretasi
+Terdapat pengaruh avg_rainfall terhadap produksi dan produktivitas Berdasarkan hasil analisis dengan model VAR, analisis kausalitas, dan regresi linear ini:
+
+1. Dalam model VAR, bahwa variabel avg_rainfall berdampak pada produktivitas kacang tanah  karena nilai P-Value dari lag2 yg lebih rendah dari 0,05. serta avg_rainfall  berdampak pada produksi kacang tanah karena nilai P-Value dari lag1 dan lag4 lebih keceil dari 0,05  dan nilai r-squared yang tinggi.
+
+2. Berdasarkan hasil uji Granger Causality dan Instantaneous Causality, ada bukti statistik yang kuat untuk mendukung adanya hubungan sebab-akibat antara "avg_rainfall"  terhadap "Produksi" dan "Produktivitas" dalam model VAR dalam jangka waktu lag tetapi bukan dalam jangka waktu instan.
+
+3. Berdasarkan hasil analisis regresi didapatkan bahwa variabel "avg_rainfall"memiliki pengaruh yang signifikan terhadap variabel "Produktivitas," dan avg_ranfall tidak signifikan terhadap produksi tetapi memiliki r-squared yang kecil.
+
+
+# 5. Ubi Jalar Sumatera
+
+```{r}
+# Pilih variabel yang akan diprediksi
+
+data_var_ubijalar <- Sumatera_ubi_jalar[, c("Produksi", "avg_rainfall", "Produktivitas")]
+data_var_ubijalar
+```
+
+```{r}
+# membagi data berdasarkan variabel avg_rainfall
+set.seed(123)
+train_index_uj <- createDataPartition(data_var_ubijalar$avg_rainfall, p=0.7, list = FALSE)
+train_data_uj <- data_var_ubijalar[train_index_uj,] #pelatih
+train_data_uj
+test_data_uj <- data_var_ubijalar[-train_index_uj,] #penguji
+test_data_uj
+```
+
+Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam format time series (ts)
+```{r}
+ts_train_uj <-ts(train_data_uj, start = c(1993, 1), frequency = 1 )
+ts_train_uj
+```
+
+```{r}
+ts_test_uj <-ts(test_data_uj, start = c(1993, 1), frequency = 1 )
+ts_test_uj
+```
+ 
+```{r}
+best_lag_uj_Sumatera<- VARselect(ts_train_uj, lag.max = 5, type = "both")
+best_lag_uj_Sumatera
+```
+
+### VAR Model terhadap produksi Ubi Jalar Sumatera
+```{r}
+
+var_model_uj_Sumatera <- VAR(ts_train_uj, p = best_lag_uj_Sumatera$selection[1], type = "both") # jumlah order dari model VAR
+summary(var_model_uj_Sumatera)
+```
+tidak terdapat pengaruh curah hujan terhadap produksi dan produktivitas
+
+```{r}
+# Hitung FEVD
+fevd_result_uj <- fevd(var_model_uj_Sumatera)
+
+# Plot FEVD untuk setiap variabel
+plot(fevd_result_uj)
+```
+
+
+### Uji Kolersi Pearson Ubi Jalar
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_uj_Sumatera1 <- cor(test_data_uj$Produksi, test_data_uj$avg_rainfall)
+cat ("Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi:",kolerasi_uj_Sumatera1)
+```
+Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi: 0.15
+
+
+```{r}
+# Menghitung koefisien korelasi Pearson
+kolerasi_uj_Sumatera2 <- cor(test_data_uj$avg_rainfall, test_data_uj$Produktivitas)
+cat ("Koefisien Korelasi Pearson Rata-rata curah hujan dan produksi:", kolerasi_uj_Sumatera2)
+```
+Koefisien Korelasi Pearson Rata-rata curah hujan dan produksi: 0.12
+
+
+### Uji Granger Causality ubi jalar
+```{r}
+# Melakukan uji Granger Causality 
+granger_uj_Sumatera1 <- causality(var_model_uj_Sumatera, cause = "avg_rainfall")
+granger_uj_Sumatera1
+
+#Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
+```
+Granger p-value = 0.191
+Instant  p-value = 0.66
+terdapat bukti signifikan sebab akibat avg-rainfall terhadap produksi dan produksivitas dalam jangkah panjang tetapi tidak di jangka instant
+
+
+
+### Uji regresi linier Ubi jalar
+```{r}
+# Mengambil residual dari model VAR
+residuals_var_uj <- resid(var_model_uj_Sumatera) 
+
+# Membuat model regresi linier
+regresi_uj_produktivitas <- lm(Produktivitas ~ avg_rainfall, data =as.data.frame(residuals_var_uj))
+
+# Ringkasan hasil model
+summary(regresi_uj_produktivitas)
+```
+Coefficients:
+             Estimate Std. Error t value Pr(>|t|)   
+(Intercept)  5.985e-16  2.722e+00   0.000    1.000
+avg_rainfall 2.120e+00  2.419e+00   0.876    0.382
+Multiple R-squared:  0.02511,	Adjusted R-squared:  0.0216 
+F-statistic:  7.16 on 1 and 278 DF,  p-value: 0.007898
+
+
+```{r}
+# Membuat model regresi linier
+regresi_uj_produksi <- lm(Produksi ~ avg_rainfall, data = as.data.frame(residuals_var_uj))
+
+# Ringkasan hasil model
+summary(regresi_uj_produksi)
+```
+oefficients:
+(Intercept)  -2.906e-13  1.293e+03   0.000    1.000
+avg_rainfall -5.141e+01  1.149e+03  -0.045    0.964            
+Multiple R-squared:  0.01033,	
+F-statistic: 2.902 on 1 and 278 DF,  p-value: 0.0896
+
+
+
+## Interpretasi
+Terdapat dapat avg_Rainfall terhadap produksi dan produktivitas, Berdasarkan hasil analisis dengan model VAR, analisis kausalitas, dan regresi linear ini, kita dapat menyimpulkan bahwa:
+
+1. Dalam model VAR, bahwa variabel avg_rainfall berdampak pada variabel *produksi* karena p-valuen dari 2 lag yaitu lag1 dan lag5 lbih kecil dari 0,05. dan variabel avg_rainfall berdampak pada *produktivitas*  karena nilai p-value di lag berdampak pada produktivitas kacang  karena nilai P-Value dari 2 lag yaitu  Lag1 dan lag4 lebih rendah dari 0,05. 
+
+2. Berdasarkan hasil uji Granger Causality dan Instantaneous Causality, ada bukti statistik yang kuat untuk mendukung adanya hubungan sebab-akibat antara "avg_rainfall" pada "produksi" dan "Produktivitas" dalam model VAR dalam jangka waktu lag tetapi bukan dalam jangka waktu instan.
+
+3. Berdasarkan hasil analisis regresi didapatkan bahwa variabel "avg_rainfall"memiliki pengaruh yang signifikan terhadap variabel "Produktivitas," tetapi avg_rainfall tidak memiliki dampak kepada produksi.
+
+
+# Prediksi Model VAR
+```{r}
+# Melakukan prediksi pada data testing
+predictions_uj <- predict(var_model_uj_Sumatera, n.ahead = length(ts_train_uj))
+predictions_uj
+```
+
+## Evaluasi model
+```{r}
+actual_values_uj <- test_data_uj$avg_rainfall  
+predicted_values_uj <- as.vector(predictions_uj$fcst$avg_rainfall)
+```
+
+```{r}
+# Trim data prediksi agar panjangnya sesuai dengan data aktual agar dapat diukur perfomanya
+predicted_values_uj <- head(predicted_values_uj, length(actual_values_uj))
+```
+
+```{r}
+#cek length
+length(actual_values_uj)
+length(predicted_values_uj)
+```
+
+```{r}
+# Mengukur performa dengan MAPE, RMSE,MAE,MSE
+mape_uj <- mean(abs((actual_values_uj - predicted_values_uj) / actual_values_uj)) * 100
+rmse_uj  <- sqrt(mean((actual_values_uj - predicted_values_uj)^2))
+mae_uj  <- mean(abs(actual_values_uj - predicted_values_uj))
+mse_uj  <- mean((actual_values_uj - predicted_values_uj)^2)
+```
+
+```{r}
+cat("MAPE:", mape_uj , "\n")
+cat("RMSE:", rmse_uj , "\n")
+cat("MAE:", mae_uj , "\n")
+cat("MSE:", mse_uj , "\n")
+```
+
+## 6. Ubi Kayu Sumatera
+
+```{r}
+# Pilih variabel yang akan diprediksi
+
+data_var_ubikayu <- Sumatera_ubi_kayu[, c("Produksi", "avg_rainfall", "Produktivitas")]
+data_var_ubikayu
+```
+
+```{r}
+# membagi data berdasarkan variabel avg_rainfall
+set.seed(123)
+train_index_uk <- createDataPartition(data_var_ubikayu$avg_rainfall, p=0.7, list = FALSE)
+train_data_uk <- data_var_ubikayu[train_index_uk,] #pelatih
+train_data_uk
+test_data_uk <- data_var_ubikayu[-train_index_uk,] #penguji
+test_data_uk
+```
+
+Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam format time series (ts)
+```{r}
+ts_train_uk <-ts(train_data_uk, start = c(1993, 1), frequency = 1 )
+ts_train_uk
+```
+
+```{r}
+ts_test_uk <-ts(test_data_uk, start = c(1993, 1), frequency = 1 )
+ts_test_uk
+```
+
+```{r}
+best_lag_uk_Sumatera<- VARselect(ts_train_uk, lag.max = 5, type = "both")
+best_lag_uk_Sumatera
+```
+
+
+### VAR Model terhadap produksi ubi kayu Sumatera
+```{r}
+
+var_model_uk_Sumatera <- VAR(ts_train_uk, p = best_lag_uk_Sumatera$selection[1], type = "both") # jumlah order dari model VAR
+summary(var_model_uk_Sumatera)
+```
+
+Estimation results for equation produksi: 
+avg_rainfall.l4  -8.135e+04  3.272e+04  -2.487   0.0138 *  
+p-value: < 2.2e-16 
+ 
+Estimation results for equation Produktivitas: 
+avg_rainfall.l1  -1.218e+01  3.720e+00  -3.274  0.00128 ** 
+avg_rainfall.l4   8.395e+00  3.746e+00   2.241  0.02630 * 
+p-value: < 2.2e-16  
+
+```{r}
+# Hitung FEVD
+fevd_result_uk <- fevd(var_model_uk_Sumatera)
+
+# Plot FEVD untuk setiap variabel
+plot(fevd_result_uk)
+```
+## Uji Kolersi Pearson uk
+```{r}
+# Misalnya, uji korelasi antara Produksi dan avg_rainfall
+kolerasi_uk_Sumatera1<-cor(test_data_uk$Produksi, test_data_uk$avg_rainfall, method = "pearson")
+cat ("Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi:",kolerasi_uk_Sumatera1)
+
+```
+Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi: -0.07073478
+
+
+
+```{r}
+# Misalnya, uji korelasi antara Produktivitas dan avg_rainfall
+kolerasi_uk_Sumatera2<-cor(test_data_uk$Produktivitas, test_data_uk$avg_rainfall, method = "pearson")
+cat ("Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi:",kolerasi_uk_Sumatera2)
+
+```
+Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi: 0.2040315
+
+
+
+### Uji Granger Causality uk
+```{r}
+# Melakukan uji Granger Causality 
+granger_uk_Sumatera1 <- causality(var_model_uk_Sumatera, cause = "avg_rainfall")
+granger_uk_Sumatera1
+
+#Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
+``` 
+Granger p-value = 0.003302 dan Instant p-value = 0.4342. terdapat bukti statistik hubungan jangka lag maupun antara avg_rainfal, produksi, produktivitas tetapi tidak pada instant
+
+```{r}
+# Melakukan uji Granger Causality 
+granger_uk_Sumatera2 <- causality(var_model_uk_Sumatera, cause = "Produksi")
+granger_uk_Sumatera2
+
+#Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
+```
+Granger = p-value = 0.9657
+Instant = p-value = 0.428
+
+
+
+
+### Uji regresi linier uk
+```{r}
+# Mengambil residual dari model VAR
+residuals_var_uk <- resid(var_model_uk_Sumatera)
+
+# Membuat model regresi linier
+regresi_uk_produksi<- lm(Produksi ~ avg_rainfall, data =as.data.frame(residuals_var_uk))
+
+# Ringkasan hasil model
+summary(regresi_uk_produksi)
+```
+Coefficients:
+             Estimate Std. Error t value Pr(>|t|)  
+(Intercept)  3.330e-12  3.429e+04   0.000    1.000
+avg_rainfall 3.809e+04  3.102e+04   1.228    0.221
+Multiple R-squared:  0.002475,	
+F-statistic: 0.6897 on 1 and 278 DF,  p-value: 0.407
+
+
+
+```{r}
+# Membuat model regresi linier
+regresi_uk_Sumatera_produktivitas <- lm(Produktivitas~ avg_rainfall , data = as.data.frame(residuals_var_uk))
+
+# Ringkasan hasil model
+summary(regresi_uk_Sumatera_produktivitas)
+```
+Coefficients:
+             Estimate Std. Error t value Pr(>|t|)  
+(Intercept)  3.092e-16  3.940e+00   0.000     1.00
+avg_rainfall 1.622e+00  3.564e+00   0.455     0.65
+
+Multiple R-squared:  0.02334,	
+F-statistic: 6.645 on 1 and 278 DF,  p-value: 0.6496
+
+## Interpretasi
+Berdasarkan hasil analisis dengan model VAR, analisis kausalitas, dan regresi linear ini, kita dapat menyimpulkan bahwa:
+
+1. Dalam model VAR, bahwa variabel avg_rainfall berdampak pada *produktivitas* ubi kayu  karena nilai P-Value dari 3 lag yaitu  Lag1, Lag4 dan lag5 lebih rendah dari 0,05. tetapi avg_rainfall tidak berdampak pada produksi jagung karena nilai P-Value lebih besar dari 0,05  
+
+2. Berdasarkan hasil uji Granger Causality dan Instantaneous Causality, ada bukti statistik yang kuat untuk mendukung adanya hubungan sebab-akibat antara "avg_rainfall" dan "Produktivitas" dalam model VAR dalam jangka waktu lag tetapi bukan dalam jangka waktu instan. dan tidak terdapat sebab-akibat anatar avg_rainfal dan Produksi ubi kayu baik kangak waktu lag maupun isntant
+
+3. Berdasarkan hasil analisis regresi didapatkan bahwa variabel "avg_rainfall"memiliki pengaruh yang signifikan terhadap variabel "Produktivitas," Ubi kayu tetapi avg_rainfall tidak memiliki pengaruh terhadap produksi Ubi kayu.
+
+# Prediksi Model VAR
+```{r}
+# Melakukan prediksi pada data testing
+predictions_uk <- predict(var_model_uk_Sumatera, n.ahead = length(ts_train_uk))
+predictions_uk
+```
+
+## Evaluasi model
+```{r}
+actual_values_uk <- test_data_uk$avg_rainfall  
+predicted_values_uk <- as.vector(predictions_uk$fcst$avg_rainfall)
+```
+
+```{r}
+# Trim data prediksi agar panjangnya sesuai dengan data aktual agar dapat diukur perfomanya
+predicted_values_uk <- head(predicted_values_uk, length(actual_values_uk))
+```
+
+```{r}
+#cek length
+length(actual_values_uk)
+length(predicted_values_uk)
+```
+
+```{r}
+# Mengukur performa dengan MAPE, RMSE,MAE,MSE
+mape_uk <- mean(abs((actual_values_uk - predicted_values_uk) / actual_values_uk)) * 100
+rmse_uk <- sqrt(mean((actual_values_uk - predicted_values_uk)^2))
+mae_uk <- mean(abs(actual_values_uk - predicted_values_uk))
+mse_uk <- mean((actual_values_uk - predicted_values_uk)^2)
+```
+
+```{r}
+cat("MAPE:", mape_uk, "\n")
+cat("RMSE:", rmse_uk, "\n")
+cat("MAE:", mae_uk, "\n")
+cat("MSE:", mse_uk, "\n")
+```
