@@ -1,0 +1,1423 @@
+---
+title: "GARCH PALAWIJA"
+author: "Fitria"
+date: "2023-12-20"
+output: html_document
+---
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(lubridate)
+library(summarytools)
+library(readxl)
+library(cluster)
+library(scales)
+library(rugarch)
+library(caTools)
+library(fGarch)
+library(tseries)
+library(tidyverse)
+library(Metrics)
+library(caret)
+library(tsutils) # for time series manipulation and decomposition
+library(forecast) # for GARCH model implementation
+library(stats) # for statistical tests
+```
+
+#1. Jagung
+```{r}
+# Pilih variabel yang akan diprediksi
+garch_jagung44 <- Sumatera_jagung[, c("Produksi", "avg_rainfall")]
+garch_jagung44
+```
+
+```{r}
+# membagi data berdasarkan variabel Produksi
+set.seed(123)
+train_data_index44 <- createDataPartition(garch_jagung44$Produksi, p=0.8, list = FALSE)
+train_data_p4 <- garch_jagung44[train_data_index44,] #pelatih
+train_data_p4
+test_data_p4 <- garch_jagung44[-train_data_index44,] #penguji
+test_data_p4
+```
+
+```{r}
+# Spesifikasi model GARCH
+model_SPEC_GARCH <- ugarchspec(variance.model = list(model = "sGARCH", garchOrder = c(1, 1)),
+                               mean.model = list(armaOrder = c(0, 0)))
+
+# Fitting model GARCH
+garch_fitting_GARCH<- ugarchfit(spec = model_SPEC_GARCH, data = train_data_p4$avg_rainfall)
+garch_fitting_GARCH
+```
+Output/r console:
+Optimal Parameters
+------------------------------------
+        Estimate  Std. Error    t value Pr(>|t|)
+mu      7.740785    0.074599 103.764803  0.00000
+omega   0.001184    0.027024   0.043807  0.96506
+alpha1  0.000000    0.021738   0.000001  1.00000
+beta1   0.998998    0.001248 800.438319  0.00000
+
+output/dataframe:
+                     t-value     prob       sig
+Sign Bias         	0.1745637	0.8615838		
+Negative Sign Bias	0.9559245	0.3401644		
+Positive Sign Bias	1.1633735	0.2459440		
+Joint Effect	2.2694414	0.5184004	
+
+Output 1/Dataframe:
+
+Sign Bias: Nilai di bawah 1 menunjukkan bahwa tidak ada sign bias yang signifikan.
+Negative Sign Bias: Nilai di atas 0.05 (tingkat signifikansi 5%) menunjukkan bahwa tidak ada signifikansi dampak negatif.
+Positive Sign Bias: Nilai di atas 0.05 menunjukkan bahwa tidak ada signifikansi dampak positif.
+Joint Effect: Nilai di atas 0.05 menunjukkan bahwa tidak ada dampak bersama yang signifikan.
+Output 2/R Console:
+
+Estimasi Parameter alpha1 dan beta1: Nilai alpha1 (koefisien ARCH) dan beta1 (koefisien GARCH) yang mendekati nol menunjukkan bahwa fluktuasi curah hujan (avg_rainfall) tidak memiliki dampak yang signifikan terhadap volatilitas (fluktuasi) produksi jagung dalam model GARCH.
+Berdasarkan hasil ini, dapat disimpulkan bahwa, setidaknya berdasarkan model GARCH yang Anda tentukan, tidak ada dampak yang signifikan dari fluktuasi curah hujan terhadap volatilitas produksi jagung.
+
+
+```{r}
+# Extract coefficients
+coefficients_pj <- coef(garch_fitting)
+print(coefficients_pj)
+```
+```{r}
+residuals_garch <- residuals(garch_fitting)
+summary(residuals_garch)
+```
+ 
+ Berdasarkan statistik deskriptif ini, residu model GARCH tampaknya memiliki sifat-sifat yang diharapkan, seperti rata-rata mendekati nol dan distribusi mendekati simetris
+
+```{r}
+# Misalnya, uji korelasi antara Produksi dan avg_rainfall
+kolerasi_p4_Sumatera1<-cor(train_data_p4$Produksi, train_data_p4$avg_rainfall, method = "pearson")
+cat ("Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi:",kolerasi_p4_Sumatera1)
+
+```
+Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi:  0.06073633
+
+
+```{r}
+# Misalnya, uji korelasi antara Produksi dan avg_rainfall
+kolerasi_p4_Sumatera44<-cor(garch_jagung44$Produksi, garch_jagung44$avg_rainfall, method = "pearson")
+cat ("Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi:",kolerasi_p4_Sumatera44)
+```
+Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi: 0.05068692
+
+## Uji regresi linier kh
+```{r}
+regresi_p4_produksi <- lm(Produksi ~ avg_rainfall, data = train_data_p4)
+summary(regresi_p4_produksi)
+
+```
+Coefficients:
+             Estimate Std. Error t value Pr(>|t|)  
+(Intercept)    123506     264216   0.467    0.641
+avg_rainfall    30629      33784   0.907    0.366
+berdasarkan uji regresi dapat dilihat bawah tidak terdapat dampak avg_rainfall terhadap produksi jagung
+
+Interprep:
+Berdasarkan analisis garch,regresi, kolerasi dapat di simpulkan bahwa tidak Terdapat dampak curah hujan terhadap produksi 
+
+### EVALUASI DENGAN Residu
+```{r}
+residuals_garch <- residuals(garch_fitting)
+summary(residuals_garch)
+```
+
+```{r}
+# Menghitung Residuals
+residuals1 <- residuals_garch
+```
+
+```{r}
+# Trim data prediksi agar panjangnya sesuai dengan data aktual agar dapat diukur perfomanya
+test_data_p4 <- head(test_data_p4, length(residuals1))
+test_data_p4
+```
+
+```{r}
+# Menghitung MSE
+mse_jp <- mean(residuals1^2)
+cat("Mean Squared Error (MSE) Produksi Jagung Sumatera:", mse_jp, "\n")
+```
+Mean Squared Error (MSE) Produksi Jagung Sumatera: 0.0001142908 
+
+```{r}
+# Menghitung RMSE
+rmse_jp <- sqrt(mse)
+cat("Root Mean Squared Error (RMSE) Produksi Jagung Sumatera:", rmse_jp, "\n")
+```
+Root Mean Squared Error (RMSE) Produksi Jagung Sumatera: 0.01069069 
+
+```{r}
+# Menghitung MAE
+mae_jp <- mean(abs(residuals1))
+cat("Mean Absolute Error (MAE) Produksi Jagung Sumatera:", mae_jp, "\n")
+```
+Mean Absolute Error (MAE) Produksi Jagung Sumatera: 0.008686963 
+
+```{r}
+# Menghitung MAPE
+mape_jp <- mean(abs(residuals1 / test_data_p4$Produksi)) * 100
+cat("Mean Absolute Percentage Error (MAPE)Produksi Jagung Sumatera:", mape_jp, "%\n")
+```
+Mean Absolute Percentage Error (MAPE) Produksi Jagung Sumatera:  9.446427e-05 %
+
+### PREDIKSI GARCH
+```{r}
+forecast_garch <- ugarchforecast(garch_fitting_GARCH, n.ahead = nrow(test_data_p4))
+forecast_garch
+```
+output:
+*------------------------------------*
+*       GARCH Model Forecast         *
+*------------------------------------*
+Model: sGARCH
+Horizon: 56
+Roll Steps: 0
+Out of Sample: 0
+
+0-roll forecast [T0=1970-08-13]:
+     Series Sigma
+T+1   7.741 1.111
+T+2   7.741 1.111
+T+3   7.741 1.111
+T+4   7.741 1.111
+T+5   7.741 1.111
+T+6   7.741 1.111
+T+7   7.741 1.111
+T+8   7.741 1.111
+T+9   7.741 1.111
+T+10  7.741 1.111
+T+11  7.741 1.111
+T+12  7.741 1.111
+
+```{r}
+# Ekstraksi hasil prediksi dari objek forecast_GARCH
+pred_garch_pj <- as.numeric(forecast_garch@forecast$seriesFor[, 1])
+pred_garch
+```
+output:
+[1] 7.740785 7.740785 7.740785 7.740785 7.740785 7.740785 7.740785 7.740785 7.740785 7.740785 7.740785 7.740785
+[13] 7.740785 7.740785 7.740785 7.740785 7.740785 7.740785 7.740785 7.740785 7.740785 7.740785 7.740785 7.740785
+[25] 7.740785 7.740785 7.740785 7.740785 7.740785 7.740785 7.740785 7.740785 7.740785 7.740785 7.740785 7.740785
+[37] 7.740785 7.740785 7.740785 7.740785 7.740785 7.740785 7.740785 7.740785 7.740785 7.740785 7.740785 7.740785
+[49] 7.740785 7.740785 7.740785 7.740785 7.740785 7.740785 7.740785 7.740785
+
+```{r}
+actual_data_garch <- test_data_p4$avg_rainfall
+```
+
+```{r}
+mape_garch <- mean(abs((actual_data_garch - pred_garch_pj) / actual_data_garch)) * 100
+rmse_garch <- sqrt(mean((actual_data_garch - pred_garch_pj)^2))
+mae_garch <- mean(abs(actual_data_garch - pred_garch_pj))
+mse_garch <- mean((actual_data_garch - pred_garch_pj)^2)
+
+cat("MAPE from garch:", mape_garch, "%\n")
+cat("RMSE:", rmse_garch, "\n")
+cat("MAE:", mae_garch, "\n")
+cat("MSE:", mse_garch, "\n")
+
+```
+MAPE from GARCH: 13.31685 %
+RMSE: 1.238994 
+MAE: 0.8879174 
+MSE: 1.367602 
+
+## avg_rainfall terhadap Produktivitas jagung
+```{r}
+# Pilih variabel yang akan diprediksi
+garch_jagung_produktivitas <- Sumatera_jagung[, c("Produktivitas", "avg_rainfall")]
+garch_jagung_produktivitas
+```
+
+```{r}
+# membagi data berdasarkan variabel Produktivitas
+set.seed(123)
+train_index_pt <- createDataPartition(garch_jagung_produktivitas$Produktivitas, p=0.8, list = FALSE)
+train_data_pt <- garch_jagung_produktivitas[train_index_pt,] #pelatih
+train_data_pt
+test_data_pt <- garch_jagung_produktivitas[-train_index_pt,] #penguji
+test_data_pt
+```
+
+
+```{r}
+# Fitting model
+garch_model_pt <- ugarchfit(spec = model_SPEC_GARCH, data = train_data_pt$Produktivitas)
+garch_model_pt
+```
+Output/r cosole:
+Optimal Parameters
+------------------------------------
+        Estimate  Std. Error    t value Pr(>|t|)
+        Estimate  Std. Error  t value Pr(>|t|)
+mu        26.811    2.416427  11.0952 0.000000
+omega     10.268    3.897856   2.6343 0.008431
+alpha1     0.999    0.114467   8.7274 0.000000
+beta1      0.000    0.020607   0.0000 1.000000
+
+
+output/dataframe:
+                      t-value     prob       sig
+Sign Bias         	2.5355278	0.01192537	**	
+Negative Sign Bias	0.6121773	0.54105553		
+Positive Sign Bias	2.2044626	0.02853284	**	
+Joint Effect      	10.1037697	0.01770434	**
+
+Interpretepsi:
+-Model GARCH pada variabel Produktivitas menunjukkan adanya sign bias yang signifikan dengan  0.0119 (**), yang lebih kecil dari 0.05
+-Positive Sign Bias memiliki tingkat signifikansi 0.0285 (**), yang lebih kecil dari 0.05. Ini menunjukkan bahwa Positive Sign Bias signifikan secara statistik.
+-Joint Effect memiliki tingkat signifikansi 0.0177 (**), yang lebih kecil dari 0.05. Ini menunjukkan bahwa Joint Effect signifikan secara statistik.
+
+```{r}
+residuals_garch_pt <- residuals(garch_model_pt)
+summary(residuals_garch_pt)
+```
+Kesimpulan = dapat melihat bahwa residuals memiliki sebaran yang relatif kecil, dan rata-rata residuals mendekati nol. Ini menunjukkan bahwa model GARCH mungkin dapat menjelaskan volatilitas dengan baik, karena residuals (sisa) yang relatif kecil mengindikasikan bahwa tidak ada pola signifikan yang tertinggal dalam data yang tidak dijelaskan oleh model.
+
+
+```{r}
+# Misalnya, uji korelasi antara Produktivitas dan avg_rainfall
+kolerasi_pt_jagung<-cor(test_data_pt$Produktivitas, test_data_pt$avg_rainfall, method = "pearson")
+cat ("Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksitivitas:",kolerasi_pt_jagung)
+
+```
+Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksitivitas: 0.19
+
+## Uji regresi linier kh
+```{r}
+regresi_produktvitas_j <- lm(Produktivitas ~ avg_rainfall, data = garch_jagung_produktivitas)
+summary(regresi_produktvitas_j)
+```
+Coefficients:
+             Estimate Std. Error t value Pr(>|t|)    
+(Intercept)   15.3966     6.5006   2.368 0.018545 *  
+avg_rainfall   2.8064     0.8348   3.362 0.000882 ***
+
+*Interpred*
+Berdasarkan analisis GARCH dan regresi dapat simpulkan terdapat dampak curah hujan terhadap produktivitas jagung.
+
+### PREDIKSI GARCH
+```{r}
+forecast_produktivitas <- ugarchforecast(garch_model_pt, n.ahead = nrow(test_data_pt))
+forecast_produktivitas
+```
+
+```{r}
+# Ekstraksi hasil prediksi dari objek forecast_GARCH
+hasil_pred_pt <- as.numeric(forecast_produktivitas@forecast$seriesFor[, 1])
+hasil_pred_pt
+```
+```{r}
+actual_data_ptj <- test_data_pt$Produktivitas
+```
+
+```{r}
+mape_garch <- mean(abs((actual_data_ptj- hasil_pred_pt) / actual_data_ptj)) * 100
+rmse_garch <- sqrt(mean((actual_data_ptj - hasil_pred_pt)^2))
+mae_garch <- mean(abs(actual_data_ptj - hasil_pred_pt))
+mse_garch <- mean((actual_data_ptj - hasil_pred_pt)^2)
+
+cat("MAPE from garch:", mape_garch, "%\n")
+cat("RMSE:", rmse_garch, "\n")
+cat("MAE:", mae_garch, "\n")
+cat("MSE:", mse_garch, "\n")
+```
+MAPE from garch: 32.92976%
+RMSE: 19.26104 
+MAE: 14.21351 
+MSE: 370.9877
+
+
+#2. Kacang Hijau
+```{r}
+# Pilih variabel yang akan diprediksi
+garch_data_kh <- Sumatera_kacang_hijau[, c("Produksi", "avg_rainfall")]
+garch_data_kh
+```
+
+```{r}
+# membagi data berdasarkan variabel Produksi
+set.seed(123)
+train_Gindex_1 <- createDataPartition(garch_data_kh$Produksi, p=0.8, list = FALSE)
+train_pkh <- garch_data_kh[train_Gindex_1,] #pelatih
+train_pkh
+test_pkh <- garch_data_kh[-train_Gindex_1,] #penguji
+test_pkh
+```
+
+
+```{r}
+# Fitting model
+garch_fit_pkh <- ugarchfit(spec = model_SPEC_GARCH, data = train_pkh$Produksi)
+garch_fit_pkh
+```
+
+                      t-value     prob   sig
+
+Sign Bias          	1.239308287	0.2171930		
+Negative Sign Bias	0.864076253	0.3889442		
+Positive Sign Bias	0.002072066	0.9983495		
+Joint Effect      	2.024160801	0.5674072
+Kesimpulan tidak terdapat dampak avg_rainfal terhadap produksi kacang hijau
+
+
+```{r}
+residuals_garch_pkh <- residuals(garch_fit_pkh)
+summary(residuals_garch_pkh)
+```
+
+```{r}
+# Misalnya, uji korelasi antara Produksi dan avg_rainfall
+kolerasi_pkh_Sumatera<-cor(test_pkh$Produksi, test_pkh$avg_rainfall, method = "pearson")
+cat ("Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi:",kolerasi_pkh_Sumatera)
+
+```
+Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi: 0.02445461
+
+## Uji regresi linier kh
+```{r}
+regresi_produksi_kh <- lm(Produksi ~ avg_rainfall, data = garch_data_kh)
+summary(regresi_produksi_kh)
+
+```
+
+
+*Interpret*
+Berdasarkan hasil analisis garch, regresi dan kolerasi dapat disimpulkan bahwa curah hujan tidak berdampak terhadap produksi kacang hijau.
+
+### PREDIKSI kacang hijau
+````{r}
+forecast_produksi_kh <- ugarchforecast(garch_fit_pkh, n.ahead = nrow(test_pkh))
+forecast_produksi_kh
+```
+
+```{r}
+# Ekstraksi hasil prediksi dari objek forecast_GARCH
+hasil_pred_pkh <- as.numeric(forecast_produksi_kh@forecast$seriesFor[, 1])
+hasil_pred_pkh
+```
+
+```{r}
+actual_data_pkh <- test_pkh$Produksi
+```
+
+```{r}
+epsilon <- 1e-10  # Nilai kecil untuk menghindari pembagian dengan nol
+mape_garch <- mean(abs((actual_data_pkh - hasil_pred_pkh) / pmax(actual_data_pkh, epsilon))) * 100
+rmse_garch <- sqrt(mean((actual_data_pkh - hasil_pred_pkh)^2))
+mae_garch <- mean(abs(actual_data_pkh - hasil_pred_pkh))
+mse_garch <- mean((actual_data_pkh - hasil_pred_pkh)^2)
+
+cat("MAPE from garch:", mape_garch, "%\n")
+cat("RMSE:", rmse_garch, "\n")
+cat("MAE:", mae_garch, "\n")
+cat("MSE:", mse_garch, "\n")
+```
+MAPE from garch: 3.425272e+13 %
+RMSE: 2716.786 
+MAE: 1892.644 
+MSE: 7380925 
+
+## avg_rainfall terhadap Produktivitas Kacang hijau
+```{r}
+# Pilih variabel yang akan diprediksi
+garch_pt_kh <- Sumatera_kacang_hijau[, c("Produktivitas", "avg_rainfall")]
+garch_pt_kh
+```
+
+```{r}
+# membagi data berdasarkan variabel Produktivitas
+set.seed(123)
+train_index_ptkh <- createDataPartition(garch_pt_kh$Produktivitas, p=0.8, list = FALSE)
+train_pt_kh <- garch_pt_kh[train_index_ptkh,] #pelatih
+train_pt_kh
+test_pt_kh <- garch_pt_kh[-train_index_ptkh,] #penguji
+test_pt_kh
+```
+
+
+```{r}
+# Fitting model
+garch_model_ptkh <- ugarchfit(spec = model_SPEC_GARCH, data = train_pt_kh$Produktivitas)
+garch_model_ptkh
+```
+
+output:
+
+Optimal Parameters
+------------------------------------
+        Estimate  Std. Error     t value Pr(>|t|)
+mu       9.84837    0.215845  45.6271 0.000000
+omega    0.69309    0.368649   1.8801 0.060095
+alpha1   0.43724    0.206993   2.1124 0.034656
+beta1    0.56176    0.065248   8.6095 0.000000
+                   
+                      t-value     prob   sig
+Sign Bias	          1.3376603	0.1827940		
+Negative Sign Bias	1.3291007	0.1855958		
+Positive Sign Bias	0.1392983	0.8893793		
+Joint Effect      	2.8166130	0.4207724
+
+```{r}
+residuals_produktivitas_kh <- residuals(garch_model_ptkh)
+summary(residuals_produktivitas_kh)
+```
+
+
+```{r}
+# Misalnya, uji korelasi antara Produktivitas dan avg_rainfall
+kolerasi_pt_kh<-cor(test_pt_kh$Produktivitas, test_pt_kh$avg_rainfall, method = "pearson")
+cat ("Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksitivitas:",kolerasi_pt_kh)
+
+```
+Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksitivitas: 0.13
+
+## Uji regresi linier kh
+```{r}
+
+# Membuat model regresi linier 
+regresi_produktvitas_kh <- lm(Produktivitas ~ avg_rainfall, data = test_pt_kh)
+
+# Ringkasan hasil model
+summary(regresi_produktvitas_kh)
+
+```
+             Estimate Std. Error t value Pr(>|t|)  
+(Intercept)    6.5145     3.8158   1.707   0.0955 .
+avg_rainfall   0.4348     0.4932   0.882   0.3833
+
+Interpred:
+Berdasarkan  hasil analisis garch, kolerasi dan regresi tidak terdapat dampak curah hujan terhadap produktivitas
+
+### PREDIKSI produktivtas kacang hijau
+````{r}
+forecast_pt_kh <- ugarchforecast(garch_model_ptkh, n.ahead = nrow(test_pt_kh))
+forecast_pt_kh
+```
+
+```{r}
+# Ekstraksi hasil prediksi dari objek forecast_GARCH
+hasil_pred_ptkh <- as.numeric(forecast_pt_kh@forecast$seriesFor[, 1])
+hasil_pred_ptkh
+```
+
+```{r}
+actual_data_ptkh <- test_pt_kh$Produktivitas
+```
+
+```{r}
+epsilon <- 1e-10  # Nilai kecil untuk menghindari pembagian dengan nol
+mape_ptkh_garch <- mean(abs((actual_data_ptkh - hasil_pred_ptkh) / pmax(actual_data_ptkh, epsilon))) * 100
+rmse_ptkh_garch <- sqrt(mean((actual_data_ptkh - hasil_pred_ptkh)^2))
+mae_ptkh_garch <- mean(abs(actual_data_ptkh - hasil_pred_ptkh))
+mse_ptkh_garch <- mean((actual_data_ptkh - hasil_pred_ptkh)^2)
+
+cat("MAPE from garch:", mape_ptkh_garch, "%\n")
+cat("RMSE:", rmse_ptkh_garch, "\n")
+cat("MAE:", mae_ptkh_garch, "\n")
+cat("MSE:", mse_ptkh_garch, "\n")
+```
+MAPE from garch: 70.04866 %
+RMSE: 2.75038 
+MAE: 1.744597 
+MSE: 7.564591
+
+#3. Kacang kedelai
+
+```{r}
+# Pilih variabel yang akan diprediksi
+garch_data_kk <- Sumatera_Kedelai[, c("Produksi", "avg_rainfall")]
+garch_data_kk
+```
+
+```{r}
+# membagi data berdasarkan variabel Produksi
+set.seed(123)
+train_Gindex_1 <- createDataPartition(garch_data_kk$Produksi, p=0.8, list = FALSE)
+train_pkk <- garch_data_kk[train_Gindex_1,] #pelatih
+train_pkk
+test_pkk <- garch_data_kk[-train_Gindex_1,] #penguji
+test_pkk
+```
+
+
+```{r}
+# Fitting model
+garch_fit_pkk <- ugarchfit(spec = model_SPEC_GARCH, data = train_pkk$avg_rainfall)
+garch_fit_pkk
+```
+
+                     t-value     prob   sig
+Sign Bias	          0.3629910	0.7169820		
+Negative Sign Bias	0.9440198	0.3462601		
+Positive Sign Bias	1.1665274	0.2447435		
+Joint Effect	      2.3168818	0.5092945
+
+```{r}
+residuals_garch_pkk <- residuals(garch_fit_pkk)
+summary(residuals_garch_pkk)
+```
+
+```{r}
+# Misalnya, uji korelasi antara Produksi dan avg_rainfall
+kolerasi_pkk_Sumatera<-cor(test_pkk$Produksi, test_pkk$avg_rainfall, method = "pearson")
+cat ("Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi:",kolerasi_pkk_Sumatera)
+
+```
+Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi: -0.1109095
+
+## Uji regresi linier kh
+```{r}
+regresi_produksi_kk <- lm(Produksi ~ avg_rainfall, data = test_pkk)
+summary(regresi_produksi_kk)
+
+```
+Coefficients:
+             Estimate Std. Error t value Pr(>|t|)
+(Intercept)     32105      20210   1.589    0.116
+avg_rainfall    -2533       2638  -0.960    0.340
+
+### PREDIKSI 
+````{r}
+forecast_kd <- ugarchforecast(garch_fit_pkk, n.ahead = nrow(test_pkk))
+forecast_kd
+```
+
+```{r}
+# Ekstraksi hasil prediksi dari objek forecast_GARCH
+hasil_pred_kd<- as.numeric(forecast_pt_kh@forecast$seriesFor[, 1])
+hasil_pred_kd
+```
+
+```{r}
+actual_data_pkk <- test_pkk$avg_rainfall
+```
+
+```{r}
+epsilon <- 1e-10  # Nilai kecil untuk menghindari pembagian dengan nol
+mape_pkk_garch <- mean(abs((actual_data_pkk - hasil_pred_kd) / pmax(actual_data_pkk, epsilon))) * 100
+rmse_pkk_garch <- sqrt(mean((actual_data_pkk - hasil_pred_kd)^2))
+mae_pkk_garch <- mean(abs(actual_data_pkk - hasil_pred_kd))
+mse_pkk_garch <- mean((actual_data_pkk - hasil_pred_kd)^2)
+
+cat("MAPE from garch:", mape_pkk_garch, "%\n")
+cat("RMSE:", rmse_pkk_garch, "\n")
+cat("MAE:", mae_pkk_garch, "\n")
+cat("MSE:", mse_pkk_garch, "\n")
+```
+MAPE from garch: 11.33089 %
+RMSE: 1.03538 
+MAE: 0.8126108 
+MSE: 1.072012 
+
+
+## avg_rainfall terhadap Produktivitas Kacang 
+```{r}
+# Pilih variabel yang akan diprediksi
+garch_data_produktivitas <- Sumatera_Kedelai[, c("Produktivitas", "avg_rainfall")]
+garch_data_produktivitas
+```
+
+```{r}
+# membagi data berdasarkan variabel Produktivitas
+set.seed(123)
+train_index_ptkk <- createDataPartition(garch_data_produktivitas$Produktivitas, p=0.8, list = FALSE)
+train_pt_kk <- garch_data_produktivitas[train_index_ptkk,] #pelatih
+train_pt_kk
+test_pt_kk <- garch_data_produktivitas[-train_index_ptkk,] #penguji
+test_pt_kk
+```
+
+```{r}
+# Fitting model
+garch_model_ptkk <- ugarchfit(spec = model_SPEC_GARCH, data = train_pt_kk$Produktivitas)
+garch_model_ptkk
+```
+output:
+                    t-value     prob   sig
+
+Sign Bias	          0.6095217	0.5428471		
+Negative Sign Bias	1.6473006	0.1010134		
+Positive Sign Bias	0.4645812	0.6427197		
+Joint Effect      	3.1135402	0.3744486	
+signifikasinya di atas 0,05 semuanya.
+
+```{r}
+residuals_garch_kk <- residuals(garch_model_ptkk)
+summary(residuals_garch_kk)
+```
+Kesimpulan = dapat melihat bahwa residuals memiliki sebaran yang relatif kecil, dan rata-rata residuals mendekati nol. Ini menunjukkan bahwa model GARCH mungkin dapat menjelaskan volatilitas dengan baik, karena residuals (sisa) yang relatif kecil mengindikasikan bahwa tidak ada pola signifikan yang tertinggal dalam data yang tidak dijelaskan oleh model.
+
+
+```{r}
+# Misalnya, uji korelasi antara Produktivitas dan avg_rainfall
+kolerasi_pt_kk<-cor(test_pt_kk$Produktivitas, test_pt_kk$avg_rainfall, method = "pearson")
+cat ("Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksitivitas:",kolerasi_pt_kk)
+
+```
+Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksitivitas: 0.10
+
+## Uji regresi linier kh
+```{r}
+regresi_produktvitas_kk <- lm(Produktivitas ~ avg_rainfall, data = test_pt_kk)
+
+summary(regresi_produktvitas_kk)
+```
+Coefficients:
+             Estimate Std. Error t value Pr(>|t|)    
+(Intercept)   10.6052     1.7533   6.049 1.84e-07 ***
+avg_rainfall   0.1827     0.2342   0.780    0.439    
+
+Interpred
+
+Berdasarkan hasil analisis model garch,regresi dan kolerasi Tidak terdapat dampak curah hujan terhadap produktivitas
+
+### PREDIKSI Produktivitas
+````{r}
+forecast_ptkd <- ugarchforecast(garch_model_ptkk, n.ahead = nrow(test_pt_kk))
+forecast_ptkd
+```
+
+```{r}
+# Ekstraksi hasil prediksi dari objek forecast_GARCH
+hasil_pred_ptkd<- as.numeric(forecast_ptkd@forecast$seriesFor[, 1])
+hasil_pred_ptkd
+```
+
+```{r}
+actual_data_ptkk <- test_pt_kk$Produktivitas
+```
+
+```{r}
+epsilon <- 1e-10  # Nilai kecil untuk menghindari pembagian dengan nol
+mape_ptkk_garch <- mean(abs((actual_data_ptkk - hasil_pred_ptkd) / pmax(actual_data_ptkk, epsilon))) * 100
+rmse_ptkk_garch <- sqrt(mean((actual_data_ptkk - hasil_pred_ptkd)^2))
+mae_ptkk_garch <- mean(abs(actual_data_ptkk - hasil_pred_ptkd))
+mse_ptkk_garch <- mean((actual_data_ptkk - hasil_pred_ptkd)^2)
+
+cat("MAPE from garch:", mape_ptkk_garch, "%\n")
+cat("RMSE:", rmse_ptkk_garch, "\n")
+cat("MAE:", mae_ptkk_garch, "\n")
+cat("MSE:", mse_ptkk_garch, "\n")
+```
+MAPE from garch: 14.4043 %
+RMSE: 2.060781 
+MAE: 1.742456 
+MSE: 4.246818 
+
+
+#4. Kacang Tanah
+```{r}
+# Pilih variabel yang akan diprediksi
+garch_data_kt <- Sumatera_kacang_tanah[, c("Produksi", "avg_rainfall")]
+garch_data_kt
+```
+
+```{r}
+# membagi data berdasarkan variabel Produksi
+set.seed(123)
+train_Gindex_kt <- createDataPartition(garch_data_kt$Produksi, p=0.8, list = FALSE)
+train_pkt <- garch_data_kt[train_Gindex_kt,] #pelatih
+train_pkt
+test_pkt <- garch_data_kt[-train_Gindex_kt,] #penguji
+test_pkt
+```
+
+
+```{r}
+# Fitting model
+garch_fit_pkt <- ugarchfit(spec =model_SPEC_GARCH, data = train_pkt$Produksi)
+garch_fit_pkt
+```
+output:
+
+                      t-value     prob     sig
+Sign Bias         	0.7730582	0.4403215		
+Negative Sign Bias	0.5011246	0.6167868		
+Positive Sign Bias	0.2261097	0.8213270		
+Joint Effect       	1.1907324	0.7552279	
+
+Kesimpulan:
+siginifikasi diatas 0,05 jadi tidak terdapat dampak curah hujan terhadap produksi
+
+```{r}
+residuals_garch_pkt <- residuals(garch_fit_pkt)
+summary(residuals_garch_pkt)
+```
+
+
+```{r}
+# Misalnya, uji korelasi antara Produksi dan avg_rainfall
+kolerasi_pkt_Sumatera<-cor(test_pkt$Produksi, test_pkt$avg_rainfall, method = "pearson")
+cat ("Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi:",kolerasi_pkt_Sumatera)
+
+```
+Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi: -0.26
+
+## Uji regresi linier kh
+```{r}
+# Membuat model regresi linier menggunakan residual
+regresi_produksi_kh <- lm(Produksi ~ avg_rainfall, data = test_pkt)
+
+# Ringkasan hasil model
+summary(regresi_produksi_kh)
+```
+             Estimate Std. Error t value Pr(>|t|)   
+(Intercept)   21674.3     7134.1   3.038  0.00369 **
+avg_rainfall  -1851.1      912.4  -2.029  0.04752 * 
+
+## PREDIKSI 
+````{r}
+forecast_pkt <- ugarchforecast(garch_fit_pkt, n.ahead = nrow(test_pkt))
+forecast_pkt
+```
+
+```{r}
+# Ekstraksi hasil prediksi dari objek forecast_GARCH
+hasil_pred_pkt<- as.numeric(forecast_pkt@forecast$seriesFor[, 1])
+hasil_pred_pkt
+```
+
+```{r}
+actual_data_pkt <- test_pkt$Produksi
+```
+
+```{r}
+epsilon <- 1e-10  # Nilai kecil untuk menghindari pembagian dengan nol
+mape_pkt_garch <- mean(abs((actual_data_pkt - hasil_pred_pkt) / pmax(actual_data_pkt, epsilon))) * 100
+rmse_pkt_garch <- sqrt(mean((actual_data_pkt - hasil_pred_pkt)^2))
+mae_pkt_garch <- mean(abs(actual_data_pkt - hasil_pred_pkt))
+mse_pkt_garch <- mean((actual_data_pkt - hasil_pred_pkt)^2)
+
+cat("MAPE from garch:", mape_pkt_garch, "%\n")
+cat("RMSE:", rmse_pkt_garch, "\n")
+cat("MAE:", mae_pkt_garch, "\n")
+cat("MSE:", mse_pkt_garch, "\n")
+```
+MAPE from garch: 656.4034 %
+RMSE: 7881.928 
+MAE: 5492.822 
+MSE: 62124789 
+
+## avg_rainfall terhadap Produktivitas Kacang tanah
+```{r}
+# Pilih variabel yang akan diprediksi
+garch_pt_kt <- Sumatera_kacang_tanah[, c("Produktivitas", "avg_rainfall")]
+garch_pt_kt
+```
+
+```{r}
+# membagi data berdasarkan variabel Produktivitas
+set.seed(123)
+train_index_ptkt <- createDataPartition(garch_pt_kt$Produktivitas, p=0.8, list = FALSE)
+train_pt_kt <- garch_pt_kt[train_index_ptkt,] #pelatih
+train_pt_kt
+test_pt_kt <- garch_pt_kt[-train_index_ptkt,] #penguji
+test_pt_kt
+```
+
+```{r}
+# Fitting model
+garch_model_ptkt <- ugarchfit(spec = model_SPEC_GARCH, data = train_pt_kt$Produktivitas)
+garch_model_ptkt
+```
+
+                      t-value     prob   sig
+Sign Bias         	1.5144731	0.1313412		
+Negative Sign Bias	0.2467177	0.8053568		
+Positive Sign Bias	1.3024445	0.1941263		
+Joint Effect      	5.9103949	0.1160520
+
+
+```{r}
+residuals_produktivitas_kt <- residuals(garch_model_ptkt)
+summary(residuals_produktivitas_kt)
+```
+Kesimpulan = dapat melihat bahwa residuals memiliki sebaran yang relatif kecil, dan rata-rata residuals mendekati nol. Ini menunjukkan bahwa model GARCH mungkin dapat menjelaskan volatilitas dengan baik, karena residuals (sisa) yang relatif kecil mengindikasikan bahwa tidak ada pola signifikan yang tertinggal dalam data yang tidak dijelaskan oleh model.
+
+```{r}
+# Misalnya, uji korelasi antara Produktivitas dan avg_rainfall
+kolerasi_pt_kt<-cor(test_pt_kt$Produktivitas, test_pt_kt$avg_rainfall, method = "pearson")
+cat ("Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksitivitas:",kolerasi_pt_kt)
+```
+Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksitivitas: 0.008
+
+## Uji regresi linier kt
+```{r}
+
+# Membuat model regresi linier 
+regresi_produktvitas_kt <- lm(Produktivitas ~ avg_rainfall, data = test_pt_kt)
+
+# Ringkasan hasil model
+summary(regresi_produktvitas_kt)
+
+```
+Coefficients:
+(Intercept)  11.38569    1.92655   5.910 2.67e-07 ***
+avg_rainfall  0.01496    0.25189   0.059    0.953 
+
+Kesimpulan
+
+Berdasarkan analisis GARCH, regresi dan kolerasi dapat di simpulkan bahwa tidak terdapat dampak curah hujan terhadap produktivitas.
+
+
+## PREDIKSI Produktivitas
+
+````{r}
+forecast_produktivitas_kt <- ugarchforecast(garch_model_ptkt, n.ahead = nrow(test_pt_kt))
+forecast_produktivitas_kt
+```
+
+
+```{r}
+# Ekstraksi hasil prediksi dari objek forecast_GARCH
+hasil_prediksi_ptkt<- as.numeric(forecast_produktivitas_kt@forecast$seriesFor[, 1])
+hasil_prediksi_ptkt
+```
+
+```{r}
+actual_ptkt <- test_pt_kt$Produktivitas
+```
+
+```{r}
+epsilon <- 1e-10  # Nilai kecil untuk menghindari pembagian dengan nol
+mape_pt_kt_garch <- mean(abs((actual_ptkt - hasil_prediksi_ptkt) / pmax(actual_ptkt, epsilon))) * 100
+rmse_pt_kt_garch <- sqrt(mean((actual_ptkt - hasil_prediksi_ptkt)^2))
+mae_pt_kt_garch <- mean(abs(actual_ptkt - hasil_prediksi_ptkt))
+mse_pt_kt_garch <- mean((actual_ptkt - hasil_prediksi_ptkt)^2)
+
+cat("MAPE from garch:", mape_pt_kt_garch, "%\n")
+cat("RMSE:", rmse_pt_kt_garch, "\n")
+cat("MAE:", mae_pt_kt_garch, "\n")
+cat("MSE:", mse_pt_kt_garch, "\n")
+```
+MAPE from garch: 13.09877 %
+RMSE: 1.898461 
+MAE: 1.536193 
+MSE: 3.604153
+
+#5. Ubi jalar
+```{r}
+# Pilih variabel yang akan diprediksi
+garch_data_uj <- Sumatera_ubi_jalar[, c("Produksi", "avg_rainfall")]
+garch_data_uj
+```
+
+```{r}
+# membagi data berdasarkan variabel Produksi
+set.seed(123)
+train_Gindex_uj <- createDataPartition(garch_data_uj$Produksi, p=0.8, list = FALSE)
+train_puj <- garch_data_uj[train_Gindex_uj,] #pelatih
+train_puj
+test_puj <- garch_data_uj[-train_Gindex_uj,] #penguji
+test_puj
+```
+
+
+```{r}
+# Fitting model
+garch_fit_puj <- ugarchfit(spec = model_SPEC_GARCH, data = train_puj$avg_rainfall)
+garch_fit_puj
+```
+Sign Bias	          0.8748325	0.38276376		
+Negative Sign Bias	2.2331798	0.02669773	**	
+Positive Sign Bias	1.1131646	0.26703672		
+Joint Effect	     6.6331673	0.08455609	*
+
+Kesimpulan:
+Terdapat dampak negatif curah hujan terhadap produksi dengan siginifkansi dibawah 0,05 
+
+```{r}
+residuals_garch_puj <- residuals(garch_fit_puj)
+summary(residuals_garch_puj)
+```
+
+```{r}
+# Misalnya, uji korelasi antara Produksi dan avg_rainfall
+kolerasi_puj_Sumatera<-cor(test_puj$Produksi, test_puj$avg_rainfall, method = "pearson")
+cat ("Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi:",kolerasi_puj_Sumatera)
+```
+Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi:  0.02659879
+
+
+## Uji regresi linier uj
+```{r}
+regresi_produksi_uj <- lm(Produksi ~ avg_rainfall, data = test_puj)
+summary(regresi_produksi_uj)
+```
+Coefficients:
+             Estimate Std. Error t value Pr(>|t|)
+(Intercept)     34541      33652   1.026    0.308
+avg_rainfall     1025       4255   0.241    0.810
+
+*Interpred*
+
+Berdasarkan analisis GARCH,Regresi dan Kolerasi dapat di simpulkan bahwa tidak terdapat dampak curah hujan terhadap produksi
+
+```{r}
+# Trim data prediksi agar panjangnya sesuai dengan data aktual agar dapat diukur perfomanya
+test_data_p4 <- head(test_data_p4, length(residuals_garch_puj))
+```
+
+```{r}
+# Menghitung MSE
+mse_puj <- mean(residuals_garch_puj^2)
+cat("Mean Squared Error (MSE):", mse_puj, "\n")
+```
+
+Mean Squared Error (MSE): 0.0001134447 
+
+
+```{r}
+# Menghitung RMSE
+rmse_puj <- sqrt(mse_puj)
+cat("Root Mean Squared Error (RMSE):", rmse_puj, "\n")
+```
+Root Mean Squared Error (RMSE):  0.01065104 
+
+```{r}
+# Menghitung MAE
+mae_puj <- mean(abs(residuals_garch_puj))
+cat("Mean Absolute Error (MAE):", mae_puj, "\n")
+```
+Mean Absolute Error (MAE): 0.008689958 
+
+```{r}
+# Menghitung MAPE
+mape_puj <- mean(abs(residuals_garch_puj / test_puj$Produksi)) * 100
+cat("Mean Absolute Percentage Error (MAPE):", mape_puj, "%\n")
+```
+### Prediksi
+````{r}
+forecast_puj <- ugarchforecast(garch_fit_puj, n.ahead = nrow(test_puj))
+forecast_puj
+```
+
+```{r}
+# Ekstraksi hasil prediksi dari objek forecast_GARCH
+hasil_pred_puj<- as.numeric(forecast_puj@forecast$seriesFor[, 1])
+hasil_pred_puj
+```
+
+```{r}
+actual_data_puj <- test_puj$avg_rainfall
+```
+
+```{r}
+epsilon <- 1e-10  # Nilai kecil untuk menghindari pembagian dengan nol
+mape_puj_garch <- mean(abs((actual_data_puj - hasil_pred_puj) / pmax(actual_data_puj, epsilon))) * 100
+rmse_puj_garch <- sqrt(mean((actual_data_puj - hasil_pred_puj)^2))
+mae_puj_garch <- mean(abs(actual_data_puj - hasil_pred_puj))
+mse_puj_garch <- mean((actual_data_puj - hasil_pred_puj)^2)
+
+cat("MAPE from garch:", mape_puj_garch, "%\n")
+cat("RMSE:", rmse_puj_garch, "\n")
+cat("MAE:", mae_puj_garch, "\n")
+cat("MSE:", mse_puj_garch, "\n")
+```
+MAPE from garch: 12.2454 %
+RMSE: 1.135911 
+MAE: 0.9022313 
+MSE: 1.290293 
+
+## avg_rainfall terhadap Produktivitas Ubi Jalar
+```{r}
+# Pilih variabel yang akan diprediksi
+garch_pt_uj <- Sumatera_ubi_jalar[, c("Produktivitas", "avg_rainfall")]
+garch_pt_uj
+```
+
+```{r}
+# membagi data berdasarkan variabel Produktivitas
+set.seed(123)
+train_index_ptuj <- createDataPartition(garch_pt_uj$Produktivitas, p=0.8, list = FALSE)
+train_pt_uj <- garch_pt_uj[train_index_ptuj,] #pelatih
+train_pt_uj
+test_pt_uj <- garch_pt_uj[-train_index_ptuj,] #penguji
+test_pt_uj
+```
+
+```{r}
+# Fitting model
+garch_model_ptuj <- ugarchfit(spec = model_SPEC_GARCH, data = train_pt_uj$Produktivitas)
+garch_model_ptuj
+```
+
+output:
+                      t-value     prob   sig
+Sign Bias	          1.0147399	0.3113496		
+Negative Sign Bias	1.2409203	0.2159628		
+Positive Sign Bias	0.2501016	0.8027432		
+Joint Effect       	1.6348355	0.6515172
+
+```{r}
+residuals_produktivitas_uj <- residuals(garch_model_uj)
+summary(residuals_produktivitas_uj)
+```
+
+```{r}
+# Misalnya, uji korelasi antara Produktivitas dan avg_rainfall
+kolerasi_pt_uj<-cor(test_pt_uj$Produktivitas, test_pt_uj$avg_rainfall, method = "pearson")
+cat ("Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksitivitas:",kolerasi_pt_uj)
+
+```
+Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksitivitas: 0.28
+
+## Uji regresi linier uj
+```{r}
+# Membuat model regresi linier 
+regresi_produktvitas_uj <- lm(Produktivitas ~ avg_rainfall, data = test_pt_uj)
+
+# Ringkasan hasil model
+summary(regresi_produktvitas_uj)
+
+```
+             Estimate Std. Error t value Pr(>|t|)  
+(Intercept)   -14.666     62.303  -0.235   0.8148  
+avg_rainfall   17.740      8.076   2.197   0.0324 *
+
+*interpred*
+
+Berdasarkan hasil analisis di simpulkan bahwa tidak terdampat dampak curah hujan terhadap produktivitas
+
+```{r}
+# Menghitung MSE
+mse_ptuj <- mean(residuals_produktivitas_uj^2)
+cat("Mean Squared Error (MSE):", mse_ptuj, "\n")
+```
+Mean Squared Error (MSE): 
+
+```{r}
+# Menghitung RMSE
+rmse_ptuj <- sqrt(mse_ptuj)
+cat("Root Mean Squared Error (RMSE):", rmse_ptuj, "\n")
+```
+Root Mean Squared Error (RMSE): 
+
+```{r}
+# Menghitung MAE
+mae_ptuj <- mean(abs(residuals_produktivitas_uj))
+cat("Mean Absolute Error (MAE):", mae_ptuj, "\n")
+```
+Mean Absolute Error (MAE): 
+
+```{r}
+# Menghitung MAPE
+#mape_ptj <- mean(abs(residuals_garch_pt/test_data_pt$Produksi)) * 100
+#cat("Mean Absolute Percentage Error (MAPE):", mape_ptj, "%\n")
+
+```
+
+### Prediksi produktivitas
+````{r}
+forecast_produktivitas_uj <- ugarchforecast(garch_model_ptuj, n.ahead = nrow(test_pt_uj))
+forecast_produktivitas_uj
+```
+
+```{r}
+# Ekstraksi hasil prediksi dari objek forecast_GARCH
+hasil_prediksi_ptuj<- as.numeric(forecast_produktivitas_uj@forecast$seriesFor[, 1])
+hasil_prediksi_ptuj
+```
+
+```{r}
+actual_ptuj <- test_pt_uj$Produktivitas
+```
+
+```{r}
+epsilon <- 1e-10  # Nilai kecil untuk menghindari pembagian dengan nol
+mape_pt_uj_garch <- mean(abs((actual_ptuj - hasil_prediksi_ptuj) / pmax(actual_ptuj, epsilon))) * 100
+rmse_pt_uj_garch <- sqrt(mean((actual_ptuj - hasil_prediksi_ptuj)^2))
+mae_pt_uj_garch <- mean(abs(actual_ptuj - hasil_prediksi_ptuj))
+mse_pt_uj_garch <- mean((actual_ptuj - hasil_prediksi_ptuj)^2)
+
+cat("MAPE from garch:", mape_pt_uj_garch, "%\n")
+cat("RMSE:", rmse_pt_uj_garch, "\n")
+cat("MAE:", mae_pt_uj_garch, "\n")
+cat("MSE:", mse_pt_uj_garch, "\n")
+```
+MAPE from garch: 23.18936 %
+RMSE: 65.82092 
+MAE: 37.42 
+MSE: 4332.394 
+
+
+#6. Ubi kayu
+```{r}
+# Pilih variabel yang akan diprediksi
+garch_data_uk <- Sumatera_ubi_kayu[, c("Produksi", "avg_rainfall")]
+garch_data_uk
+```
+
+```{r}
+# membagi data berdasarkan variabel Produksi
+set.seed(123)
+train_Gindex_uk <- createDataPartition(garch_data_uk$Produksi, p=0.8, list = FALSE)
+train_puk <- garch_data_uk[train_Gindex_uk,] #pelatih
+train_puk
+test_puk <- garch_data_uk[-train_Gindex_uk,] #penguji
+test_puk
+```
+
+```{r}
+# Fitting model
+garch_fit_puk <- ugarchfit(spec = model_SPEC_GARCH, data = train_puk$avg_rainfall)
+garch_fit_puk
+```
+output:
+                      t-value     prob   sig
+Sign Bias	          0.4198508	0.6750060		
+Negative Sign Bias	1.2403642	0.2161679		
+Positive Sign Bias	1.5929721	0.1126087		
+Joint Effect      	4.1517995	0.2455322	
+
+Kesimpulan: dengan tingkat siginifikasi 0,05 dapat disimpilkan bahwa tidak terdapat dampak curah hujan terhadap produksi
+
+```{r}
+residuals_garch_puk <- residuals(garch_fit_puk)
+summary(residuals_garch_puk)
+```
+Kesimpulan = dapat melihat bahwa residuals memiliki sebaran yang relatif kecil, dan rata-rata residuals mendekati nol. Ini menunjuukan bahwa model GARCH mungkin dapat menjelaskan volatilitas dengan baik, karena residuals (sisa) yang relatif kecil mengindikasikan bahwa tidak ada pola signifikan yang tertinggal dalam data yang tidak dijelaskan oleh model.
+
+```{r}
+# Misalnya, uji korelasi antara Produksi dan avg_rainfall
+kolerasi_puk_Sumatera<-cor(test_puk$Produksi, test_puk$avg_rainfall, method = "pearson")
+cat ("Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi:",kolerasi_puk_Sumatera)
+```
+Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi: -0.104402
+
+
+
+## Uji regresi linier uk
+```{r}
+regresi_produksi_uk <- lm(Produksi ~ avg_rainfall, data = test_puk)
+summary(regresi_produksi_uk)
+```
+Coefficients:
+             Estimate Std. Error t value Pr(>|t|)
+(Intercept)   2379917    2085634   1.141    0.259
+avg_rainfall  -204592     265218  -0.771    0.444
+
+
+```{r}
+
+# Membuat model regresi linier menggunakan residual
+regresi_produksi_uk2 <- lm(Produksi ~ avg_rainfall, data = garch_data_uk)
+
+# Ringkasan hasil model
+summary(regresi_produksi_uk2)
+
+```
+Coefficients:
+             Estimate Std. Error t value Pr(>|t|)  
+(Intercept)   1311158     719490   1.822   0.0695 .
+avg_rainfall   -76732      92392  -0.831   0.4070
+
+```{r}
+# Menghitung Prediksi
+predictions_puk <- as.numeric(fitted(garch_fit_puk))
+predictions_puk
+```
+
+
+```{r}
+# Trim data prediksi agar panjangnya sesuai dengan data aktual agar dapat diukur perfomanya
+test_data_p4 <- head(test_data_p4, length(residuals1))
+```
+
+```{r}
+# Menghitung MSE
+mse_puk <- mean(residuals_garch_puk^2)
+cat("Mean Squared Error (MSE):", mse_puk, "\n")
+```
+```{r}
+# Menghitung RMSE
+rmse_puk <- sqrt(mse_puk)
+cat("Root Mean Squared Error (RMSE):", rmse_puk, "\n")
+```
+Root Mean Squared Error (RMSE): 
+
+```{r}
+# Menghitung MAE
+mae_puk <- mean(abs(residuals_garch_puk))
+cat("Mean Absolute Error (MAE):", mae_puk, "\n")
+```
+Mean Absolute Error (MAE): 
+
+```{r}
+# Menghitung MAPE
+mape_puk <- mean(abs(residuals_garch_puk / test_puk$Produksi)) * 100
+cat("Mean Absolute Percentage Error (MAPE):", mape_puk, "%\n")
+
+```
+0.0001203104 %
+
+### Prediksi curah hujan
+````{r}
+forecast_uk <- ugarchforecast(garch_fit_puk, n.ahead = nrow(test_puk))
+forecast_uk
+```
+
+
+```{r}
+# Ekstraksi hasil prediksi dari objek forecast_GARCH
+hasil_prediksi_uk<- as.numeric(forecast_uk@forecast$seriesFor[, 1])
+hasil_prediksi_uk
+```
+
+```{r}
+actual_data_uk <- test_puk$avg_rainfall
+```
+
+```{r}
+epsilon <- 1e-10  # Nilai kecil untuk menghindari pembagian dengan nol
+mape_uk_garch <- mean(abs((actual_data_uk - hasil_prediksi_uk) / pmax(actual_data_uk, epsilon))) * 100
+rmse_uk_garch <- sqrt(mean((actual_data_uk - hasil_prediksi_uk)^2))
+mae_uk_garch <- mean(abs(actual_data_uk - hasil_prediksi_uk))
+mse_uk_garch <- mean((actual_data_uk - hasil_prediksi_uk)^2)
+
+cat("MAPE from garch:", mape_uk_garch, "%\n")
+cat("RMSE:", rmse_uk_garch, "\n")
+cat("MAE:", mae_uk_garch, "\n")
+cat("MSE:", mse_uk_garch, "\n")
+```
+MAPE from garch: 9.352159 %
+RMSE: 0.9280062 
+MAE: 0.7155336 
+MSE: 0.8611955 
+
+
+## avg_rainfall terhadap Produktivitas Ubi kayu
+```{r}
+# Pilih variabel yang akan diprediksi
+garch_pt_uk <- Sumatera_ubi_kayu[, c("Produktivitas", "avg_rainfall")]
+garch_pt_uk
+```
+
+```{r}
+# membagi data berdasarkan variabel Produktivitas
+set.seed(123)
+train_index_ptuk <- createDataPartition(garch_pt_uk$Produktivitas, p=0.8, list = FALSE)
+train_pt_uk <- garch_pt_uk[train_index_ptuk,] #pelatih
+train_pt_uk
+test_pt_uk <- garch_pt_uk[-train_index_ptuk,] #penguji
+test_pt_uk
+```
+
+
+```{r}
+# Fitting model
+garch_model_ptuk <- ugarchfit(spec = model_SPEC_GARCH, data = train_pt_uk$Produktivitas)
+garch_model_ptuk
+```
+output:
+
+                      t-value     prob   sig
+Sign Bias	          1.65771131	0.09880096	*	
+Negative Sign Bias	0.05346686	0.95740846		
+Positive Sign Bias	1.24880034	0.21306531		
+Joint Effect      	5.42296765	0.14331929		
+
+dengan tingkat signifikansi 0,05 dapat disimpulkan bahwa curah hujan tidak berdampak terhadap produktivitas
+
+```{r}
+residuals_produktivitas_uk <- residuals(garch_model_ptuk)
+summary(residuals_produktivitas_uk)
+```
+Kesimpulan = dapat melihat bahwa residuals memiliki sebaran yang relatif kecil, dan rata-rata residuals mendekati nol. Ini menunjukkan bahwa model GARCH mungkin dapat menjelaskan volatilitas dengan baik, karena residuals (sisa) yang relatif kecil mengindikasikan bahwa tidak ada pola signifikan yang tertinggal dalam data yang tidak dijelaskan oleh model.
+
+
+```{r}
+# Misalnya, uji korelasi antara Produktivitas dan avg_rainfall
+kolerasi_pt_uk<-cor(test_pt_uk$Produktivitas, test_pt_uk$avg_rainfall, method = "pearson")
+cat ("Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksitivitas:",kolerasi_pt_uk)
+
+```
+Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksitivitas: -0.02345777
+
+## Uji regresi linier uk
+```{r}
+# Membuat model regresi linier 
+regresi_produktvitas_uk <- lm(Produktivitas ~ avg_rainfall, data = test_pt_uk)
+# Ringkasan hasil model
+summary(regresi_produktvitas_uk)
+```
+Coefficients:
+             Estimate Std. Error t value Pr(>|t|)  
+(Intercept)   208.047     95.068   2.188   0.0331 *
+avg_rainfall   -2.109     12.345  -0.171   0.8650  
+
+*Intepred*
+Berdasarkan hasil analisis GARCH, Regresi dan Kolerasi dapat disimpulkan bahwa tidak terdapat dampak curah hujan terhadap prduktivitas
+
+
+```{r}
+# Menghitung MSE
+mse_ptuk <- mean(residuals_produktivitas_uk^2)
+cat("Mean Squared Error (MSE):", mse_ptuk, "\n")
+```
+Mean Squared Error (MSE): 
+
+```{r}
+# Menghitung RMSE
+rmse_ptuk <- sqrt(mse_ptuk)
+cat("Root Mean Squared Error (RMSE):", rmse_ptuk, "\n")
+```
+Root Mean Squared Error (RMSE): 
+
+```{r}
+# Menghitung MAE
+mae_pt_uk <- mean(abs(residuals_produktivitas_uk))
+cat("Mean Absolute Error (MAE):", mae_pt_uk, "\n")
+```
+Mean Absolute Error (MAE): 0.
+
+```{r}
+# Menghitung MAPE
+#mape_ptj <- mean(abs(residuals_garch_pt/test_data_pt$Produksi)) * 100
+#cat("Mean Absolute Percentage Error (MAPE):", mape_ptj, "%\n")
+```
+
+
+### Prediksi produktivitas
+````{r}
+forecast_produktivitas_uk <- ugarchforecast(garch_model_ptuk, n.ahead = nrow(test_pt_uk))
+forecast_produktivitas_uk
+```
+
+```{r}
+# Ekstraksi hasil prediksi dari objek forecast_GARCH
+hasil_prediksi_ptuk<- as.numeric(forecast_produktivitas_uk@forecast$seriesFor[, 1])
+hasil_prediksi_ptuk
+```
+
+```{r}
+actual_ptuk <- test_pt_uk$Produktivitas
+```
+
+```{r}
+epsilon <- 1e-10  # Nilai kecil untuk menghindari pembagian dengan nol
+mape_pt_uk_garch <- mean(abs((actual_ptuk - hasil_prediksi_ptuk) / pmax(actual_ptuk, epsilon))) * 100
+rmse_pt_uk_garch <- sqrt(mean((actual_ptuk - hasil_prediksi_ptuk)^2))
+mae_pt_uk_garch <- mean(abs(actual_ptuk - hasil_prediksi_ptuk))
+mse_pt_uk_garch <- mean((actual_ptuk - hasil_prediksi_ptuk)^2)
+
+cat("MAPE from garch:", mape_pt_uk_garch, "%\n")
+cat("RMSE:", rmse_pt_uk_garch, "\n")
+cat("MAE:", mae_pt_uk_garch, "\n")
+cat("MSE:", mse_pt_uk_garch, "\n")
+```
+
+MAPE from garch: 27.9015 %
+RMSE: 118.0881 
+MAE: 76.13348 
+MSE: 13944.8 
+
+
