@@ -518,25 +518,6 @@ ggplot(df_long, aes(x = Year, y = Value, color = Variable, group = Variable)) +
   theme_minimal()
 ```
 
-```{r}
-# Convert data to tidy format
-library(tidyr)
-padi_select_t <- padi_select %>% 
-  dplyr::select(Area, Production, Productivity, Humidity, Wind_Velocity, Sunshine_Duration, Temperature, Rainfall)
-
-padi_select_tidy <- gather(padi_select_t, key = "variable", value = "value")
-
-# Create histogram for each variable in one page
-ggplot(data = padi_select_tidy, aes(x = value)) +
-  geom_histogram(binwidth = 5, fill = "blue", color = "black", alpha = 0.7) +
-  labs(title = "Histogram of Data Distribution",
-       x = "Values",
-       y = "Frequency") +
-  theme_minimal() +
-  facet_wrap(~variable, scales = "free", ncol = 4)
-
-```
-
 
 # 4. Model
 
@@ -606,12 +587,6 @@ best_ridge_model <- glmnet(
 coef(best_ridge_model)
 
 ```
-```{r}
-nonzero_coef <- predict(best_ridge_model, type = "nonzero")
-nonzero_coef
-```
-
-
 
 Perlu dilakukan evaluasi lebih lanjut terkait dengan masalah-masalah tersebut dan mungkin penggunaan teknik validasi model untuk memastikan bahwa model dapat digeneralisasi dengan baik ke data baru.
 
@@ -712,63 +687,11 @@ colnames(data_testing)[colSums(data_testing == 0) > 0]
 ## GLM Model
 
 ```{r}
-# Hyperparamater Random Search
-
-# Install dan load library
-# install.packages(c("glm2", "boot"))
-library(glm2)
-library(boot)
-
-# Contoh dataset (gantilah dengan dataset Anda)
-set.seed(123)
-n <- 100
-data <- data.frame(
-  X1 = rnorm(n),
-  X2 = rnorm(n),
-  Y = 0.5 * rnorm(n) + 2 * rnorm(n, mean = 1)
-)
-
-# Fungsi untuk membuat model GLM dengan glm2
-create_glm2_model <- function(formula, data) {
-  model <- glm2(formula, data = data)
-  return(model)
-}
-
-# Fungsi untuk melakukan cross-validation pada model GLM dengan glm2
-cv_glm2 <- function(data, indices, formula) {
-  train_data <- data[indices, ]
-  test_data <- data[-indices, ]
-  
-  model <- create_glm2_model(formula, train_data)
-  
-  # Prediksi pada data uji
-  predictions <- predict(model, newdata = test_data, type = "response")
-  
-  # Menghitung RMSE (sebagai contoh, bisa diganti dengan metrik lain)
-  rmse <- sqrt(mean((test_data$Y - predictions)^2))
-  
-  return(rmse)
-}
-
-# Contoh formula untuk model GLM
-formula <- Y ~ X1 + X2
-
-# Cross-validation dengan 5-fold
-cv_result <- cvms(data, cv_glm2, formula = formula, m = 5)
-
-# View the results
-print("Cross-Validation Result:")
-print(cv_result)
-
-```
-
-
-```{r}
 # library model GLM
 library(glm2)
 
 # model GLM untuk memprediksi variabel Production pada data training
-model_glm <- glm(Production ~ Rainfall + Humidity + Wind_Velocity + Temperature + Sunshine_Duration + Area + Productivity, data = data_training, family = gaussian(link = "identity"), control = list(epsilon = 1e-8, maxit =100))
+model_glm <- glm(Production ~ Rainfall + Humidity + Wind_Velocity + Temperature + Sunshine_Duration + Area + Productivity, data = data_training, family = gaussian(link = "identity"), control = list(epsilon = 1e-5, maxit =200))
 
 # melihat hasil model prediksi
 summary(model_glm)
@@ -810,8 +733,6 @@ ggplot(data = result_data_glm, aes(x = 1:length(Production))) +
 
 ```{r}
 # Evaluasi GLM Model
-library(Metrics)
-
 
 # Hitung MAE
 mae_value_glm <- mae(data_testing$Production, predicted_glm)
@@ -821,7 +742,7 @@ mse_value_glm <- mse(data_testing$Production, predicted_glm)
 
 # Hitung RMSE
 rmse_value_glm <- rmse(data_testing$Production, predicted_glm)
- 
+
 # Hitung MAPE
 mape_value_glm <- mape(data_testing$Production, predicted_glm)
 
@@ -834,71 +755,9 @@ cat(paste("MAPE: ", mape_value_glm, "%\n"))
 
 ## RF Model
 
-
-
-```{r}
-padi_rs <- padi_select
-
-# Set seed untuk reproduktibilitas
-set.seed(123)
-
-# Data
-n <- 100
-padi_rs <- data.frame(
-  X1 = rnorm(n),
-  X2 = rnorm(n),
-  Y = 0.5 * rnorm(n) + 2 * rnorm(n, mean = 1)
-)
-
-# Split dataset menjadi data pelatihan dan data uji
-train_indices <- sample(seq_len(n), size = 0.8 * n)
-train_data <- padi_rs[train_indices, ]
-test_data <- padi_rs[-train_indices, ]
-
-# Menetapkan variabel respons dan prediktor
-response_variable <- "Y"
-predictor_variables <- setdiff(names(train_data), response_variable)
-
-# Membuat grid hyperparameter untuk Random Search pada Random Forest
-hyperparameter_grid <- data.frame(
-  mtry = sqrt(length(predictor_variables))  # Parameter mtry untuk jumlah prediktor yang diambil acak berdasarkan sqrt
-  #ntree = sample(50:200, 10),            # Contoh variasi nilai ntree
-  #min_samples_split = c(2, 5, 10),       # Contoh variasi nilai min_samples_split
-  # min_samples_leaf = c(1, 2, 4)
-)
-
-# Menetapkan kontrol untuk Random Search
-control <- trainControl(
-  method = "cv",  # Cross-validation sebagai metode evaluasi
-  number = 5,     # Jumlah lipatan cross-validation
-  search = "random",  # Metode pencarian Random Search
-  verboseIter = TRUE
-)
-
-# Melakukan Random Search dengan model Random Forest Regression
-model <- train(
-  x = train_data[, predictor_variables],
-  y = train_data[[response_variable]],
-  method = "rf",
-  trControl = control,
-  tuneGrid = hyperparameter_grid
-)
-
-# Menampilkan hasil terbaik
-print(model)
-
-# Prediksi pada data uji
-predictions <- predict(model, newdata = test_data)
-
-# Evaluasi model (gantilah dengan metrik evaluasi yang sesuai untuk regresi)
-rmse <- sqrt(mean((test_data$Y - predictions)^2))
-cat("RMSE:", rmse, "\n")
-
-```
-
 ```{r}
 # Membuat model RF
-model_rf <- randomForest(Production ~ Rainfall + Humidity + Wind_Velocity + Temperature + Sunshine_Duration + Area + Productivity, data = data_training, ntree = 200, mtry = floor(sqrt(ncol(data_training))), importance = TRUE)
+model_rf <- randomForest(Production ~ Rainfall + Humidity + Wind_Velocity + Temperature + Sunshine_Duration + Area + Productivity, data = data_training, ntree = 200, mtry = floor(log2(ncol(data_training))), min_sample_splt = 2, min_sample_leaf = 1, max_dept = NULL, importance = TRUE)
 
 summary(model_rf)
 ```
@@ -956,7 +815,6 @@ ggplot(var_importance_rf, aes(x = reorder(Variable, Importance), y = Importance)
 
 ```{r}
 # Evaluasi RF Model
-library(Metrics)
 
 # Hitung MAE
 mae_value_rf <- mae(data_testing$Production, predictions_rf)
@@ -980,74 +838,6 @@ cat(paste("MAPE: ", mape_value_rf, "%\n"))
 ## SVR Model
 
 ```{r}
-padi_svr <- padi_select
-
-# Set seed untuk reproduktibilitas
-set.seed(123)
-
-# Data
-n <- 100
-padi_svr <- data.frame(
-  X1 = rnorm(n),
-  X2 = rnorm(n),
-  Y = 0.5 * rnorm(n) + 2 * rnorm(n, mean = 1)
-)
-
-# Split dataset menjadi data pelatihan dan data uji
-train_indices <- sample(seq_len(n), size = 0.7 * n)
-train_data <- padi_svr[train_indices, ]
-test_data <- padi_svr[-train_indices, ]
-
-# Menetapkan variabel respons dan prediktor
-response_variable <- "Y"
-predictor_variables <- setdiff(names(train_data), response_variable)
-
-# Membuat grid hyperparameter untuk Random Search pada SVR
-hyperparameter_grid <- expand.grid(
-  cost = 10^runif(10, -2, 2),  # Contoh variasi nilai cost (log scale)
-  gamma = 10^runif(10, -2, 2)  # Contoh variasi nilai gamma (log scale)
-)
-
-# Melakukan Random Search dengan model SVM
-best_rmse <- Inf
-best_svm_model <- NULL
-
-for (i in 1:nrow(hyperparameter_grid)) {
-  # Membuat model SVM dengan parameter tertentu 
-  svm_model <- svm(
-    formula = Y ~ .,
-    data = train_data,
-    cost = hyperparameter_grid$cost[i],
-    gamma = hyperparameter_grid$gamma[i]
-  )
-
-  # Prediksi pada data uji
-  predictions <- predict(svm_model, newdata = test_data)
-
-  # Evaluasi model
-  rmse <- sqrt(mean((test_data$Y - predictions)^2))
-
-  # Memperbarui model terbaik jika ditemukan
-  if (rmse < best_rmse) {
-    best_rmse <- rmse
-    best_svm_model <- svm_model
-  }
-}
-
-# Menampilkan model terbaik
-print(best_svm_model)
-
-# Prediksi pada data uji menggunakan model terbaik
-predictions <- predict(best_svm_model, newdata = test_data)
-
-# Evaluasi model terbaik (gantilah dengan metrik evaluasi yang sesuai untuk regresi)
-rmse <- sqrt(mean((test_data$Y - predictions)^2))
-cat("RMSE:", rmse, "\n")
-
-
-```
-
-```{r}
 # Menentukan variabel respons dan prediktor
 response_variable <- "Production"
 predictor_variables <- c("Area", "Productivity", "Rainfall", "Humidity", "Wind_Velocity", "Temperature", "Sunshine_Duration")
@@ -1067,7 +857,7 @@ test_data_scaled <- predict(preproc, test_data[, predictor_variables])
 
 ```{r}
 # Membuat model SVR
-model_svr <- svm(train_data_scaled[, predictor_variables], train_data[[response_variable]], kernel = "linear", cost = 1.33548, epsilon = 0.1, gamma = 0.01471221)
+model_svr <- svm(train_data_scaled[, predictor_variables], train_data[[response_variable]], kernel = "radial", cost = 0.1, epsilon = 0.01, gamma = 0.1)
 
 ```
 
@@ -1105,7 +895,6 @@ ggplot(data = result_data_svr, aes(x = 1:length(Production))) +
 
 ```{r}
 # Evaluasi SVR Model
-library(Metrics)
 
 # Hitung MAE
 mae_value_svr <- mae(data_testing$Production, predictions_svr)
@@ -1154,81 +943,6 @@ ggplot(var_importance, aes(x = variable, y = importance)) +
 ## XGBoost Model
 
 ```{r}
-padi_xgb <- padi_select
-
-# Set seed untuk reproduktibilitas
-set.seed(123)
-
-
-# Data
-n <- 100
-padi_xgb <- data.frame(
-  X1 = rnorm(n),
-  X2 = rnorm(n),
-  Y = 0.5 * rnorm(n) + 2 * rnorm(n, mean = 1)
-)
- 
-
-# Split dataset menjadi data pelatihan dan data uji
-train_indices <- sample(seq_len(n), size = 0.8 * n)
-train_data <- padi_xgb[train_indices, ]
-test_data <- padi_xgb[-train_indices, ]
-
-# Menetapkan variabel respons dan prediktor
-response_variable <- "Y"
-predictor_variables <- setdiff(names(train_data), response_variable)
-
-# Membuat grid hyperparameter untuk Random Search pada XGBoost Regression
-hyperparameter_grid <- expand.grid(
-  eta = runif(10, 0.01, 0.3),        # Contoh variasi nilai learning rate
-  max_depth = sample(3:10, 10),       # Contoh variasi nilai max_depth
-  nrounds = sample(50:100, 10)        # Contoh variasi nilai nrounds
-)
-
-# Melakukan Random Search dengan model XGBoost Regression
-best_rmse <- Inf
-best_xgb_model <- NULL
-
-for (i in 1:nrow(hyperparameter_grid)) {
-  # Membuat model XGBoost dengan parameter tertentu
-  xgb_model <- xgboost(
-    data = as.matrix(train_data[, predictor_variables]),
-    label = train_data[[response_variable]],
-    eta = hyperparameter_grid$eta[i],
-    max_depth = hyperparameter_grid$max_depth[i],
-    nrounds = hyperparameter_grid$nrounds[i],
-    objective = "reg:squarederror"
-  )
-
-  # Prediksi pada data uji
-  predictions <- predict(xgb_model, newdata = as.matrix(test_data[, predictor_variables]))
-
-  # Evaluasi model
-  rmse <- sqrt(mean((test_data$Y - predictions)^2))
-
-  # Memperbarui model terbaik jika ditemukan
-  if (rmse < best_rmse) {
-    best_rmse <- rmse
-    best_xgb_model <- xgb_model
-  }
-}
-
-# Menampilkan model terbaik
-print(best_xgb_model)
-
-# Prediksi pada data uji menggunakan model terbaik
-predictions <- predict(best_xgb_model, newdata = as.matrix(test_data[, predictor_variables]))
-
-# Evaluasi model terbaik (gantilah dengan metrik evaluasi yang sesuai untuk regresi)
-rmse <- sqrt(mean((test_data$Y - predictions)^2))
-cat("RMSE:", rmse, "\n")
-
-```
-
-
-
-
-```{r}
 # Mengonversi data frame ke matriks
 X_train <- data.matrix(data_training[, c("Rainfall", "Humidity", "Wind_Velocity", "Temperature", "Sunshine_Duration", "Area", "Productivity")])
 y_train <- data_training$Production
@@ -1239,7 +953,7 @@ X_test <- data.matrix(data_testing[, c("Rainfall", "Humidity", "Wind_Velocity", 
 ```{r}
 # Membuat model XGBoost
 xgb_data_train <- xgb.DMatrix(data = X_train, label = y_train)
-model_xgb <- xgboost(data = xgb_data_train, nrounds = 100, objective = "reg:squarederror", booster = "gbtree", eta = 0.3)
+model_xgb <- xgboost(data = xgb_data_train, nrounds = 200, objective = "reg:squarederror", booster = "gbtree", eta = 0.1)
 ```
 
 ```{r}
@@ -1319,9 +1033,9 @@ gbm_model <- gbm(
   formula = as.formula(paste(response_variable, "~", paste(predictor_variables, collapse = " + "))),
   data = data_training,
   distribution = "gaussian",  # Sesuaikan dengan distribusi data Anda
-  n.trees = 100,  # Jumlah pohon
-  interaction.depth = 3,  # Kedalaman interaksi
-  shrinkage = 0.1,  # Shrinkage atau learning rate
+  n.trees = 200,  # Jumlah pohon
+  interaction.depth = 5,  # Kedalaman interaksi
+  shrinkage = 0.01,  # Shrinkage atau learning rate
   cv.folds = 5,  # Jumlah lipatan validasi silang
   verbose = TRUE
 )
@@ -1329,7 +1043,7 @@ gbm_model <- gbm(
 
 ```{r}
 # Melakukan prediksi pada set pengujian
-predictions_gbm <- predict(gbm_model, newdata = data_testing, n.trees = 100, type = "response")
+predictions_gbm <- predict(gbm_model, newdata = data_testing, n.trees = 200, type = "response")
 
 ```
 
@@ -1415,7 +1129,7 @@ knn_model <- train(
   method = "knn",
   preProcess = c("center", "scale"),  # Preprocess data (standardization)
   trControl = trainControl(method = "cv", number = 5),  # Cross-validation
-  weights = "uniform",
+  weights = "distance",
   tuneGrid = tuned_params
 )
 ```
@@ -1519,11 +1233,11 @@ model %>% compile(
 history <- model %>% fit(
   x = as.matrix(train_data[, predictor_variables]),
   y = train_data[[response_variable]],
-  epochs = 100,  # Jumlah iterasi pelatihan
+  epochs = 50,  # Jumlah iterasi pelatihan
   validation_split = 0.2,  # Pembagian data validasi
-  batch_size = 32,
-  hidden_neurons = c(5,2),
+  batch_size = 64,
   learning_rate = 0.001,
+  hidden_neurons = c(5,2),
   verbose = 1
 )
 ```
@@ -1647,7 +1361,7 @@ decision_tree_model <- rpart(
   formula = as.formula(paste(response_variable, "~", paste(predictor_variables, collapse = " + "))),
   data = train_data,
   method = "anova",
-  control = rpart.control(minsplit = 2, cp = 0.007, minleaf = 1)  # Hyperparameter control
+  control = rpart.control(minsplit = 2, cp = 0.001)  # Hyperparameter control
 )
 ```
 
@@ -1775,7 +1489,7 @@ model_performance
 ```
 
 ```{r}
-write.csv(model_performance, file = "matrik_1.csv", row.names = TRUE)
+write.csv(model_performance, file = "matrik_2.csv", row.names = TRUE)
 ```
 
 

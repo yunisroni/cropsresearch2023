@@ -318,6 +318,7 @@ gs_padi_rf_model
 gs_predictions_rf_padi <- predict(gs_padi_rf_model, datapadi_test)
 gs_predictions_rf_padi
 ```
+
 ```{r}
 # Visualisasi Hasil
 gs_result_datapadi_rf <- data.frame(Produksi = datapadi_test$Produksi, Predictions = gs_predictions_rf_padi)
@@ -328,8 +329,8 @@ ggplot(data = gs_result_datapadi_rf, aes(x = Produksi, y = Predictions)) +
   geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
   scale_x_continuous(labels = scales::comma) +
   scale_y_continuous(labels = scales::comma) +
-  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
-  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
+  labs(x = "Actual Production (Ton)", y = "Production Prediction (Ton)") +
+  ggtitle("Comparison of Actual Production and RF Model Prediction") +
   theme_minimal()
 ```
 
@@ -373,6 +374,7 @@ rs_padi_rf_model
 rs_predictions_rf_padi <- predict(rs_padi_rf_model, datapadi_test)
 rs_predictions_rf_padi
 ```
+
 ```{r}
 # Visualisasi Hasil
 rs_result_datapadi_rf <- data.frame(Produksi = datapadi_test$Produksi, Predictions = rs_predictions_rf_padi)
@@ -383,10 +385,14 @@ ggplot(data = rs_result_datapadi_rf, aes(x = Produksi, y = Predictions)) +
   geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
   scale_x_continuous(labels = scales::comma) +
   scale_y_continuous(labels = scales::comma) +
-  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
-  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model RF") +
+  labs(x = "Actual Production (Ton)", y = "Production Prediction (Ton)") +
+  ggtitle("Comparison of Actual Production and RF Model Prediction") +
   theme_minimal()
 ```
+
+
+
+
 ```{r}
 # Evaluasi RF Model
 
@@ -423,7 +429,7 @@ model_performance_padi_rf <- data.frame(
 )
 model_performance_padi_rf
 ```
-Berdasarkan hasil diatas, kalau dilihat dari performance matrik tingkat kesalahan yang paling rendah (MAPE), maka model **Random Forest dengan Grid Search** yang dianggap sebagai model terbaik dalam hal akurasi prediksi produksi padi.
+Berdasarkan hasil diatas, kalau dilihat dari performance matrik tingkat kesalahan yang paling rendah (MAPE), maka model **Random Forest dengan Random Search** yang dianggap sebagai model terbaik dalam hal akurasi prediksi produksi padi.
 
 
 ##c. Model SVR
@@ -475,6 +481,7 @@ gs_predictions_svr_padi_radial <- predict(gs_padi_svr_model_radial, datapadi_tes
 gs_predictions_svr_padi_radial
 ```
 
+
 ```{r}
 # Visualisasi hasil prediksi
 gs_result_datapadi_svr_radial <- data.frame(Produksi = datapadi_test$Produksi, Predictions = gs_predictions_svr_padi_radial)
@@ -482,12 +489,13 @@ gs_result_datapadi_svr_radial <- data.frame(Produksi = datapadi_test$Produksi, P
 ggplot(data = gs_result_datapadi_svr_radial, aes(x = Produksi, y = Predictions)) +
   geom_point() +
   geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
-  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  labs(x = "Actual Production (Ton)", y = "Production Prediction (Ton)") +
   scale_x_continuous(labels = scales::comma) +
   scale_y_continuous(labels = scales::comma) +
-  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model SVR") +
+  ggtitle("Comparison of Actual and Predicted Production of SVR Model") +
   theme_minimal()
 ```
+
 ```{r}
 # Evaluasi SVR Model
 
@@ -549,6 +557,20 @@ rs_predictions_svr_padi_radial
 ```
 
 ```{r}
+# Visualisasi hasil prediksi
+rs_result_datapadi_svr_radial <- data.frame(Produksi = datapadi_test$Produksi, Predictions = rs_predictions_svr_padi_radial)
+
+ggplot(data = rs_result_datapadi_svr_radial, aes(x = Produksi, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  labs(x = "Actual Production (Ton)", y = "Production Prediction (Ton)") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  ggtitle("Comparison of Actual and Predicted Production of SVR Model") +
+  theme_minimal()
+```
+
+```{r}
 # Evaluasi SVR Model
 
 # Hitung MAE
@@ -584,7 +606,7 @@ model_performance_padi_svr_radial <- data.frame(
 )
 model_performance_padi_svr_radial
 ```
-Berdasarkan hasil diatas, kalau dilihat dari performance matrik tingkat kesalahan yang paling rendah (MAPE), maka model **SVR dengan Random Search** yang dianggap sebagai model terbaik dalam hal akurasi prediksi produksi padi.
+Berdasarkan hasil diatas, kalau dilihat dari performance matrik tingkat kesalahan yang paling rendah (MAPE), maka model **SVR Radial dengan Random Search** yang dianggap sebagai model terbaik dalam hal akurasi prediksi produksi padi.
 
 
 ###- Kernel Linear
@@ -737,7 +759,7 @@ model_performance_padi_svr_linear <- data.frame(
 )
 model_performance_padi_svr_linear
 ```
-Berdasarkan hasil diatas, kalau dilihat dari performance matrik tingkat kesalahan yang paling rendah (MAPE), maka model **SVR dengan Random Search** yang dianggap sebagai model terbaik dalam hal akurasi prediksi produksi padi.
+Berdasarkan hasil diatas, kalau dilihat dari performance matrik tingkat kesalahan yang paling rendah (MAPE), maka model **SVR Linear dengan Random Search** yang dianggap sebagai model terbaik dalam hal akurasi prediksi produksi padi.
 
 
 
