@@ -605,15 +605,17 @@ Hasil analisis regresi linear dari model regresi yang mencoba memprediksi variab
 ### Interpretasi Jagung 
 Berdasarkan hasil analisis dengan model VAR, analisis kausalitas, dan regresi linear ini, kita dapat menyimpulkan bahwa:
 
-1. Dalam model VAR, bahwa variabel avg_rainfall berdampak pada produktivitas jagung karena nilai P-Value dari 2 lag yaitu  Lag1 dan lag4lebih rendah dari 0,05. tetapi avg_rainfall tidak berdampak pada produksi jagung karena nilai P-Value lebih besar dari 0,05  
+1. Dalam model VAR, bahwa variabel avg_rainfall berdampak pada produktivitas jagung karena nilai P-Value dari 2 lag yaitu  Lag1 dan lag4lebih rendah dari 0,05. dan avg_rainfall berdampak pada produksi jagung karena nilai P-Value di lag 1 dan lag 4 lebih besar dari 0,05  
 
-2. Berdasarkan hasil uji Granger Causality dan Instantaneous Causality, ada bukti statistik yang kuat untuk mendukung adanya hubungan sebab-akibat antara "avg_rainfall" dan "Produktivitas" dalam model VAR dalam jangka waktu lag tetapi bukan dalam jangka waktu instan.
+2. Berdasarkan hasil uji Granger Causality dan Instantaneous Causality, ada bukti statistik yang kuat untuk mendukung adanya hubungan sebab-akibat antara "avg_rainfall", "produksi" dan "Produktivitas" dalam model VAR dalam jangka waktu lag tetapi bukan dalam jangka waktu instan.
 
-3. Berdasarkan hasil analisis regresi didapatkan bahwa variabel "avg_rainfall"memiliki pengaruh yang signifikan terhadap variabel "Produktivitas," 
+3. Berdasarkan hasil analisis regresi didapatkan bahwa variabel "avg_rainfall"memiliki pengaruh yang signifikan terhadap variabel "Produktivitas," tetapi tidak berpegaruh pada produksi.
+
 
 ```{r}
 # Menghitung residual dari model VAR
 residuals_var <- residuals(var_model_jagung_Sumatera)
+residuals_var
 ```
 
 ```{r}
@@ -628,24 +630,25 @@ cat(paste("MAPE Avg Rainfall: ", mape_avg_rainfall, "%\n"))
 cat(paste("MAPE Produktivitas: ", mape_produktivitas, "%\n"))
 
 ```
-
+MAPE Produksi:  3510.44615753154 %
+MAPE Avg Rainfall:  10.1821945593109 %
+MAPE Produktivitas:  13.3046466567002 %
 
 ```{r}
 # Menghitung MSE, MAE, MAPE, dan RMSE
 mse_value <- mean(residuals_var^2)
 mae_value <- mean(abs(residuals_var))
 rmse_value <- sqrt(mse_value)
-```
 
-
-```{r}
 # Menampilkan hasil evaluasi
 cat(paste("MSE: ", mse_value, "\n"))
 cat(paste("MAE: ", mae_value, "\n"))
 cat(paste("RMSE: ", rmse_value, "\n"))
 
 ```
-
+MSE:  12980424017.2115 
+MAE:  31831.2209370661 
+RMSE:  113931.66380428
 
 
 ### Membuat Prediksi Jagung Sumatera dengan Model VAR
@@ -726,67 +729,12 @@ plot_avgrainfall <- ggplot(predicted_data, aes(x = Tahun, y = avg_rainfall, colo
 print(plot_avgrainfall)
 ```
 
-### Menguji kinerja model
-```{r}
-# Mengambil data aktual untuk periode yang sama
-actual_data <- Sumatera_jagung %>%
-  filter(Tahun >= 2023 & Tahun <= 2032)
-actual_data
-```
+
 
 ```{r}
-# Pilih variabel yang akan diprediks
 prediksi_jagung_Sumatera <- predicted_data[, c("Produksi", "avg_rainfall", "Produktivitas")]
 prediksi_jagung_Sumatera
 ```
-```{r}
-mae_Jagung <- mae(ts_data_jagung_Sumatera[,1], predicted_data[,1])
-mae_Jagung
-```
-```{r}
-mae_Jagung<- mae(ts_data_jagung_Sumatera[,1], prediksi_jagung_Sumatera[,1])
-mae_Jagung
-```
-
-
-
-```{r}
-# Mengambil nilai sebenarnya
-actual_values_jagung_Sumatera <- ts_data_jagung_Sumatera[(nrow(ts_data_jagung_Sumatera) - best_lag_jagung_Sumatera$selection[1] + 1):nrow(ts_data_jagung_Sumatera), "Produksi"]
-actual_values_jagung_Sumatera
-```
-
-```{r}
-# Menghitung metrik evaluasi (RMSE, MAPE, MAE, MSE)
-rmse_jagung_Sumatera1 <- sqrt(mean((data_var_jagung - prediksi_jagung_Sumatera)^2))
-mape_jagung_Sumatera1 <- mean(abs((data_var_jagung- prediksi_jagung_Sumatera) / data_var_jagung)) * 100
-mae_jagung_Sumatera1 <- mean(abs(data_var_jagung - prediksi_jagung_Sumatera))
-mse_jagung_Sumatera1 <- mean((data_for_var - prediksi_jagung_Sumatera)^2)
-```
-```{r}
-# Menampilkan hasil evaluasi
-print(paste("RMSE Jagung Sumatera: ", rmse_jagung_Sumatera1))
-print(paste("MAPE Jagung Sumatera: ", mape_jagung_Sumatera1))
-print(paste("MAE Jagung Sumatera: ", mae_jagung_Sumatera1))
-print(paste("MSE Jagung Sumatera: ", mse_jagung_Sumatera1))
-```
-```{r}
-
-# Menghitung error measures
-rmse_1 <- sqrt(mean(data_var_jagung$prediksi_jagung_Sumatera^2))  # RMSE
-mae_1 <- mean(abs(data_var_jagung$prediksi_jagung_Sumatera))  # MAE
-mape_1 <- mean(abs(data_var_jagung$E1 / var_pred$fcst$mean)) * 100  # MAPE
-mse_1 <- mean(data_var_jagung$E1^2)  # MSE
-```
-
-```{r}
-# Menampilkan hasil
-print(paste("RMSE: ", rmse_1))
-print(paste("MAE: ", mae))
-print(paste("MAPE: ", mape))
-print(paste("MSE: ", mse))
-```
-
 
 ```{r}
 #Prediksi dan menghitung kesalahan prediksi
@@ -794,25 +742,11 @@ forecastVar <- predicted_data$mean
 observedVar <- as.data.frame(data_var_jagung[, -ncol(data_var_jagung), ncol(data_var_jagung):1])
 ```
 
-
 ```{r}
 predictedVar <- as.matrix(forecastVar[, ncol(forecastVar):1])
 actualVar <- as.matrix(observedVar[, ncol(observedVar):1])
 ```
 
-
-```{r}
-# Menghitung RMSE, MAE, MAPE, MSE
-RMSE_var <- rmse(predictedVar, actualVar)
-MAE_var <- mae(predictedVar, actualVar)
-MAPE_var <- mape(predictedVar, actualVar)
-MSE_var <- mse(predictedVar, actualVar)
-
-print(paste("RMSE: ", RMSE_var))
-print(paste("MAE: ", MAE_var))
-print(paste("MAPE: ", MAPE_var))
-print(paste("MSE: ", MSE_var))
-```
 
 ```{r}
 # Merubah type data karakter menjadi numeric
@@ -859,19 +793,18 @@ mae <- function(actual, predicted) {
 }
 ```
 
-
 ```{r}
 # Hitung MAE
-mae_value_var2 <- mae(data_var_jagung$Produksi, prediksi_jagung_Sumatera$Produksi)
+mae_value_var2 <- mae(data_var_jagung$Produktivitas, prediksi_jagung_Sumatera$Produktivitas)
 
 # Hitung MSE
-mse_value_var2 <- mse(data_var_jagung$Produksi, prediksi_jagung_Sumatera$Produksi)
+mse_value_var2 <- mse(data_var_jagung$Produktivitas, prediksi_jagung_Sumatera$Produktivitas)
 
 # Hitung RMSE
-rmse_value_var2 <- rmse(data_var_jagung$Produksi, prediksi_jagung_Sumatera$Produksi)
+rmse_value_var2 <- rmse(data_var_jagung$Produktivitas, prediksi_jagung_Sumatera$Produktivitas)
 
 # Hitung MAPE
-mape_value_var2 <- mape(data_var_jagung$Produksi, prediksi_jagung_Sumatera$Produksi)
+mape_value_var2 <- mape(data_var_jagung$Produktivitas, prediksi_jagung_Sumatera$Produktivitas)
 
 # Tampilkan hasil evaluasi
 cat(paste("MAE: ", mae_value_var2, "\n"))
@@ -879,7 +812,10 @@ cat(paste("MSE: ", mse_value_var2, "\n"))
 cat(paste("RMSE: ", rmse_value_var2, "\n"))
 cat(paste("MAPE: ", mape_value_var2, "%\n"))
 ```
-
+MAE:  18.0911332412296 
+MSE:  410.857302551186 
+RMSE:  20.2696152541479 
+MAPE:  0.679935093371022 %
 
 
 
