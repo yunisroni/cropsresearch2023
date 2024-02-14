@@ -199,7 +199,7 @@ T+12  7.741 1.111
 ```{r}
 # Ekstraksi hasil prediksi dari objek forecast_GARCH
 pred_garch_pj <- as.numeric(forecast_garch@forecast$seriesFor[, 1])
-pred_garch
+pred_garch_pj
 ```
 output:
 [1] 7.740785 7.740785 7.740785 7.740785 7.740785 7.740785 7.740785 7.740785 7.740785 7.740785 7.740785 7.740785

@@ -546,6 +546,191 @@ Terdapat bukti bahwa curah hujan (avg_rainfall) tidak memiliki dampak yang signi
 ## Interpretasi kacang kedelai
 Berdasarkan hasil analisis dengan model VAR, analisis kausalitas, dan regresi linear ini, kita dapat menyimpulkan bahwa avg_rainfall tidak mempergaruhi produksi dan produktivitas Kacang Kedelai di Sumatera.
 
+### Prediksi dengan GARCH
+```{r}
+# Mengekstrak residu dari model VAR
+residual_kedelai <- residuals(var_model_kk)
+```
+
+```{r}
+# Buat data frame baru dari nilai residu
+residu_var_kk <- data.frame(residual_kedelai)
+# Tampilkan data frame baru
+print(residu_var_kk)
+```
+
+```{r}
+ #Mengecek outlier
+boxplot(residual_kedelai, main = "Boxplot of Residuals", ylab = "Residuals")
+# Mengecek normalitas data
+shapiro.test(residual_kedelai)
+```
+
+```{r}
+# karena model garch mengunakan distribusi normal, maka perlu mengecek data berdistribusi normal atau tidak
+shapiro.test(train_data_kk$Produksi)
+shapiro.test(train_data_kk$Produktivitas)
+shapiro.test(train_data_kk$avg_rainfall)
+```
+
+```{r}
+# Membuat data frame baru dengan transformasi kuadrat
+df_kuadrat <- data.frame(Produksi_kuadrat = residu_var_kk$Produksi^2)
+df_kuadrat
+```
+
+```{r}
+# Membuat data frame baru dengan transformasi kuadrat akar
+df_akar <- data.frame(Produksi_akar = sqrt(pmax(residu_var_kk$Produksi, 0)))
+```
+
+```{r}
+# Buat objek data frame baru dengan transformasi Box-Cox
+df_boxcox <- data.frame(Produksi_boxcox = BoxCox(residu_var_kk$Produksi, lambda = "auto"))
+```
+
+```{r}
+# Transformasi residual menggunakan transformasi logaritma
+residu_var_kk$Produksi_log <- log(abs(residu_var_kk$Produksi) + 1)
+```
+
+```{r}
+shapiro.test(df_kuadrat$Produksi)
+shapiro.test(df_boxcox$Produksi_boxcox)
+shapiro.test(residu_var_kk$Produksi_log)
+shapiro.test(df_akar$Produksi_akar)
+```
+
+```{r}
+# Memodelkan GARCH pada residu VAR
+garch_model <- ugarchspec(variance.model = list(model = "sGARCH", garchOrder = c(1, 1)),
+                           mean.model = list(armaOrder = c(0, 0)))
+```
+
+```{r}
+# Estimasi parameter GARCH
+garch_fit_ptkk <- ugarchfit(spec = garch_model, data = residu_var_kk$Produktivitas)
+# Menampilkan ringkasan model GARCH
+show(garch_fit_ptkk)
+```
+```{r}
+# Menyimpan hasil prediksi
+prediksi_garch_ptkk <- ugarchforecast(garch_fit_ptkk, n.ahead = 10)
+prediksi_garch_ptkk
+```
+
+
+```{r}
+# Estimasi parameter GARCH
+garch_fit_avgkk <- ugarchfit(spec = garch_model, data = residu_var_kk$avg_rainfall)
+# Menampilkan ringkasan model GARCH
+show(garch_fit_avgkk)
+```
+```{r}
+# Menyimpan hasil prediksi
+prediksi_garch_avgkk <- ugarchforecast(garch_fit_avgkk, n.ahead = 10)
+prediksi_garch_avgkk
+```
+
+
+```{r}
+# Estimasi parameter GARCH
+garch_fit_pjkk <- ugarchfit(spec = garch_model, data = residu_var_kk$Produksi_log)
+# Menampilkan ringkasan model GARCH
+show(garch_fit_pjkk)
+```
+```{r}
+# Menyimpan hasil prediksi
+prediksi_garch_pjkk <- ugarchforecast(garch_fit_pjkk, n.ahead = 10)
+prediksi_garch_pjkk
+```
+                                                                                                          
+                                                                                                          
+```{r}
+# Mengambil nilai prediksi GARCH dan membuat menjadi data frame
+Prediksi_garch_kedelai <- data.frame(Produksi = as.numeric(prediksi_garch_pjkk@forecast$seriesFor[, 1]),
+                                    Avg_Rainfall = as.numeric(prediksi_garch_avgkk@forecast$seriesFor[, 1]),
+                                    Produktivitas = as.numeric(prediksi_garch_ptkk@forecast$seriesFor[, 1]))
+Prediksi_garch_kedelai
+```
+
+```{r}
+# Menambahkan kolom tahun
+Prediksi_garch_kedelai$Tahun <- seq(2023, 2032)
+# Menampilkan data frame
+Prediksi_garch_kedelai
+```
+
+```{r}
+# Visualisasi tren produksi kedelai
+plot_tren_produksi <- ggplot(Prediksi_garch_kedelai
+                             , aes(x = Tahun, y = Produksi, color = "Prediksi")) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Prediksi Tren Produksi Kedelai Sumatera (2023-2033)",
+       x = "Tahun",
+       y = "Produksi Jagung",
+       color = "Metode Prediksi") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "right")
+
+# Menampilkan plot
+print(plot_tren_produksi)
+```
+```{r}
+# Mengambil data produksi jagung selama 10 tahun terakhir
+data_aktual_kedelai <- Sumatera_Kedelai[format(Sumatera_Kedelai$Tahun, "%Y") >= "2013", "Produksi"]
+data_aktual_kedelai
+```
+
+
+```{r}
+prediksi_produksi_kk <-Prediksi_garch_kedelai$Produksi
+prediksi_produksi_kk
+```
+```{r}
+data_aktual_kedelai <- as.numeric(data_aktual_kedelai)
+```
+```{r}
+data_aktual_kedelai <- as.numeric(data_aktual_kedelai$Produksi)
+```
+
+```{r}
+data_aktual_kedelai <- as.numeric(unlist(data_aktual_kedelai))
+```
+
+```{r}
+prediksi_produksi_kk <- as.numeric(prediksi_produksi_kk)
+```
+
+```{r}
+prediksi_produksi_kk <- as.numeric(Prediksi_garch_kedelai$Produksi)
+```
+
+```{r}
+prediksi_produksi_kk <- as.numeric(unlist(Prediksi_garch_kedelai$Produksi))
+```
+
+
+```{r}
+# Menghitung nilai RMSE, MAPE, MAE, dan MSE
+rmse_garch_kk <- sqrt(mean((data_aktual_kedelai - prediksi_produksi_kk)^2))
+mape_garch_kk <- mean(abs((data_aktual_kedelai - prediksi_produksi_kk) / data_aktual_kedelai) * 100)
+mae_garch_kk <- mean(abs(data_aktual_kedelai - prediksi_produksi_kk))
+mse_garch_kk <- mean((data_aktual_kedelai - prediksi_produksi_kk)^2)
+
+
+cat("MAPE from garch:", mape_garch_kk, "%\n")
+cat("RMSE:", rmse_garch_kk, "\n")
+cat("MAE:", mae_garch_kk, "\n")
+cat("MSE:", mse_garch_kk, "\n")
+
+```
+
+
+# Menampilkan data frame hasil evaluasi
+
 
 ### Prediksi Kedelai dengan Model VAR
 ```{r}
