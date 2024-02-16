@@ -572,8 +572,6 @@ summary(var_model_jagung_Sumatera)
 
 Estimation results for equation Produksi: avg_rainfall.l1 -3.674e+04 1.162e+04 -3.161 0.00176 \*\* avg_rainfall.l4 2.745e+04 1.207e+04 2.275 0.02375 \* F-statistic: 115.1 on 16 and 258 DF, p-value: \< 2.2e-16
 
-Estimation results for equation avg_rainfall: Produktivitas.l4 3.193e-02 1.174e-02 2.720 0.00697 **Produktivitas.l5 -4.793e-02 9.219e-03 -5.199 4.08e-07** \* F-statistic: 63.7 on 16 and 258 DF, p-value: \< 2.2e-16
-
 Estimation results for equation Produktivitas: avg_rainfall.l1 -1.945e+00 4.242e-01 -4.586 7.05e-06 ***avg_rainfall.l4 2.014e+00 4.404e-01 4.574 7.44e-06*** F-statistic: 63.7 on 16 and 258 DF, p-value: \< 2.2e-16
 
 ### Uji Kolersi Pearson Jagung
@@ -647,7 +645,6 @@ Berdasarkan hasil analisis dengan model VAR, analisis kausalitas, dan regresi li
 
 3.  Berdasarkan hasil analisis regresi didapatkan bahwa variabel "avg_rainfall"memiliki pengaruh yang signifikan terhadap variabel "Produktivitas," tetapi tidak berpegaruh pada produksi.
 
-
 ### ANALISIS PREDIKSI DENGAN GARCH
 
 ```{r}
@@ -670,14 +667,14 @@ boxplot(residuals_var_jagung, main = "Boxplot of Residuals", ylab = "Residuals")
 shapiro.test(residuals_var_jagung)
 ```
 
-data: residuals_var W = 0.3585, p-value < 2.2e-16
-Hasil dari uji Shapiro-Wilk menunjukkan nilai p-value yang rendah,yang menunjukkan bahwa data residual tidak normal. Hal ini dapat menyebabkan kesalahan pada proses pemodelan, karena model GARCH mengasumsikan bahwa data residual normal.
+data: residuals_var W = 0.3585, p-value \< 2.2e-16 Hasil dari uji Shapiro-Wilk menunjukkan nilai p-value yang rendah,yang menunjukkan bahwa data residual tidak normal. Hal ini dapat menyebabkan kesalahan pada proses pemodelan, karena model GARCH mengasumsikan bahwa data residual normal.
 
 ```{r}
 # Buat data frame baru dari nilai residu
 residu_var_SJ <- data.frame(residuals_var_jagung)
 residu_var_SJ
 ```
+
 ```{r}
 # Transformasi residual menggunakan transformasi logaritma
 residu_var_SJ$Produksi_log <- log(abs(residu_var_SJ$Produksi) + 1)
@@ -699,8 +696,9 @@ garch_pt_jagung <- ugarchfit(spec = garch_model, data = residu_var_SJ$Produktivi
 # Menampilkan ringkasan model GARCH
 show(garch_pt_jagung)
 ```
+
 ```{r}
-# Menyimpan hasil prediksi
+# Menyimpan hasil prediksi produktivitas
 prediksi_garch_ptj <- ugarchforecast(garch_pt_jagung, n.ahead = 10)
 prediksi_garch_ptj
 ```
@@ -711,8 +709,9 @@ garch_avg_jagung <- ugarchfit(spec = garch_model, data = residu_var_SJ$avg_rainf
 # Menampilkan ringkasan model GARCH
 show(garch_avg_jagung)
 ```
+
 ```{r}
-# Menyimpan hasil prediksi
+# Menyimpan hasil prediksi avg rainfal
 prediksi_garch_avg <- ugarchforecast(garch_avg_jagung, n.ahead = 10)
 prediksi_garch_avg
 ```
@@ -723,17 +722,18 @@ garch_produksi_jagung <- ugarchfit(spec = garch_model, data = residu_var_SJ$Prod
 # Menampilkan ringkasan model GARCH
 show(garch_produksi_jagung)
 ```
+
 ```{r}
-# Menyimpan hasil prediksi
+# Menyimpan hasil prediksi produksi
 prediksi_garch_produksi_j <- ugarchforecast(garch_produksi_jagung, n.ahead = 10)
 prediksi_garch_produksi_j
 ```
-                                                                                                          
+
 ```{r}
-# Mengambil nilai prediksi GARCH dan membuat menjadi data frame
-prediksi_garch_jagung <- data.frame(Produksi = as.numeric(prediksi_garch_ptj@forecast$seriesFor[, 1]),
+# Mengambil nilai prediksi GARCH Produksi, produktivitas dan rainfall dan membuat menjadi data frame
+prediksi_garch_jagung <- data.frame(Produktivitas = as.numeric(prediksi_garch_ptj@forecast$seriesFor[, 1]),
                                     Avg_Rainfall = as.numeric(prediksi_garch_avg@forecast$seriesFor[, 1]),
-                                    Produktivitas = as.numeric(prediksi_garch_produksi_j@forecast$seriesFor[, 1]))
+                                    Produksi = as.numeric(prediksi_garch_produksi_j@forecast$seriesFor[, 1]))
 prediksi_garch_jagung
 ```
 
@@ -812,6 +812,7 @@ data_aktual_j<- as.numeric(data_aktual_j$Produksi)
 
 ```{r}
 prediksi_produksi_j <- as.numeric(prediksi_garch_jagung$Produksi)
+prediksi_produksi_j
 ```
 
 ```{r}
@@ -821,10 +822,10 @@ mape_garch_j <- mean(abs((data_aktual_j - prediksi_produksi_j) / data_aktual_j) 
 mae_garch_j <- mean(abs(data_aktual_j - prediksi_produksi_j))
 mse_garch_j <- mean((data_aktual_j - prediksi_produksi_j)^2)
 
-cat("MAPE from garch:", mape_garch_j, "%\n")
-cat("RMSE:", rmse_garch_j, "\n")
-cat("MAE:", mae_garch_j, "\n")
-cat("MSE:", mse_garch_j, "\n")
+cat("MAPE Produksi jagung:", mape_garch_j, "%\n")
+cat("RMSE Produksi jagung:", rmse_garch_j, "\n")
+cat("MAE Produksi jagung:", mae_garch_j, "\n")
+cat("MSE Produksi jagung:", mse_garch_j, "\n")
 ```
 
 ```{r}
@@ -848,11 +849,16 @@ mape_garch_ptj <- mean(abs((data_aktual_ptj - prediksi_produksi_ptj) / data_aktu
 mae_garch_ptj <- mean(abs(data_aktual_ptj - prediksi_produksi_ptj))
 mse_garch_ptj <- mean((data_aktual_ptj - prediksi_produksi_ptj)^2)
 
-cat("MAPE from garch:", mape_garch_ptj, "%\n")
-cat("RMSE:", rmse_garch_ptj, "\n")
-cat("MAE:", mae_garch_ptj, "\n")
-cat("MSE:", mse_garch_ptj, "\n")
+cat("MAPE Produktivitas jagung:", mape_garch_ptj, "%\n")
+cat("RMSE Produktivitas jagung:", rmse_garch_ptj, "\n")
+cat("MAE Produktivitas jagung:", mae_garch_ptj, "\n")
+cat("MSE Produktivitas jagung:", mse_garch_ptj, "\n")
 ```
+MAPE Produktivitas jagung: 100 %
+RMSE Produktivitas jagung: 53.53347 
+MAE Produktivitas jagung: 51.566 
+MSE Produktivitas jagung: 2865.832 
+
 ```{r}
 # Mengambil data avg rainfall jagung selama 10 tahun terakhir
 data_aktual_rainfal <- Sumatera_jagung[format(Sumatera_jagung$Tahun, "%Y") >= "2013", "avg_rainfall"]
@@ -879,7 +885,6 @@ cat("RMSE:", rmse_garch_rainfall, "\n")
 cat("MAE:", mae_garch_rainfall, "\n")
 cat("MSE:", mse_garch_rainfall, "\n")
 ```
-
 
 ## b.VAR terhadap Kacang Kedelai Sumatera
 
@@ -909,13 +914,20 @@ var_model_kedelai_Sumatera <- VAR(ts_data_kedelai_Sumatera, p = best_lag_kedelai
 summary(var_model_kedelai_Sumatera)
 ```
 
-Estimation results for equation Produksi: Produktivitas.l3 1.133e+03 4.960e+02 2.283 0.02329 \* Multiple R-Squared: 0.6857, F-statistic: 32.99 p-value: \< 2.2e-16
+Estimation results for equation Produksi: 
+Produktivitas.l3 1.133e+03 4.960e+02 2.283 0.02329 
+Multiple R-Squared: 0.6857, F-statistic: 32.99 p-value: \< 2.2e-16
 
-Estimation results for equation avg_rainfall: Produktivitas.l1 7.732e-02 3.726e-02 2.075 0.039016 *Produksi.l4 -1.369e-05 6.630e-06 -2.065 0.039980* \
-avg_rainfall.l4 1.732e-01 6.236e-02 2.777 0.005915 **Produktivitas.l5 -1.423e-01 3.986e-02 -3.569 0.000432** \* Multiple R-Squared: 0.1746,\
-F-statistic: 3.198 , p-value: 5.224e-05
+Estimation results for equation avg_rainfall: 
+Produktivitas.l1 7.732e-02 3.726e-02 2.075 0.039016 *
+Produksi.l4 -1.369e-05 6.630e-06 -2.065 0.039980*
+avg_rainfall.l4 1.732e-01 6.236e-02 2.777 0.005915 **
+Produktivitas.l5 -1.423e-01 3.986e-02 -3.569 0.000432** 
+Multiple R-Squared: 0.1746,F-statistic: 3.198 , p-value: 5.224e-05
 
-Estimation results for equation Produkivitas: Produktivitas.l1 5.199e-01 6.532e-02 7.960 6.66e-14 \*\*\* Multiple R-Squared: 0.3855, F-statistic: 9.487, p-value: \< 2.2e-16
+Estimation results for equation Produkivitas: 
+Produktivitas.l1 5.199e-01 6.532e-02 7.960 6.66e-14 
+Multiple R-Squared: 0.3855, F-statistic: 9.487, p-value: \< 2.2e-16
 
 Berdasarkan hasil Model VAR Porduksi dan produktivitas tidak di pengaruhi oleh avg_rainfall
 
@@ -998,12 +1010,12 @@ boxplot(residuals_var_kedelai, main = "Boxplot of Residuals", ylab = "Residuals"
 shapiro.test(residuals_var_kedelai)
 ```
 
-
 ```{r}
 # Buat data frame baru dari nilai residu
 residu_var_SK <- data.frame(residuals_var_kedelai)
 residu_var_SK
 ```
+
 ```{r}
 # Transformasi residual menggunakan transformasi logaritma
 residu_var_SK$Produksi_log <- log(abs(residu_var_SK$Produksi) + 1)
@@ -1025,6 +1037,7 @@ garch_pt_kedelai <- ugarchfit(spec = garch_model, data = residu_var_SK$Produktiv
 # Menampilkan ringkasan model GARCH
 show(garch_pt_kedelai)
 ```
+
 ```{r}
 # Menyimpan hasil prediksi
 Prediksi_garch_pt_kedelai <- ugarchforecast(garch_pt_kedelai, n.ahead = 10)
@@ -1036,6 +1049,7 @@ Prediksi_garch_pt_kedelai
 garch_avg_kedelai <- ugarchfit(spec = garch_model, data = residu_var_SK$avg_rainfall)
 garch_avg_kedelai
 ```
+
 ```{r}
 # Menyimpan hasil prediksi
 prediksi_garch_avgkk <- ugarchforecast(garch_avg_kedelai, n.ahead = 10)
@@ -1048,17 +1062,18 @@ garch_produksi_kedelai <- ugarchfit(spec = garch_model, data = residu_var_SK$Pro
 # Menampilkan ringkasan model GARCH
 show(garch_produksi_kedelai)
 ```
+
 ```{r}
 # Menyimpan hasil prediksi
 prediksi_garch_produksi_kk <- ugarchforecast(garch_produksi_kedelai, n.ahead = 10)
 prediksi_garch_produksi_kk
 ```
-                                                                                                          
+
 ```{r}
 # Mengambil nilai prediksi GARCH dan membuat menjadi data frame
-prediksi_garch_kedelai <- data.frame(Produksi = as.numeric(Prediksi_garch_pt_kedelai@forecast$seriesFor[, 1]),
-                                    Avg_Rainfall = as.numeric(prediksi_garch_avgkk@forecast$seriesFor[, 1]),
-                                    Produktivitas = as.numeric(prediksi_garch_produksi_kk@forecast$seriesFor[, 1]))
+prediksi_garch_kedelai <- data.frame(Produktivitas = as.numeric(Prediksi_garch_pt_kedelai@forecast$seriesFor[, 1]),
+                                    avg_rainfall = as.numeric(prediksi_garch_avgkk@forecast$seriesFor[, 1]),
+                                    Produksi = as.numeric(prediksi_garch_produksi_kk@forecast$seriesFor[, 1]))
 prediksi_garch_kedelai
 ```
 
@@ -1084,7 +1099,7 @@ plot_predik_produksi_kedelai <- ggplot(prediksi_garch_kedelai
   theme(legend.position = "right")
 
 # Menampilkan plot
-print(plot_tren_produksi_kedelai)
+print(plot_predik_produksi_kedelai)
 ```
 
 ```{r}
@@ -1111,7 +1126,7 @@ plot_predik_avgkk<- ggplot(prediksi_garch_kedelai
                              , aes(x = Tahun, y = avg_rainfall, color = "Prediksi")) +
   geom_line() +
   geom_point() +
-  labs(title = "Prediksi Tren Produksi kedelai Sumatera (2023-2033)",
+  labs(title = "Prediksi avg rainfall kedelai Sumatera (2023-2033)",
        x = "Tahun",
        y = "Produksi kedelai",
        color = "Metode Prediksi") +
@@ -1127,7 +1142,7 @@ print(plot_predik_avgkk)
 
 ```{r}
 # Mengambil data produksi kedelai selama 10 tahun terakhir
-data_aktual_kk <- Sumatera_kedelai[format(Sumatera_kedelai$Tahun, "%Y") >= "2013", "Produksi"]
+data_aktual_kk <- Sumatera_Kedelai[format(Sumatera_Kedelai$Tahun, "%Y") >= "2013", "Produksi"]
 data_aktual_kk
 ```
 
@@ -1146,15 +1161,15 @@ mape_garch_kk <- mean(abs((data_aktual_kk - prediksi_produksi_kk) / data_aktual_
 mae_garch_kk <- mean(abs(data_aktual_kk - prediksi_produksi_kk))
 mse_garch_kk <- mean((data_aktual_kk - prediksi_produksi_kk)^2)
 
-cat("MAPE from garch:", mape_garch_kk, "%\n")
-cat("RMSE:", rmse_garch_kk, "\n")
-cat("MAE:", mae_garch_kk, "\n")
-cat("MSE:", mse_garch_kk, "\n")
+cat("MAPE Produksi Kedelai:", mape_garch_kk, "%\n")
+cat("RMSE Produksi Kedelai:", rmse_garch_kk, "\n")
+cat("MAE Produksi Kedelai:", mae_garch_kk, "\n")
+cat("MSE Produksi Kedelai:", mse_garch_kk, "\n")
 ```
 
 ```{r}
 # Mengambil data produktivitas kedelai selama 10 tahun terakhir
-data_aktual_ptkk <- Sumatera_kedelai[format(Sumatera_kedelai$Tahun, "%Y") >= "2013", "Produktivitas"]
+data_aktual_ptkk <- Sumatera_Kedelai[format(Sumatera_Kedelai$Tahun, "%Y") >= "2013", "Produktivitas"]
 data_aktual_ptkk
 ```
 
@@ -1163,24 +1178,25 @@ data_aktual_ptkk<- as.numeric(data_aktual_ptkk$Produktivitas)
 ```
 
 ```{r}
-prediksi_produksi_ptkk <- as.numeric(prediksi_garch_kedelai$Produktivitas)
+prediksi_ptkk <- as.numeric(prediksi_garch_kedelai$Produktivitas)
 ```
 
 ```{r}
 # Menghitung nilai RMSE, MAPE, MAE, dan MSE
-rmse_garch_ptkk <- sqrt(mean((data_aktual_ptkk - prediksi_produksi_ptkk)^2))
-mape_garch_ptkk <- mean(abs((data_aktual_ptkk - prediksi_produksi_ptkk) / data_aktual_ptkk) * 100)
-mae_garch_ptkk <- mean(abs(data_aktual_ptkk - prediksi_produksi_ptkk))
-mse_garch_ptkk <- mean((data_aktual_ptkk - prediksi_produksi_ptkk)^2)
+rmse_garch_ptkk <- sqrt(mean((data_aktual_ptkk - prediksi_ptkk)^2))
+mape_garch_ptkk <- mean(abs((data_aktual_ptkk - prediksi_ptkk) / data_aktual_ptkk) * 100)
+mae_garch_ptkk <- mean(abs(data_aktual_ptkk - prediksi_ptkk))
+mse_garch_ptkk <- mean((data_aktual_ptkk - prediksi_ptkk)^2)
 
-cat("MAPE from garch:", mape_garch_ptkk, "%\n")
-cat("RMSE:", rmse_garch_ptkk, "\n")
-cat("MAE:", mae_garch_ptkk, "\n")
-cat("MSE:", mse_garch_ptkk, "\n")
+cat("MAPE Produktivitas Kedelai:", mape_garch_ptkk, "%\n")
+cat("RMSE roduktivitas Kedelai:", rmse_garch_ptkk, "\n")
+cat("MAE roduktivitas Kedelai:", mae_garch_ptkk, "\n")
+cat("MSE roduktivitas Kedelai:", mse_garch_ptkk, "\n")
 ```
+
 ```{r}
 # Mengambil data avg rainfall kedelai selama 10 tahun terakhir
-data_aktual_rainfal <- Sumatera_kedelai[format(Sumatera_kedelai$Tahun, "%Y") >= "2013", "avg_rainfall"]
+data_aktual_rainfal <- Sumatera_Kedelai[format(Sumatera_Kedelai$Tahun, "%Y") >= "2013", "avg_rainfall"]
 data_aktual_rainfal
 ```
 
@@ -1204,8 +1220,6 @@ cat("RMSE:", rmse_rainfall_kk, "\n")
 cat("MAE:", mae_rainfall_kk, "\n")
 cat("MSE:", mse_rainfall_kk, "\n")
 ```
-
-
 
 ## VAR terhadap Produksi Kacang Hijau Sumatera
 
@@ -1237,11 +1251,18 @@ var_model_kacanghijau_Sumatera <- VAR(ts_data_kacang_hijau, p = best_lag_kacang_
 summary(var_model_kacanghijau_Sumatera)
 ```
 
-Estimation results for equation Produksi: avg_rainfall.l4 -143.02969 71.42177 -2.003 0.04660 \* F-statistic: 50.22 on 16 and 195 DF, p-value: \< 2.2e-16
+Estimation results for equation Produksi: 
+avg_rainfall.l4 -143.02969 71.42177 -2.003 0.04660 \* 
+F-statistic: 50.22 on 16 and 195 DF, p-value: \< 2.2e-16
 
-Estimation results for equation avg_raifall: Produktivitas.l4 2.141e-01 4.567e-02 4.687 5.19e-06 \*\*\* F-statistic: 3.52 on 16 and 195 DF, p-value: 1.474e-05
+Estimation results for equation avg_raifall: 
+Produktivitas.l4 2.141e-01 4.567e-02 4.687 5.19e-06 
+F-statistic: 3.52 on 16 and 195 DF, p-value: 1.474e-05
 
-Estimation results for equation Produktivitas: avg_rainfall.l4 3.388e-01 1.292e-01 2.622 0.009439 \*\* avg_rainfall.l5 2.879e-01 1.308e-01 2.202 0.028834 \* F-statistic: 8.312 on 16 and 195 DF, p-value: 4.24e-15
+Estimation results for equation Produktivitas: 
+avg_rainfall.l4 3.388e-01 1.292e-01 2.622 0.009439 \*\* 
+avg_rainfall.l5 2.879e-01 1.308e-01 2.202 0.028834 \* 
+F-statistic: 8.312 on 16 and 195 DF, p-value: 4.24e-15
 
 ### Uji Kolersi Pearson kacang hijau
 
@@ -1318,7 +1339,7 @@ Estimate Std. Error t value Pr(\>\|t\|)\
 
 Berdasarkan hasil analisis dengan model VAR, analisis kausalitas, dan regresi linear ini, kita dapat menyimpulkan bahwa:
 
-1.  Dalam model VAR, bahwa variabel avg_rainfall berdampak pada produktivitas kacang karena nilai P-Value dari 2 lag yaitu Lag4 dan lag5 lebih rendah dari 0,05. tetapi avg_rainfall tidak berdampak pada produksi jagung karena nilai P-Value lebih besar dari 0,05
+1.  Dalam model VAR, bahwa variabel avg_rainfall berdampak pada produktivitas kacang karena nilai P-Value dari 2 lag yaitu Lag4 dan lag5 lebih rendah dari 0,05. dan avg_rainfall  berdampak pada produksi di lag 4 karena nilai P-Value lebih besar dari 0,05
 
 2.  Berdasarkan hasil uji Granger Causality dan Instantaneous Causality, ada bukti statistik yang kuat untuk mendukung adanya hubungan sebab-akibat antara "avg_rainfall" dan "Produktivitas" dalam model VAR dalam jangka waktu lag tetapi bukan dalam jangka waktu instan.
 
@@ -1373,6 +1394,7 @@ garch_pt_kacanghijau <- ugarchfit(spec = garch_model, data = residu_var_KK$Produ
 # Menampilkan ringkasan model GARCH
 show(garch_pt_kacanghijau)
 ```
+
 ```{r}
 # Menyimpan hasil prediksi
 Prediksi_pt_kh <- ugarchforecast(garch_pt_kacanghijau, n.ahead = 10)
@@ -1384,6 +1406,7 @@ Prediksi_pt_kh
 garch_avg_kacanghijau <- ugarchfit(spec = garch_model, data = residu_var_KK$avg_rainfall)
 garch_avg_kacanghijau
 ```
+
 ```{r}
 # Menyimpan hasil prediksi
 prediksi_avg_kh <- ugarchforecast(garch_avg_kacanghijau, n.ahead = 10)
@@ -1396,17 +1419,18 @@ garch_produksi_kacanghijau <- ugarchfit(spec = garch_model, data = residu_var_KK
 # Menampilkan ringkasan model GARCH
 show(garch_produksi_kacanghijau)
 ```
+
 ```{r}
 # Menyimpan hasil prediksi
 prediksi_produksi_kh <- ugarchforecast(garch_produksi_kacanghijau, n.ahead = 10)
 prediksi_produksi_kh
 ```
-                                                                                                          
+
 ```{r}
 # Mengambil nilai prediksi GARCH dan membuat menjadi data frame
-prediksi_garch_kacanghijau <- data.frame(Produksi = as.numeric(Prediksi_garch_pt_kh@forecast$seriesFor[, 1]),
-                                    Avg_Rainfall = as.numeric(prediksi_avg_kh@forecast$seriesFor[, 1]),
-                                    Produktivitas = as.numeric(prediksi_produksi_kh@forecast$seriesFor[, 1]))
+prediksi_garch_kacanghijau <- data.frame(Produktivitas = as.numeric(Prediksi_pt_kh@forecast$seriesFor[, 1]),
+                                    avg_rainfall = as.numeric(prediksi_avg_kh@forecast$seriesFor[, 1]),
+                                    Produksi = as.numeric(prediksi_produksi_kh@forecast$seriesFor[, 1]))
 prediksi_garch_kacanghijau
 ```
 
@@ -1432,7 +1456,7 @@ plot_predik_produksi_kacanghijau <- ggplot(prediksi_garch_kacanghijau
   theme(legend.position = "right")
 
 # Menampilkan plot
-print(plot_tren_produksi_kacanghijau)
+print(plot_predik_produksi_kacanghijau)
 ```
 
 ```{r}
@@ -1459,7 +1483,7 @@ plot_predik_avgkk<- ggplot(prediksi_garch_kacanghijau
                              , aes(x = Tahun, y = avg_rainfall, color = "Prediksi")) +
   geom_line() +
   geom_point() +
-  labs(title = "Prediksi Tren Produksi kacanghijau Sumatera (2023-2033)",
+  labs(title = "Prediksi rainfall kacanghijau Sumatera (2023-2033)",
        x = "Tahun",
        y = "Produksi kacanghijau",
        color = "Metode Prediksi") +
@@ -1488,21 +1512,30 @@ prediksi_produksi_kh <- as.numeric(prediksi_garch_kacanghijau$Produksi)
 ```
 
 ```{r}
-# Menghitung nilai RMSE, MAPE, MAE, dan MSE
-rmse_garch_kh <- sqrt(mean((data_aktual_kh - prediksi_produksi_kh)^2))
-mape_garch_kh <- mean(abs((data_aktual_kh - prediksi_produksi_kh) / data_aktual_kh) * 100)
-mae_garch_kh <- mean(abs(data_aktual_kh - prediksi_produksi_kh))
-mse_garch_kh <- mean((data_aktual_kh - prediksi_produksi_kh)^2)
-
-cat("MAPE from garch:", mape_garch_kh, "%\n")
-cat("RMSE:", rmse_garch_kh, "\n")
-cat("MAE:", mae_garch_kh, "\n")
-cat("MSE:", mse_garch_kh, "\n")
+# Trim data data aktual agar dapat diukur perfomanya
+data_aktual_kacanghijau <- head(data_aktual_kh, length(prediksi_produksi_kh))
+data_aktual_kacanghijau
 ```
 
 ```{r}
+# Menghitung nilai RMSE, MAPE, MAE, dan MSE
+rmse_garch_kh <- sqrt(mean((data_aktual_kacanghijau - prediksi_produksi_kh)^2))
+mape_garch_kh <- mean(abs((data_aktual_kacanghijau - prediksi_produksi_kh) / data_aktual_kacanghijau) * 100)
+mae_garch_kh <- mean(abs(data_aktual_kacanghijau - prediksi_produksi_kh))
+mse_garch_kh <- mean((data_aktual_kacanghijau - prediksi_produksi_kh)^2)
+cat("MAPE Produksi kacang hijau :", mape_garch_kh, "%\n")
+cat("RMSE Produksi kacang hijau :", rmse_garch_kh, "\n")
+cat("MAE Produksi kacang hijau :", mae_garch_kh, "\n")
+cat("MSE Produksi kacang hijau :", mse_garch_kh, "\n")
+```
+MAPE Produksi kacang hijau : 98.93298 %
+RMSE Produksi kacang hijau : 886.0209 
+MAE Produksi kacang hijau : 760.5371 
+MSE Produksi kacang hijau : 785033.1
+
+```{r}
 # Mengambil data produktivitas kacanghijau selama 10 tahun terakhir
-data_aktual_ptkh <- Sumatera_kacanghijau[format(Sumatera_kacanghijau$Tahun, "%Y") >= "2013", "Produktivitas"]
+data_aktual_ptkh <- Sumatera_kacang_hijau[format(Sumatera_kacang_hijau$Tahun, "%Y") >= "2013", "Produktivitas"]
 data_aktual_ptkh
 ```
 
@@ -1512,6 +1545,13 @@ data_aktual_ptkh<- as.numeric(data_aktual_ptkh$Produktivitas)
 
 ```{r}
 prediksi_produksi_ptkh <- as.numeric(prediksi_garch_kacanghijau$Produktivitas)
+prediksi_garch_pjkk
+```
+
+```{r}
+# Trim data data aktual agar dapat diukur perfomanya
+data_aktual_ptkh <- head(data_aktual_ptkh, length(prediksi_produksi_ptkh))
+data_aktual_ptkh
 ```
 
 ```{r}
@@ -1521,38 +1561,44 @@ mape_garch_ptkh <- mean(abs((data_aktual_ptkh - prediksi_produksi_ptkh) / data_a
 mae_garch_ptkh <- mean(abs(data_aktual_ptkh - prediksi_produksi_ptkh))
 mse_garch_ptkh <- mean((data_aktual_ptkh - prediksi_produksi_ptkh)^2)
 
-cat("MAPE from garch:", mape_garch_ptkh, "%\n")
-cat("RMSE:", rmse_garch_ptkh, "\n")
-cat("MAE:", mae_garch_ptkh, "\n")
-cat("MSE:", mse_garch_ptkh, "\n")
+cat("MAPE Produktivitas kacang hijau:", mape_garch_ptkh, "%\n")
+cat("RMSE Produktivitas kacang hijau :", rmse_garch_ptkh, "\n")
+cat("MAE Produktivitas kacang hijau:", mae_garch_ptkh, "\n")
+cat("MSE Produktivitas kacang hijau:", mse_garch_ptkh, "\n")
 ```
+
 ```{r}
 # Mengambil data avg rainfall kacanghijau selama 10 tahun terakhir
-data_aktual_rainfal <- Sumatera_kacanghijau[format(Sumatera_kacanghijau$Tahun, "%Y") >= "2013", "avg_rainfall"]
-data_aktual_rainfal
+data_aktual_rainfal_kh <- Sumatera_kacang_hijau[format(Sumatera_kacang_hijau$Tahun, "%Y") >= "2013", "avg_rainfall"]
+data_aktual_rainfal_kh
 ```
 
 ```{r}
-data_aktual_rainfal<- as.numeric(data_aktual_rainfal$avg_rainfall)
+data_aktual_rainfal_kh<- as.numeric(data_aktual_rainfal_kh$avg_rainfall)
 ```
 
 ```{r}
-prediksi_produksi_rainfal <- as.numeric(prediksi_garch_kacanghijau$Avg_Rainfall)
+prediksi_rainfal_kh <- as.numeric(prediksi_garch_kacanghijau$avg_rainfall)
+prediksi_rainfal_kh
+```
+```{r}
+# Trim data data aktual agar dapat diukur perfomanya
+data_aktual_rainfal_kh <- head(data_aktual_rainfal_kh, length(prediksi_rainfal_kh))
+data_aktual_rainfal_kh
 ```
 
 ```{r}
 # Menghitung nilai RMSE, MAPE, MAE, dan MSE
-rmse_rainfall_kh <- sqrt(mean((data_aktual_kh - prediksi_produksi_kh)^2))
-mape_rainfall_kh <- mean(abs((data_aktual_kh - prediksi_produksi_kh) / data_aktual_kh) * 100)
-mae_rainfall_kh <- mean(abs(data_aktual_kh - prediksi_produksi_kh))
-mse_rainfall_kh <- mean((data_aktual_kacanghijau - prediksi_produksi_kh)^2)
+rmse_rainfall_kh <- sqrt(mean((data_aktual_rainfal_kh - prediksi_rainfal_kh)^2))
+mape_rainfall_kh <- mean(abs((data_aktual_rainfal_kh - prediksi_rainfal_kh) / data_aktual_rainfal_kh) * 100)
+mae_rainfall_kh <- mean(abs(data_aktual_rainfal_kh - prediksi_rainfal_kh))
+mse_rainfall_kh <- mean((data_aktual_rainfal_kh - prediksi_rainfal_kh)^2)
 
-cat("MAPE from :", mape_rainfall_kh, "%\n")
+cat("MAPE :", mape_rainfall_kh, "%\n")
 cat("RMSE:", rmse_rainfall_kh, "\n")
 cat("MAE:", mae_rainfall_kh, "\n")
 cat("MSE:", mse_rainfall_kh, "\n")
 ```
-
 
 ## d.VAR terhadap produksi kacang Tanah Sumatera
 
@@ -1652,7 +1698,7 @@ summary(regresi_kacang_tanah_produktivitas)
 ```
 
 Estimate Std. Error t value Pr(\>\|t\|)\
-(Intercept) 9.7845 0.7911 12.37 \<2e-16 \*\* *avg_rainfall 0.2256 0.1017 2.22 0.0272* \
+(Intercept) 9.7845 0.7911 12.37 \<2e-16 \*\* *avg_rainfall 0.2256 0.1017 2.22 0.0272*\
 Multiple R-squared: 0.01748, Adjusted R-squared: 0.01393 F-statistic: 4.928 on 1 and 277 DF, p-value: 0.02724 *Kesimpulan* Terdapat pengaruh curah hujan terhadap produktivitas kacang tanah.
 
 ## Interpretasi
@@ -1665,8 +1711,7 @@ Terdapat pengaruh avg_rainfall terhadap produksi dan produktivitas Berdasarkan h
 
 3.  Berdasarkan hasil analisis regresi didapatkan bahwa variabel "avg_rainfall"memiliki pengaruh yang signifikan terhadap variabel "Produktivitas," dan avg_ranfall tidak signifikan terhadap produksi tetapi memiliki r-squared yang kecil.
 
-
-### ANALISIS PREDIKSI KACANG TANAH DENGAN GARCH 
+### ANALISIS PREDIKSI KACANG TANAH DENGAN GARCH
 
 ```{r}
 # Menghitung residual dari model VAR
@@ -1674,12 +1719,6 @@ residuals_var_kacangtanah <- residuals(var_model_kacangtanah_Sumatera)
 residuals_var_kacangtanah
 ```
 
-```{r}
-# karena model garch mengunakan distribusi normal, maka perlu mengecek data berdistribusi normal atau tidak
-shapiro.test(data_var_kacangtanah$Produksi)
-shapiro.test(data_var_kacangtanah$Produktivitas)
-shapiro.test(data_var_kacangtanah$avg_rainfall)
-```
 
 ```{r}
 # Mengecek outlier dari residu var
@@ -1693,9 +1732,10 @@ shapiro.test(residuals_var_kacangtanah)
 residu_var_KT <- data.frame(residuals_var_kacangtanah)
 residu_var_KT
 ```
+
 ```{r}
 # Transformasi residual menggunakan transformasi logaritma
-residu_var_SJ$Produksi_log <- log(abs(residu_var_KT$Produksi) + 1)
+residu_var_KT$Produksi_log <- log(abs(residu_var_KT$Produksi) + 1)
 ```
 
 ```{r}
@@ -1714,6 +1754,7 @@ garch_pt_kacangtanah <- ugarchfit(spec = garch_model, data = residu_var_KT$Produ
 # Menampilkan ringkasan model GARCH
 show(garch_pt_kacangtanah)
 ```
+
 ```{r}
 # Menyimpan hasil prediksi
 Prediksi_pt_kt <- ugarchforecast(garch_pt_kacangtanah, n.ahead = 10)
@@ -1726,6 +1767,7 @@ garch_avg_kacangtanah <- ugarchfit(spec = garch_model, data = residu_var_KT$avg_
 # Menampilkan ringkasan model GARCH
 show(garch_avg_kacangtanah)
 ```
+
 ```{r}
 # Menyimpan hasil prediksi
 prediksi_avg_kt <- ugarchforecast(garch_avg_kacangtanah, n.ahead = 10)
@@ -1738,17 +1780,18 @@ garch_produksi_kacangtanah <- ugarchfit(spec = garch_model, data = residu_var_KT
 # Menampilkan ringkasan model GARCH
 show(garch_produksi_kacangtanah)
 ```
+
 ```{r}
 # Menyimpan hasil prediksi
 prediksi_produksi_kt <- ugarchforecast(garch_produksi_kacangtanah, n.ahead = 10)
 prediksi_produksi_kt
 ```
-                                                                                                          
+
 ```{r}
 # Mengambil nilai prediksi GARCH dan membuat menjadi data frame
-prediksi_kacangtanah <- data.frame(Produksi = as.numeric(Prediksi_pt_kt@forecast$seriesFor[, 1]),
-                                    Avg_Rainfall = as.numeric(prediksi_avg_kt@forecast$seriesFor[, 1]),
-                                    Produktivitas = as.numeric(prediksi_produksi_kt@forecast$seriesFor[, 1]))
+prediksi_garch_kacangtanah <- data.frame(Produktivitas = as.numeric(Prediksi_pt_kt@forecast$seriesFor[, 1]),
+                                    avg_rainfall = as.numeric(prediksi_avg_kt@forecast$seriesFor[, 1]),
+                                    Produksi = as.numeric(prediksi_produksi_kt@forecast$seriesFor[, 1]))
 prediksi_garch_kacangtanah
 ```
 
@@ -1801,7 +1844,7 @@ plot_predik_produksi <- ggplot(prediksi_garch_kacangtanah
                              , aes(x = Tahun, y = avg_rainfall, color = "Prediksi")) +
   geom_line() +
   geom_point() +
-  labs(title = "Prediksi Tren Produksi kacang tanah Sumatera (2023-2033)",
+  labs(title = "Prediksi Rainfall kacang tanah Sumatera (2023-2033)",
        x = "Tahun",
        y = "Produksi kacangtanah",
        color = "Metode Prediksi") +
@@ -1836,10 +1879,10 @@ mape_garch_kt <- mean(abs((data_aktual_kt - prediksi_produksi_kt) / data_aktual_
 mae_garch_kt <- mean(abs(data_aktual_kt - prediksi_produksi_kt))
 mse_garch_kt <- mean((data_aktual_kt - prediksi_produksi_kt)^2)
 
-cat("MAPE from garch:", mape_garch_kt, "%\n")
-cat("RMSE:", rmse_garch_kt, "\n")
-cat("MAE:", mae_garch_kt, "\n")
-cat("MSE:", mse_garch_kt, "\n")
+cat("MAPE Produksi kacang tanah:", mape_garch_kt, "%\n")
+cat("RMSE Produksi kacang tanah:", rmse_garch_kt, "\n")
+cat("MAE Produksi kacang tanah:", mae_garch_kt, "\n")
+cat("MSE Produksi kacang tanah:", mse_garch_kt, "\n")
 ```
 
 ```{r}
@@ -1863,11 +1906,16 @@ mape_garch_ptkt <- mean(abs((data_aktual_ptkt - prediksi_produksi_ptkt) / data_a
 mae_garch_ptkt <- mean(abs(data_aktual_ptkt - prediksi_produksi_ptkt))
 mse_garch_ptkt <- mean((data_aktual_ptkt - prediksi_produksi_ptkt)^2)
 
-cat("MAPE from garch:", mape_garch_ptkt, "%\n")
-cat("RMSE:", rmse_garch_ptkt, "\n")
-cat("MAE:", mae_garch_ptkt, "\n")
-cat("MSE:", mse_garch_ptkt, "\n")
+cat("MAPE Produktivitas kacang tanah:", mape_garch_ptkt, "%\n")
+cat("RMSE Produktivitas kacang tanah:", rmse_garch_ptkt, "\n")
+cat("MAE Produktivitas kacang tanah:", mae_garch_ptkt, "\n")
+cat("MSE Produktivitas kacang tanah:", mse_garch_ptkt, "\n")
 ```
+MAPE Produktivitas kacang tanah: 100 %
+RMSE Produktivitas kacang tanah: 12.86906 
+MAE Produktivitas kacang tanah: 12.6667 
+MSE Produktivitas kacang tanah: 165.6128 
+
 ```{r}
 # Mengambil data avg rainfall kacangtanah selama 10 tahun terakhir
 data_rainfal_kt <- Sumatera_kacang_tanah[format(Sumatera_kacang_tanah$Tahun, "%Y") >= "2013", "avg_rainfall"]
@@ -1889,12 +1937,15 @@ mape_garch_rainfall <- mean(abs((data_rainfal_kt - prediksi_rainfall_kt) / data_
 mae_garch_rainfall <- mean(abs(data_rainfal_kt - prediksi_rainfall_kt))
 mse_garch_rainfall <- mean((data_rainfal_kt - prediksi_rainfall_kt)^2)
 
-cat("MAPE from garch:", mape_garch_rainfall, "%\n")
-cat("RMSE:", rmse_garch_rainfall, "\n")
-cat("MAE:", mae_garch_rainfall, "\n")
-cat("MSE:", mse_garch_rainfall, "\n")
+cat("MAPE rainfall kacang tanah:", mape_garch_rainfall, "%\n")
+cat("RMSE rainfall kacang tanah:", rmse_garch_rainfall, "\n")
+cat("MAE rainfall kacang tanah:", mae_garch_rainfall, "\n")
+cat("MSE rainfall kacang tanah:", mse_garch_rainfall, "\n")
 ```
-
+MAPE rainfall kacang tanah: 100 %
+RMSE rainfall kacang tanah: 7.835492 
+MAE rainfall kacang tanah: 7.745103 
+MSE rainfall kacang tanah: 61.39494 
 
 ## e. VAR terhadap Ubi Jalar Sumatera
 
@@ -2047,6 +2098,7 @@ shapiro.test(residuals_var_ubijalar)
 residu_var_UJ <- data.frame(residuals_var_ubijalar)
 residu_var_UJ
 ```
+
 ```{r}
 # Transformasi residual menggunakan transformasi logaritma
 residu_var_UJ$Produksi_log <- log(abs(residu_var_UJ$Produksi) + 1)
@@ -2068,6 +2120,7 @@ garch_pt_ubijalar <- ugarchfit(spec = garch_model, data = residu_var_UJ$Produkti
 # Menampilkan ringkasan model GARCH
 show(garch_pt_ubijalar)
 ```
+
 ```{r}
 # Menyimpan hasil prediksi
 prediksi_pt_uj <- ugarchforecast(garch_pt_ubijalar, n.ahead = 10)
@@ -2080,6 +2133,7 @@ garch_avg_ubijalar <- ugarchfit(spec = garch_model, data = residu_var_UJ$avg_rai
 # Menampilkan ringkasan model GARCH
 show(garch_avg_ubijalar)
 ```
+
 ```{r}
 # Menyimpan hasil prediksi
 prediksi_avg_uj <- ugarchforecast(garch_avg_ubijalar, n.ahead = 10)
@@ -2092,17 +2146,18 @@ garch_produksi_ubijalar <- ugarchfit(spec = garch_model, data = residu_var_UJ$Pr
 # Menampilkan ringkasan model GARCH
 show(garch_produksi_ubijalar)
 ```
+
 ```{r}
 # Menyimpan hasil prediksi
 prediksi_produksi_uj <- ugarchforecast(garch_produksi_ubijalar, n.ahead = 10)
 prediksi_produksi_uj
 ```
-                                                                                                          
+
 ```{r}
 # Mengambil nilai prediksi GARCH dan membuat menjadi data frame
-prediksi_garch_ubijalar <- data.frame(Produksi = as.numeric(prediksi_pt_uj@forecast$seriesFor[, 1]),
+prediksi_garch_ubijalar <- data.frame(Produktivitas = as.numeric(prediksi_pt_uj@forecast$seriesFor[, 1]),
                                     Avg_Rainfall = as.numeric(prediksi_avg_uj@forecast$seriesFor[, 1]),
-                                    Produktivitas = as.numeric(prediksi_produksi_uj@forecast$seriesFor[, 1]))
+                                    Produksi = as.numeric(prediksi_produksi_uj@forecast$seriesFor[, 1]))
 prediksi_garch_ubijalar
 ```
 
@@ -2151,11 +2206,11 @@ print(plot_tren_produksi)
 
 ```{r}
 # Visualisasi tren produksi kedelai
-plot_predik_produksi <- ggplot(prediksi_garch_ubijalar
-                             , aes(x = Tahun, y = avg_rainfall, color = "Prediksi")) +
+plot_predik_rainfall_uj <- ggplot(prediksi_garch_ubijalar
+                             , aes(x = Tahun, y = Avg_Rainfall, color = "Prediksi")) +
   geom_line() +
   geom_point() +
-  labs(title = "Prediksi Tren Produksi ubijalar Sumatera (2023-2033)",
+  labs(title = "Prediksi Rainfall ubijalar Sumatera (2023-2033)",
        x = "Tahun",
        y = "Produksi ubijalar",
        color = "Metode Prediksi") +
@@ -2164,7 +2219,7 @@ plot_predik_produksi <- ggplot(prediksi_garch_ubijalar
   theme(legend.position = "right")
 
 # Menampilkan plot
-print(plot_tren_produksi)
+print(plot_predik_rainfall_uj)
 ```
 
 ### Evaluasi Model
@@ -2190,38 +2245,39 @@ mape_garch_uj <- mean(abs((data_aktual_uj - prediksi_produksi_uj) / data_aktual_
 mae_garch_uj <- mean(abs(data_aktual_uj - prediksi_produksi_uj))
 mse_garch_uj <- mean((data_aktual_uj - prediksi_produksi_uj)^2)
 
-cat("MAPE from garch:", mape_garch_uj, "%\n")
-cat("RMSE:", rmse_garch_uj, "\n")
-cat("MAE:", mae_garch_uj, "\n")
-cat("MSE:", mse_garch_uj, "\n")
+cat("MAPE Produksi ubi jalar:", mape_garch_uj, "%\n")
+cat("RMSE Produksi ubi jalar:", rmse_garch_uj, "\n")
+cat("MAE Produksi ubi jalar:", mae_garch_uj, "\n")
+cat("MSE Produksi ubi jalar:", mse_garch_uj, "\n")
 ```
 
 ```{r}
 # Mengambil data produktivitas ubijalar selama 10 tahun terakhir
-data_aktual_ptj <- Sumatera_ubi_jalar[format(Sumatera_ubi_jalar$Tahun, "%Y") >= "2013", "Produktivitas"]
-data_aktual_ptj
+data_aktual_ptuj <- Sumatera_ubi_jalar[format(Sumatera_ubi_jalar$Tahun, "%Y") >= "2013", "Produktivitas"]
+data_aktual_ptuj
 ```
 
 ```{r}
-data_aktual_ptj<- as.numeric(data_aktual_ptj$Produktivitas)
+data_aktual_ptuj<- as.numeric(data_aktual_ptuj$Produktivitas)
 ```
 
 ```{r}
-prediksi_produksi_ptj <- as.numeric(prediksi_garch_ubijalar$Produktivitas)
+prediksi_produksi_ptuj <- as.numeric(prediksi_garch_ubijalar$Produktivitas)
 ```
 
 ```{r}
 # Menghitung nilai RMSE, MAPE, MAE, dan MSE
-rmse_garch_ptj <- sqrt(mean((data_aktual_ptj - prediksi_produksi_ptj)^2))
-mape_garch_ptj <- mean(abs((data_aktual_ptj - prediksi_produksi_ptj) / data_aktual_ptj) * 100)
-mae_garch_ptj <- mean(abs(data_aktual_ptj - prediksi_produksi_ptj))
-mse_garch_ptj <- mean((data_aktual_ptj - prediksi_produksi_ptj)^2)
+rmse_garch_ptuj <- sqrt(mean((data_aktual_ptuj - prediksi_produksi_ptuj)^2))
+mape_garch_ptuj <- mean(abs((data_aktual_ptuj - prediksi_produksi_ptuj) / data_aktual_ptuj) * 100)
+mae_garch_ptuj <- mean(abs(data_aktual_ptuj - prediksi_produksi_ptuj))
+mse_garch_ptuj <- mean((data_aktual_ptuj - prediksi_produksi_ptuj)^2)
 
-cat("MAPE from garch:", mape_garch_ptj, "%\n")
-cat("RMSE:", rmse_garch_ptj, "\n")
-cat("MAE:", mae_garch_ptj, "\n")
-cat("MSE:", mse_garch_ptj, "\n")
+cat("MAPE Produktivitas ubi jalar:", mape_garch_ptuj, "%\n")
+cat("RMSE Produktivitas ubi jalar:", rmse_garch_ptuj, "\n")
+cat("MAE Produktivitas ubi jalar:", mae_garch_ptuj, "\n")
+cat("MSE Produktivitas ubi jalar:", mse_garch_ptuj, "\n")
 ```
+
 ```{r}
 # Mengambil data avg rainfall ubijalar selama 10 tahun terakhir
 data_aktual_rainfal <- Sumatera_ubi_jalar[format(Sumatera_ubi_jalar$Tahun, "%Y") >= "2013", "avg_rainfall"]
@@ -2229,27 +2285,33 @@ data_aktual_rainfal
 ```
 
 ```{r}
-data_aktual_rainfal<- as.numeric(data_aktual_rainfal$avg_rainfall)
+data_aktual_rainfal_uj<- as.numeric(data_aktual_rainfal$avg_rainfall)
+data_aktual_rainfal_uj
 ```
 
 ```{r}
-prediksi_produksi_rainfal <- as.numeric(prediksi_garch_ubijalar$avg_rainfall)
+prediksi_rainfal_uj <- as.numeric(prediksi_garch_ubijalar$Avg_Rainfall)
+prediksi_rainfal_uj
+```
+
+```{r}
+# Trim data data aktual agar dapat diukur perfomanya
+data_aktual_rainfal_uj <- head(data_aktual_rainfal_uj, length(prediksi_rainfal_uj))
+data_aktual_rainfal_uj
 ```
 
 ```{r}
 # Menghitung nilai RMSE, MAPE, MAE, dan MSE
-rmse_garch_rainfall <- sqrt(mean((data_aktual_uj - prediksi_produksi_uj)^2))
-mape_garch_rainfall <- mean(abs((data_aktual_uj - prediksi_produksi_uj) / data_aktual_uj) * 100)
-mae_garch_rainfall <- mean(abs(data_aktual_uj - prediksi_produksi_uj))
-mse_garch_rainfall <- mean((data_aktual_kedelai - prediksi_produksi_uj)^2)
+rmse_garch_rainfall <- sqrt(mean((data_aktual_rainfal_uj - prediksi_rainfal_uj)^2))
+mape_garch_rainfall <- mean(abs((data_aktual_rainfal_uj - prediksi_rainfal_uj) / data_aktual_rainfal_uj) * 100)
+mae_garch_rainfall <- mean(abs(data_aktual_rainfal_uj - prediksi_rainfal_uj))
+mse_garch_rainfall <- mean((data_aktual_rainfal_uj - prediksi_rainfal_uj)^2)
 
-cat("MAPE from garch:", mape_garch_rainfall, "%\n")
-cat("RMSE:", rmse_garch_rainfall, "\n")
-cat("MAE:", mae_garch_rainfall, "\n")
-cat("MSE:", mse_garch_rainfall, "\n")
+cat("MAPE Rainfall ubi jalar:", mape_garch_rainfall, "%\n")
+cat("RMSE Rainfall ubi jalar:", rmse_garch_rainfall, "\n")
+cat("MAE Rainfall ubi jalar:", mae_garch_rainfall, "\n")
+cat("MSE Rainfall ubi jalar:", mse_garch_rainfall, "\n")
 ```
-
-
 
 ## f. VAR terhadap Ubi Kayu Sumatera
 
@@ -2390,14 +2452,14 @@ boxplot(residuals_var_ubikayu, main = "Boxplot of Residuals", ylab = "Residuals"
 shapiro.test(residuals_var_ubikayu)
 ```
 
-data: residuals_var W = 0.3585, p-value < 2.2e-16
-Hasil dari uji Shapiro-Wilk menunjukkan nilai p-value yang rendah,yang menunjukkan bahwa data residual tidak normal. Hal ini dapat menyebabkan kesalahan pada proses pemodelan, karena model GARCH mengasumsikan bahwa data residual normal.
+data: residuals_var W = 0.3585, p-value \< 2.2e-16 Hasil dari uji Shapiro-Wilk menunjukkan nilai p-value yang rendah,yang menunjukkan bahwa data residual tidak normal. Hal ini dapat menyebabkan kesalahan pada proses pemodelan, karena model GARCH mengasumsikan bahwa data residual normal.
 
 ```{r}
 # Buat data frame baru dari nilai residu
 residu_var_UK <- data.frame(residuals_var_ubikayu)
 residu_var_UK
 ```
+
 ```{r}
 # Transformasi residual menggunakan transformasi logaritma
 residu_var_UK$Produksi_log <- log(abs(residu_var_UK$Produksi) + 1)
@@ -2419,6 +2481,7 @@ garch_pt_ubikayu <- ugarchfit(spec = garch_model, data = residu_var_UK$Produktiv
 # Menampilkan ringkasan model GARCH
 show(garch_pt_ubikayu)
 ```
+
 ```{r}
 # Menyimpan hasil prediksi
 prediksi_pt_uk <- ugarchforecast(garch_pt_ubikayu, n.ahead = 10)
@@ -2431,6 +2494,7 @@ garch_avg_ubikayu <- ugarchfit(spec = garch_model, data = residu_var_UK$avg_rain
 # Menampilkan ringkasan model GARCH
 show(garch_avg_ubikayu)
 ```
+
 ```{r}
 # Menyimpan hasil prediksi
 prediksi_avg_uk<- ugarchforecast(garch_avg_ubikayu, n.ahead = 10)
@@ -2443,17 +2507,18 @@ garch_produksi_ubikayu <- ugarchfit(spec = garch_model, data = residu_var_UK$Pro
 # Menampilkan ringkasan model GARCH
 show(garch_produksi_ubikayu)
 ```
+
 ```{r}
 # Menyimpan hasil prediksi
 prediksi_produksi_uk <- ugarchforecast(garch_produksi_ubikayu, n.ahead = 10)
 prediksi_produksi_uk
 ```
-                                                                                                          
+
 ```{r}
 # Mengambil nilai prediksi GARCH dan membuat menjadi data frame
-prediksi_garch_ubikayu <- data.frame(Produksi = as.numeric(prediksi_pt_uk@forecast$seriesFor[, 1]),
+prediksi_garch_ubikayu <- data.frame(Produktivitas = as.numeric(prediksi_pt_uk@forecast$seriesFor[, 1]),
                                     Avg_Rainfall = as.numeric(prediksi_avg_uk@forecast$seriesFor[, 1]),
-                                    Produktivitas = as.numeric(prediksi_produksi_uk@forecast$seriesFor[, 1]))
+                                    Produksi = as.numeric(prediksi_produksi_uk@forecast$seriesFor[, 1]))
 prediksi_garch_ubikayu
 ```
 
@@ -2502,11 +2567,11 @@ print(plot_tren_produksi)
 
 ```{r}
 # Visualisasi tren produksi kedelai
-plot_predik_produksi <- ggplot(prediksi_garch_ubikayu
-                             , aes(x = Tahun, y = avg_rainfall, color = "Prediksi")) +
+plot_predik_rainfall_uk <- ggplot(prediksi_garch_ubikayu
+                             , aes(x = Tahun, y = Avg_Rainfall, color = "Prediksi")) +
   geom_line() +
   geom_point() +
-  labs(title = "Prediksi Tren Produksi ubikayu Sumatera (2023-2033)",
+  labs(title = "Prediksi Rainfall ubikayu Sumatera (2023-2033)",
        x = "Tahun",
        y = "Produksi ubikayu",
        color = "Metode Prediksi") +
@@ -2515,14 +2580,14 @@ plot_predik_produksi <- ggplot(prediksi_garch_ubikayu
   theme(legend.position = "right")
 
 # Menampilkan plot
-print(plot_tren_produksi)
+print(plot_predik_rainfall_uk)
 ```
 
 ### Evaluasi Model
 
 ```{r}
 # Mengambil data produksi ubikayu selama 10 tahun terakhir
-data_aktual_uk <- Sumatera_ubikayu[format(Sumatera_ubikayu$Tahun, "%Y") >= "2013", "Produksi"]
+data_aktual_uk <- Sumatera_ubi_kayu[format(Sumatera_ubi_kayu$Tahun, "%Y") >= "2013", "Produksi"]
 data_aktual_uk
 ```
 
@@ -2541,15 +2606,15 @@ mape_garch_uk <- mean(abs((data_aktual_uk - prediksi_produksi_uk) / data_aktual_
 mae_garch_uk <- mean(abs(data_aktual_uk - prediksi_produksi_uk))
 mse_garch_uk <- mean((data_aktual_uk - prediksi_produksi_uk)^2)
 
-cat("MAPE from garch:", mape_garch_uk, "%\n")
-cat("RMSE:", rmse_garch_uk, "\n")
-cat("MAE:", mae_garch_uk, "\n")
-cat("MSE:", mse_garch_uk, "\n")
+cat("MAPE Produksi Ubi Kayu:", mape_garch_uk, "%\n")
+cat("RMSE Produksi Ubi kayu:", rmse_garch_uk, "\n")
+cat("MAE Produksi Ubi kayu:", mae_garch_uk, "\n")
+cat("MSE Produksi Ubi kayu:", mse_garch_uk, "\n")
 ```
 
 ```{r}
 # Mengambil data produktivitas ubikayu selama 10 tahun terakhir
-data_aktual_ptj <- Sumatera_ubikayu[format(Sumatera_ubikayu$Tahun, "%Y") >= "2013", "Produktivitas"]
+data_aktual_ptj <- Sumatera_ubi_kayu[format(Sumatera_ubi_kayu$Tahun, "%Y") >= "2013", "Produktivitas"]
 data_aktual_ptj
 ```
 
@@ -2568,1165 +2633,149 @@ mape_garch_ptj <- mean(abs((data_aktual_ptj - prediksi_produksi_ptj) / data_aktu
 mae_garch_ptj <- mean(abs(data_aktual_ptj - prediksi_produksi_ptj))
 mse_garch_ptj <- mean((data_aktual_ptj - prediksi_produksi_ptj)^2)
 
-cat("MAPE from garch:", mape_garch_ptj, "%\n")
-cat("RMSE:", rmse_garch_ptj, "\n")
-cat("MAE:", mae_garch_ptj, "\n")
-cat("MSE:", mse_garch_ptj, "\n")
+cat("MAPE Produktivitas Ubi kayu:", mape_garch_ptj, "%\n")
+cat("RMSE Produktivitas Ubi kayu:", rmse_garch_ptj, "\n")
+cat("MAE Produktivitas Ubi kayu:", mae_garch_ptj, "\n")
+cat("MSE Produktivitas Ubi kayu:", mse_garch_ptj, "\n")
 ```
+
 ```{r}
 # Mengambil data avg rainfall ubikayu selama 10 tahun terakhir
-data_aktual_rainfal <- Sumatera_ubikayu[format(Sumatera_ubikayu$Tahun, "%Y") >= "2013", "avg_rainfall"]
+data_aktual_rainfal <- Sumatera_ubi_kayu[format(Sumatera_ubi_kayu$Tahun, "%Y") >= "2013", "avg_rainfall"]
 data_aktual_rainfal
 ```
 
 ```{r}
-data_aktual_rainfal<- as.numeric(data_aktual_rainfal$avg_rainfall)
+data_aktual_rainfall_uk<- as.numeric(data_aktual_rainfal$avg_rainfall)
 ```
 
 ```{r}
-prediksi_produksi_rainfal <- as.numeric(prediksi_garch_ubikayu$Avg_Rainfall)
+prediksi_rainfal_uk <- as.numeric(prediksi_garch_ubikayu$Avg_Rainfall)
 ```
 
 ```{r}
 # Menghitung nilai RMSE, MAPE, MAE, dan MSE
-rmse_garch_rainfall <- sqrt(mean((data_aktual_uk - prediksi_produksi_uk)^2))
-mape_garch_rainfall <- mean(abs((data_aktual_uk - prediksi_produksi_uk) / data_aktual_uk) * 100)
-mae_garch_rainfall <- mean(abs(data_aktual_uk - prediksi_produksi_uk))
-mse_garch_rainfall <- mean((data_aktual_kedelai - prediksi_produksi_uk)^2)
-
-cat("MAPE from garch:", mape_garch_rainfall, "%\n")
-cat("RMSE:", rmse_garch_rainfall, "\n")
-cat("MAE:", mae_garch_rainfall, "\n")
-cat("MSE:", mse_garch_rainfall, "\n")
-```
-
-
-#4. Model VAR terhadap Palawija Sumatera Utara
-
-```{r}
-sumut_palawija <- Palawija_CLEAN %>%
-  filter(Provinsi == "SUMATERA UTARA")
-sumut_palawija
-```
-
-##1. Jagung palawija SUMUT
-
-```{r}
-# Filter data Palawija "Jagung" berdasarkan jenis komonditi
-jagung_palawija<- sumut_palawija %>%
-  filter(Jenis_Komoditi == "Jagung")
-jagung_palawija
-```
-
-## VAR terhadap Jagung Sumatera Utara
-
-```{r}
-# Pilih variabel yang akan diprediksi
-
-data_var_jagung_sumut <- jagung_palawija[, c("Produksi", "avg_rainfall", "Produktivitas")]
-data_var_jagung_sumut
-```
-
-Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam format time series (ts)
-
-```{r}
-#Format time series
-ts_data_jagung_sumut<- ts(data_var_jagung_sumut, start = c(2000,1), frequency = 1)
-ts_data_jagung_sumut
-```
-
-```{r}
-best_lag_jagung_sumut<- VARselect(ts_data_jagung_sumut, lag.max = 5, type = "both")
-best_lag_jagung_sumut
-```
-
-### VAR Model terhadap produksi Jagung Sumatera
-
-```{r}
-
-var_model_jagung_sumut <- VAR(ts_data_jagung_sumut, p = best_lag_jagung_sumut$selection[1], type = "both") # jumlah order dari model VAR
-summary(var_model_jagung_sumut)
-```
-
-Estimation results for equation produktivitas: avg_rainfall.l1 -1.371e+00 2.921e-01 -4.693 0.001555 \*\* avg_rainfall.l3 6.605e-01 2.427e-01 2.722 0.026188 \* Produksi.l4 4.916e-06 2.039e-06 2.411 0.042429 \* F-statistik p-value:6.623e-10
-
-### Uji Kolersi Pearson Jagung
-
-```{r}
-# Menghitung koefisien korelasi Pearson
-kolerasi_jagung_sumut1 <- cor(data_var_jagung_sumut$Produksi, data_var_jagung_sumut$avg_rainfall)
-cat ("Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi:",kolerasi_jagung_sumut1)
-```
-
-Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi: 0.3372069
-
-```{r}
-# Menghitung koefisien korelasi Pearson
-kolerasi_jagung_sumut2 <- cor(data_var_jagung_sumut$avg_rainfall, data_var_jagung_sumut$Produktivitas)
-cat ("Koefisien Korelasi Pearson Rata-rata curah hujan dan produksi:", kolerasi_jagung_sumut2)
-```
-
-Koefisien Korelasi Pearson Rata-rata curah hujan dan produksi: 0.34
-
-### Uji Granger Causality Jagung
-
-```{r}
-# Melakukan uji Granger Causality 
-granger_jagung_sumut1 <- causality(var_model_jagung_sumut, cause = "avg_rainfall")
-granger_jagung_sumut1
-
-#Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
-```
-
-Granger p-value = 0.0005302 Instant p-value = 0.49 terdapat bukti signifikan sebab akibat avg-rainfall terhadap produksi dan produksivitas dalam jangkah panjang tetapi tidak di jangka instant
-
-```{r}
-# Melakukan uji Granger Causality 
-granger_jagung_sumut2 <- causality(var_model_jagung_sumut, cause = "Produksi")
-granger_jagung_sumut2
-
-```
-
-Granger p-value =1.346e-09 dan Instant p-value 0.6807 terdapat bukti signifikan sebab akibat produksi terhadap avg_rainfall dan produksivitas jangkah panjang dan tidak jangka instant
-
-### Uji regresi linier Jagung
-
-```{r}
-# Membuat model regresi linier
-regresi_jagung_1 <- lm(Produktivitas ~ avg_rainfall, data = data_var_jagung_sumut)
-
-# Ringkasan hasil model
-summary(regresi_jagung_1)
-```
-
-```         
-         Estimate Std. Error t value Pr(>|t|)   
-```
-
-(Intercept) 49.338 27.533 1.792 0.0742 . avg_rainfall 9.460 3.536 2.676 0.0079 \*\*
-
-```{r}
-# Membuat model regresi linier
-regresi_jagung_2 <- lm(Produksi ~ avg_rainfall, data = data_var_jagung_sumut)
-
-# Ringkasan hasil model
-summary(regresi_jagung_2)
-```
-
-Estimate Std. Error t value Pr(\>\|t\|)\
-(Intercept) 12092 17239 0.701 0.4836\
-avg_rainfall 3771 2214 1.703 0.0896 .
-
-# Interpretasi Jagung SUMUT
-
-Berdasarkan Model VAR, regresi dan uji grager dan isntants. Curah hujan berdampak terhadap produktivitas jagung sumut dan tidak berdampak pada produksi jagunng sumut.
-
-### Membuat Prediksi Jagung SUMUT dengan Model VAR
-
-```{r}
-# Prediksi 10 periode ke depan
-forecast_ubikayu <- predict(var_model_ubikayu_Sumatera, n.ahead = 10)
-forecast_ubikayu
-```
-
-```{r}
-# Mengambil hanya kolom "fcst" dari setiap variabel
-forecast_results_ubikayu <- lapply(forecast_ubikayu$fcst, function(x) x[, "fcst"])
-
-# Menampilkan hasil
-print(forecast_results_ubikayu)
-```
-
-```{r}
-# Membuat data frame untuk hasil prediksi
-predicted_data_ubikayu <- as.data.frame(forecast_results_ubikayu)
-predicted_data_ubikayu
-```
-
-```{r}
-# Menambahkan variabel tahun 2023 sampai 2033
-predicted_data_ubikayu$Tahun <- seq(2023, 2032)
-predicted_data_ubikayu
-```
-
-```{r}
-# Visualisasi tren produksi Ubi kayu
-plot_produksi_ubikayu <- ggplot(predicted_data_ubikayu, aes(x = Tahun, y = Produksi, color = "Prediksi")) +
-  geom_line() +
-  geom_point() +
-  labs(title = "Prediksi Tren Produksi Ubi kayu Sumatera (2023-2033)",
-       x = "Tahun",
-       y = "Produksi Ubi kayu",
-       color = "Metode Prediksi") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal() +
-  theme(legend.position = "right")
-
-# Menampilkan plot
-print(plot_produksi_ubikayu)
-```
-
-```{r}
-# Visualisasi tren produksi Ubi kayu
-plot_produktivitas_ubikayu <- ggplot(predicted_data_ubikayu, aes(x = Tahun, y = Produktivitas, color = "Prediksi")) +
-  geom_line() +
-  geom_point() +
-  labs(title = "Prediksi Tren Produktivitas Ubi kayu Sumatera (2023-2033)",
-       x = "Tahun",
-       y = "Produktivitas Jagung",
-       color = "Metode Prediksi") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal() +
-  theme(legend.position = "right")
-
-# Menampilkan plot
-print(plot_produktivitas_ubikayu)
-```
-
-```{r}
-# Visualisasi tren Curah hujan Sumatera
-plot_avgrainfall_uk <- ggplot(predicted_data_ubikayu, aes(x = Tahun, y = avg_rainfall, color = "Prediksi")) +
-  geom_line() +
-  geom_point() +
-  labs(title = "Prediksi curah hujan Sumatera (2023-2033)",
-       x = "Tahun",
-       y = "Rata-rata curah hujan ",
-       color = "Metode Prediksi") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal() +
-  theme(legend.position = "right")
-
-# Menampilkan plot
-print(plot_avgrainfall_uk)
-```
-
-##2. Kacang kedelai palawija SUMUT
-
-```{r}
-# Filter data Palawija "kacang kedelai" berdasarkan jenis komonditi
-kedelai_palawija<-sumut_palawija %>%
-  filter(Jenis_Komoditi == "Kedelai")
-kedelai_palawija
-```
-
-## VAR terhadap Kedelai Sumatera Utara
-
-```{r}
-# Pilih variabel yang akan diprediksi
-
-data_var_kedelai_sumut <- kedelai_palawija[, c("Produksi", "avg_rainfall", "Produktivitas")]
-data_var_kedelai_sumut
-```
-
-Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam format time series (ts)
-
-```{r}
-#Format time series
-ts_data_kedelai_sumut<- ts(data_var_kedelai_sumut, start = c(2000,1), frequency = 1)
-ts_data_kedelai_sumut
-```
-
-```{r}
-best_lag_kedelai_sumut<- VARselect(ts_data_kedelai_sumut, lag.max = 5, type = "both")
-best_lag_kedelai_sumut
-```
-
-### VAR Model terhadap produksi Kedelai Sumatera
-
-```{r}
-
-var_model_kedelai_sumut <- VAR(ts_data_kedelai_sumut, p = best_lag_kedelai_sumut$selection[1], type = "both") # jumlah order dari model VAR
-summary(var_model_kedelai_sumut)
-```
-
-Estimation results for equation produktivitas:
-
-### Uji Kolersi Pearson Kedelai
-
-```{r}
-# Menghitung koefisien korelasi Pearson
-kolerasi_kedelai_sumut1 <- cor(data_var_kedelai_sumut$Produksi, data_var_kedelai_sumut$avg_rainfall)
-cat ("Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi:",kolerasi_kedelai_sumut1)
-```
-
-Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi: -0.457278
-
-```{r}
-# Menghitung koefisien korelasi Pearson
-kolerasi_kedelai_sumut2 <- cor(data_var_kedelai_sumut$avg_rainfall, data_var_kedelai_sumut$Produktivitas)
-cat ("Koefisien Korelasi Pearson Rata-rata curah hujan dan produksi:", kolerasi_kedelai_sumut2)
-```
-
-Koefisien Korelasi Pearson Rata-rata curah hujan dan produksi: 0.1026
-
-### Uji Granger Causality Kedelai
-
-```{r}
-# Melakukan uji Granger Causality 
-granger_kedelai_sumut1 <- causality(var_model_kedelai_sumut, cause = "avg_rainfall")
-granger_kedelai_sumut1
-
-#Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
-```
-
-Granger p-value = 0.419 Instant p-value = 0.1069 terdapat bukti signifikan sebab akibat avg-rainfall tidak terhadap pada produksi dan produksivitas dalam jangkah panjang dan jangka instant
-
-```{r}
-# Melakukan uji Granger Causality 
-granger_kedelai_sumut2 <- causality(var_model_kedelai_sumut, cause = "Produksi")
-granger_kedelai_sumut2
-
-```
-
-Granger p-value =0.7341 dan Instant p-value 0.1094 tidak terdapat bukti signifikan sebab akibat produksi terhadap avg_rainfall dan produksivitas jangkah panjang dan jangka instant
-
-### Uji regresi linier Kedelai
-
-```{r}
-# Membuat model regresi linier
-regresi_kedelai_1 <- lm(Produktivitas ~ avg_rainfall, data = data_var_kedelai_sumut)
-
-# Ringkasan hasil model
-summary(regresi_kedelai_1)
-```
-
-Estimate Std. Error t value Pr(\>\|t\|)\
-(Intercept) 9.6869 3.4544 2.804 0.00906 \*\* avg_rainfall 0.2407 0.4407 0.546 0.58929
-
-```{r}
-# Membuat model regresi linier
-regresi_kedelai_2 <- lm(Produksi ~ avg_rainfall, data = data_var_kedelai_sumut)
-
-# Ringkasan hasil model
-summary(regresi_kedelai_2)
-```
-
-Estimate Std. Error t value Pr(\>\|t\|)\
-(Intercept) 82440 24214 3.405 0.00202 \*\* avg_rainfall -8405 3089 -2.721 0.01107 \*
-
-# Interpretasi kedelai SUMUT
-
-Berdasarkan Model VAR, regresi dan uji grager dan isntants. Curah hujan berdampak terhadap tidak berdampak terhadap produktivitas kedelai sumut dan tidak berdampak pada produksi kedelai sumut.
-
-### Membuat Prediksi Kacang Kedelai SUMUT dengan Model VAR
-
-```{r}
-# Prediksi 10 periode ke depan
-forecast_ubikayu <- predict(var_model_ubikayu_Sumatera, n.ahead = 10)
-forecast_ubikayu
-```
-
-```{r}
-# Mengambil hanya kolom "fcst" dari setiap variabel
-forecast_results_ubikayu <- lapply(forecast_ubikayu$fcst, function(x) x[, "fcst"])
-
-# Menampilkan hasil
-print(forecast_results_ubikayu)
-```
-
-```{r}
-# Membuat data frame untuk hasil prediksi
-predicted_data_ubikayu <- as.data.frame(forecast_results_ubikayu)
-predicted_data_ubikayu
-```
-
-```{r}
-# Menambahkan variabel tahun 2023 sampai 2033
-predicted_data_ubikayu$Tahun <- seq(2023, 2032)
-predicted_data_ubikayu
-```
-
-```{r}
-# Visualisasi tren produksi Ubi kayu
-plot_produksi_ubikayu <- ggplot(predicted_data_ubikayu, aes(x = Tahun, y = Produksi, color = "Prediksi")) +
-  geom_line() +
-  geom_point() +
-  labs(title = "Prediksi Tren Produksi Ubi kayu Sumatera (2023-2033)",
-       x = "Tahun",
-       y = "Produksi Ubi kayu",
-       color = "Metode Prediksi") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal() +
-  theme(legend.position = "right")
-
-# Menampilkan plot
-print(plot_produksi_ubikayu)
-```
-
-```{r}
-# Visualisasi tren produksi Ubi kayu
-plot_produktivitas_ubikayu <- ggplot(predicted_data_ubikayu, aes(x = Tahun, y = Produktivitas, color = "Prediksi")) +
-  geom_line() +
-  geom_point() +
-  labs(title = "Prediksi Tren Produktivitas Ubi kayu Sumatera (2023-2033)",
-       x = "Tahun",
-       y = "Produktivitas Jagung",
-       color = "Metode Prediksi") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal() +
-  theme(legend.position = "right")
-
-# Menampilkan plot
-print(plot_produktivitas_ubikayu)
-```
-
-```{r}
-# Visualisasi tren Curah hujan Sumatera
-plot_avgrainfall_uk <- ggplot(predicted_data_ubikayu, aes(x = Tahun, y = avg_rainfall, color = "Prediksi")) +
-  geom_line() +
-  geom_point() +
-  labs(title = "Prediksi curah hujan Sumatera (2023-2033)",
-       x = "Tahun",
-       y = "Rata-rata curah hujan ",
-       color = "Metode Prediksi") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal() +
-  theme(legend.position = "right")
-
-# Menampilkan plot
-print(plot_avgrainfall_uk)
-```
-
-##3. Kacang hijau palawija SUMUT
-
-```{r}
-# Filter data Palawija "Kacang Hijau" berdasarkan jenis komonditi
-kacanghijau_palawija<- sumut_palawija %>%
-  filter(Jenis_Komoditi == "Kacang Hijau")
-kacanghijau_palawija
-```
-
-## VAR terhadap Kacang Hijau Sumatera Utara
-
-```{r}
-# Pilih variabel yang akan diprediksi
-
-data_var_kacanghijau_sumut <- kacanghijau_palawija[, c("Produksi", "avg_rainfall", "Produktivitas")]
-data_var_kacanghijau_sumut
-```
-
-Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam format time series (ts)
-
-```{r}
-#Format time series
-ts_data_kacanghijau_sumut<- ts(data_var_kacanghijau_sumut, start = c(2000,1), frequency = 1)
-ts_data_kacanghijau_sumut
-```
-
-```{r}
-best_lag_kacanghijau_sumut<- VARselect(ts_data_kacanghijau_sumut, lag.max = 5, type = "both")
-best_lag_kacanghijau_sumut
-```
-
-### VAR Model terhadap produksi kacanghijau Sumatera
-
-```{r}
-
-var_model_kacanghijau_sumut <- VAR(ts_data_kacanghijau_sumut, p = best_lag_kacanghijau_sumut$selection[1], type = "both") # jumlah order dari model VAR
-summary(var_model_kacanghijau_sumut)
-```
-
-Estimation results for equation produktivitas: avg_rainfall.l1 -3.933e+00 1.329e+00 -2.959 0.0416 \* F-statistik p-value:0.03056
-
-### Uji Kolersi Pearson kacanghijau
-
-```{r}
-# Menghitung koefisien korelasi Pearson
-kolerasi_kacanghijau_sumut1 <- cor(data_var_kacanghijau_sumut$Produksi, data_var_kacanghijau_sumut$avg_rainfall)
-cat ("Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi:",kolerasi_kacanghijau_sumut1)
-```
-
-Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi: 0.325
-
-```{r}
-# Menghitung koefisien korelasi Pearson
-kolerasi_kacanghijau_sumut2 <- cor(data_var_kacanghijau_sumut$avg_rainfall, data_var_kacanghijau_sumut$Produktivitas)
-cat ("Koefisien Korelasi Pearson Rata-rata curah hujan dan produksi:", kolerasi_kacanghijau_sumut2)
-```
-
-Koefisien Korelasi Pearson Rata-rata curah hujan dan produksi: 0.27
-
-### Uji Granger Causality kacanghijau
-
-```{r}
-# Melakukan uji Granger Causality 
-granger_kacanghijau_sumut1 <- causality(var_model_kacanghijau_sumut, cause = "avg_rainfall")
-granger_kacanghijau_sumut1
-
-#Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
-```
-
-Granger p-value = 0.01785 Instant p-value = 0.005492 terdapat bukti signifikan sebab akibat avg-rainfall terhadap produksi dan produksivitas dalam jangkah panjang dan di jangka instant
-
-```{r}
-# Melakukan uji Granger Causality 
-granger_kacanghijau_sumut2 <- causality(var_model_kacanghijau_sumut, cause = "Produksi")
-granger_kacanghijau_sumut2
-
-```
-
-Granger p-value =0.01102 dan Instant p-value 0.005521 terdapat bukti signifikan sebab akibat produksi terhadap avg_rainfall dan produksivitas jangkah panjang dan dan jangka instant
-
-### Uji regresi linier kacanghijau
-
-```{r}
-# Membuat model regresi linier
-regresi_kacanghijau_1 <- lm(Produktivitas ~ avg_rainfall, data = data_var_kacanghijau_sumut)
-
-# Ringkasan hasil model
-summary(regresi_kacanghijau_1)
-```
-
-Estimate Std. Error t value Pr(\>\|t\|) (Intercept) 3.3811 4.6463 0.728 0.474 avg_rainfall 0.8274 0.5870 1.410 0.171
-
-```{r}
-# Membuat model regresi linier
-regresi_kacanghijau_2 <- lm(Produksi ~ avg_rainfall, data = data_var_kacanghijau_sumut)
-
-# Ringkasan hasil model
-summary(regresi_kacanghijau_2)
-```
-
-Estimate Std. Error t value Pr(\>\|t\|)\
-(Intercept) 16928.7 6779.7 2.497 0.0198 \* avg_rainfall -1446.0 856.5 -1.688 0.1043
-
-# Interpretasi kacanghijau SUMUT
-
-Berdasarkan Model VAR, regresi dan uji grager dan isntants. Curah hujan tidak berdampak terhadap produktivitas kacanghijau sumut dan tidak berdampak pada produksi kacang hijau sumut.
-
-### Membuat Prediksi Kacang Hijau SUMUT dengan Model VAR
-
-```{r}
-# Prediksi 10 periode ke depan
-forecast_ubikayu <- predict(var_model_ubikayu_Sumatera, n.ahead = 10)
-forecast_ubikayu
-```
-
-```{r}
-# Mengambil hanya kolom "fcst" dari setiap variabel
-forecast_results_ubikayu <- lapply(forecast_ubikayu$fcst, function(x) x[, "fcst"])
-
-# Menampilkan hasil
-print(forecast_results_ubikayu)
-```
-
-```{r}
-# Membuat data frame untuk hasil prediksi
-predicted_data_ubikayu <- as.data.frame(forecast_results_ubikayu)
-predicted_data_ubikayu
-```
-
-```{r}
-# Menambahkan variabel tahun 2023 sampai 2033
-predicted_data_ubikayu$Tahun <- seq(2023, 2032)
-predicted_data_ubikayu
-```
-
-```{r}
-# Visualisasi tren produksi Ubi kayu
-plot_produksi_ubikayu <- ggplot(predicted_data_ubikayu, aes(x = Tahun, y = Produksi, color = "Prediksi")) +
-  geom_line() +
-  geom_point() +
-  labs(title = "Prediksi Tren Produksi Ubi kayu Sumatera (2023-2033)",
-       x = "Tahun",
-       y = "Produksi Ubi kayu",
-       color = "Metode Prediksi") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal() +
-  theme(legend.position = "right")
-
-# Menampilkan plot
-print(plot_produksi_ubikayu)
-```
-
-```{r}
-# Visualisasi tren produksi Ubi kayu
-plot_produktivitas_ubikayu <- ggplot(predicted_data_ubikayu, aes(x = Tahun, y = Produktivitas, color = "Prediksi")) +
-  geom_line() +
-  geom_point() +
-  labs(title = "Prediksi Tren Produktivitas Ubi kayu Sumatera (2023-2033)",
-       x = "Tahun",
-       y = "Produktivitas Jagung",
-       color = "Metode Prediksi") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal() +
-  theme(legend.position = "right")
-
-# Menampilkan plot
-print(plot_produktivitas_ubikayu)
-```
-
-```{r}
-# Visualisasi tren Curah hujan Sumatera
-plot_avgrainfall_uk <- ggplot(predicted_data_ubikayu, aes(x = Tahun, y = avg_rainfall, color = "Prediksi")) +
-  geom_line() +
-  geom_point() +
-  labs(title = "Prediksi curah hujan Sumatera (2023-2033)",
-       x = "Tahun",
-       y = "Rata-rata curah hujan ",
-       color = "Metode Prediksi") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal() +
-  theme(legend.position = "right")
-
-# Menampilkan plot
-print(plot_avgrainfall_uk)
-```
-
-##4. Kacang Tanah palawija SUMUT
-
-```{r}
-# Filter data Palawija "Jagung" berdasarkan jenis komonditi
-kacangtanah_palawija<- sumut_palawija %>%
-  filter(Jenis_Komoditi == "Kacang Tanah")
-kacangtanah_palawija
-```
-
-## VAR terhadap Jagung Sumatera Utara
-
-```{r}
-# Pilih variabel yang akan diprediksi
-
-data_var_kacangtanah_sumut <- kacangtanah_palawija[, c("Produksi", "avg_rainfall", "Produktivitas")]
-data_var_kacangtanah_sumut
-```
-
-Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam format time series (ts)
-
-```{r}
-#Format time series
-ts_data_kacangtanah_sumut<- ts(data_var_kacangtanah_sumut, start = c(2000,1), frequency = 1)
-ts_data_kacangtanah_sumut
-```
-
-```{r}
-best_lag_kacangtanah_sumut<- VARselect(ts_data_kacangtanah_sumut, lag.max = 5, type = "both")
-best_lag_kacangtanah_sumut
-```
-
-### VAR Model terhadap produksi kacangtanah Sumatera
-
-```{r}
-
-var_model_kacangtanah_sumut <- VAR(ts_data_kacangtanah_sumut, p = best_lag_kacangtanah_sumut$selection[1], type = "both") # jumlah order dari model VAR
-summary(var_model_kacangtanah_sumut)
-```
-
-### Uji Kolersi Pearson kacangtanah
-
-```{r}
-# Menghitung koefisien korelasi Pearson
-kolerasi_kacangtanah_sumut1 <- cor(data_var_kacangtanah_sumut$Produksi, data_var_kacangtanah_sumut$avg_rainfall)
-cat ("Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi:",kolerasi_kacangtanah_sumut1)
-```
-
-Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi: -0.35
-
-```{r}
-# Menghitung koefisien korelasi Pearson
-kolerasi_kacangtanah_sumut2 <- cor(data_var_kacangtanah_sumut$avg_rainfall, data_var_kacangtanah_sumut$Produktivitas)
-cat ("Koefisien Korelasi Pearson Rata-rata curah hujan dan produksi:", kolerasi_kacangtanah_sumut2)
-```
-
-Koefisien Korelasi Pearson Rata-rata curah hujan dan produksi: 0.3416
-
-### Uji Granger Causality kacangtanah
-
-```{r}
-# Melakukan uji Granger Causality 
-granger_kacangtanah_sumut1 <- causality(var_model_kacangtanah_sumut, cause = "avg_rainfall")
-granger_kacangtanah_sumut1
-
-#Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
-```
-
-Granger p-value = 0.4299 Instant p-value = 0.1633 tidak terdapat bukti signifikan sebab akibat avg-rainfall terhadap produksi dan produksivitas dalam jangkah panjang dan di jangka instant
-
-```{r}
-# Melakukan uji Granger Causality 
-granger_kacangtanah_sumut2 <- causality(var_model_kacangtanah_sumut, cause = "Produksi")
-granger_kacangtanah_sumut2
-
-```
-
-Granger p-value =0.8945 an Instant p-value 0.06302 tidak terdapat bukti signifikan sebab akibat produksi terhadap avg_rainfall dan produksivitas jangkah panjang dan tidak jangka instant
-
-### Uji regresi linier kacangtanah
-
-```{r}
-# Membuat model regresi linier
-regresi_kacangtanah_1 <- lm(Produktivitas ~ avg_rainfall, data = data_var_kacangtanah_sumut)
-
-# Ringkasan hasil model
-summary(regresi_kacangtanah_1)
-```
-
-```         
-         Estimate Std. Error t value Pr(>|t|)    
-```
-
-(Intercept) 8.2549 1.5714 5.253 1.39e-05 \*\*\* avg_rainfall 0.3856 0.2005 1.923 0.0647
-
-```{r}
-# Membuat model regresi linier
-regresi_kacangtanah_2 <- lm(Produksi ~ avg_rainfall, data = data_var_kacangtanah_sumut)
-
-# Ringkasan hasil model
-summary(regresi_kacangtanah_2)
-```
-
-Estimate Std. Error t value Pr(\>\|t\|)\
-(Intercept) 47107 14712 3.202 0.00339 \*\* avg_rainfall -3830 1877 -2.040 0.05086 . .
-
-# Interpretasi kacangtanah SUMUT
-
-Berdasarkan Model VAR, regresi dan uji grager dan isntants. Curah hujan tidak berdampak terhadap produktivitas kacang tanah sumut dan tidak berdampak pada produksi kacang tanah sumut.
-
-### Membuat Prediksi Kacang Tanah SUMUT dengan Model VAR
-
-```{r}
-# Prediksi 10 periode ke depan
-forecast_ubikayu <- predict(var_model_ubikayu_Sumatera, n.ahead = 10)
-forecast_ubikayu
-```
-
-```{r}
-# Mengambil hanya kolom "fcst" dari setiap variabel
-forecast_results_ubikayu <- lapply(forecast_ubikayu$fcst, function(x) x[, "fcst"])
-
-# Menampilkan hasil
-print(forecast_results_ubikayu)
-```
-
-```{r}
-# Membuat data frame untuk hasil prediksi
-predicted_data_ubikayu <- as.data.frame(forecast_results_ubikayu)
-predicted_data_ubikayu
-```
-
-```{r}
-# Menambahkan variabel tahun 2023 sampai 2033
-predicted_data_ubikayu$Tahun <- seq(2023, 2032)
-predicted_data_ubikayu
-```
-
-```{r}
-# Visualisasi tren produksi Ubi kayu
-plot_produksi_ubikayu <- ggplot(predicted_data_ubikayu, aes(x = Tahun, y = Produksi, color = "Prediksi")) +
-  geom_line() +
-  geom_point() +
-  labs(title = "Prediksi Tren Produksi Ubi kayu Sumatera (2023-2033)",
-       x = "Tahun",
-       y = "Produksi Ubi kayu",
-       color = "Metode Prediksi") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal() +
-  theme(legend.position = "right")
-
-# Menampilkan plot
-print(plot_produksi_ubikayu)
-```
-
-```{r}
-# Visualisasi tren produksi Ubi kayu
-plot_produktivitas_ubikayu <- ggplot(predicted_data_ubikayu, aes(x = Tahun, y = Produktivitas, color = "Prediksi")) +
-  geom_line() +
-  geom_point() +
-  labs(title = "Prediksi Tren Produktivitas Ubi kayu Sumatera (2023-2033)",
-       x = "Tahun",
-       y = "Produktivitas Jagung",
-       color = "Metode Prediksi") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal() +
-  theme(legend.position = "right")
-
-# Menampilkan plot
-print(plot_produktivitas_ubikayu)
-```
-
-```{r}
-# Visualisasi tren Curah hujan Sumatera
-plot_avgrainfall_uk <- ggplot(predicted_data_ubikayu, aes(x = Tahun, y = avg_rainfall, color = "Prediksi")) +
-  geom_line() +
-  geom_point() +
-  labs(title = "Prediksi curah hujan Sumatera (2023-2033)",
-       x = "Tahun",
-       y = "Rata-rata curah hujan ",
-       color = "Metode Prediksi") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal() +
-  theme(legend.position = "right")
-
-# Menampilkan plot
-print(plot_avgrainfall_uk)
-```
-
-##5. Ubi Jalar palawija SUMUT
-
-```{r}
-# Filter data Palawija "Jagung" berdasarkan jenis komonditi
-Ubijalar_palawija<- sumut_palawija %>%
-  filter(Jenis_Komoditi == "Ubi Jalar")
-Ubijalar_palawija
-```
-
-##VAR terhadap Ubi Jalar Sumatera Utara
-
-```{r}
-# Pilih variabel yang akan diprediksi
-
-data_var_ubijalar_sumut <- Ubijalar_palawija[, c("Produksi", "avg_rainfall", "Produktivitas")]
-data_var_ubijalar_sumut
-```
-
-Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam format time series (ts)
-
-```{r}
-#Format time series
-ts_data_ubijalar_sumut<- ts(data_var_ubijalar_sumut, start = c(1993,1), frequency = 1)
-ts_data_ubijalar_sumut
-```
-
-```{r}
-best_lag_ubijalar_sumut<- VARselect(ts_data_ubijalar_sumut, lag.max = 5, type = "both")
-best_lag_ubijalar_sumut
-```
-
-### VAR Model terhadap produksi Ubi Jalar Sumatera
-
-```{r}
-
-var_model_ubijalar_sumut <- VAR(ts_data_ubijalar_sumut, p = best_lag_ubijalar_sumut$selection[1], type = "both") # jumlah order dari model VAR
-summary(var_model_ubijalar_sumut)
-```
-
-### Uji Kolersi Pearson Ubi Jalar
-
-```{r}
-# Menghitung koefisien korelasi Pearson
-kolerasi_ubijalar_sumut1 <- cor(data_var_ubijalar_sumut$Produksi, data_var_ubijalar_sumut$avg_rainfall)
-cat ("Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi:",kolerasi_ubijalar_sumut1)
-```
-
-Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi: 0.25
-
-```{r}
-# Menghitung koefisien korelasi Pearson
-kolerasi_ubijalar_sumut2 <- cor(data_var_ubijalar_sumut$avg_rainfall, data_var_ubijalar_sumut$Produktivitas)
-cat ("Koefisien Korelasi Pearson Rata-rata curah hujan dan produksi:", kolerasi_ubijalar_sumut2)
-```
-
-Koefisien Korelasi Pearson Rata-rata curah hujan dan produksi: 0.23
-
-### Uji Granger Causality ubi jalar
-
-```{r}
-# Melakukan uji Granger Causality 
-granger_ubijalar_sumut1 <- causality(var_model_ubijalar_sumut, cause = "avg_rainfall")
-granger_ubijalar_sumut1
-
-#Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
-```
-
-Granger p-value = 0.2464 Instant p-value = 0.2937 tidak terdapat bukti signifikan sebab akibat avg-rainfall terhadap produksi dan produksivitas dalam jangkah panjang dan tidak di jangka instant
-
-```{r}
-# Melakukan uji Granger Causality 
-granger_ubijalar_sumut2 <- causality(var_model_ubijalar_sumut, cause = "Produksi")
-granger_ubijalar_sumut2
-
-#Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
-```
-
-Granger p-value =0.602 an Instant p-value 0.3156 tidak terdapat bukti signifikan sebab akibat produksi terhadap avg_rainfall dan produksivitas baik jangkah panjang dan di jangka instant
-
-### Uji regresi linier Ubi jalar
-
-```{r}
-# Membuat model regresi linier
-regresi_ubijalar_1 <- lm(Produktivitas ~ avg_rainfall, data = data_var_ubijalar_sumut)
-
-# Ringkasan hasil model
-summary(regresi_ubijalar_1)
-```
-
-```{r}
-# Membuat model regresi linier
-regresi_ubijalar_2 <- lm(Produksi ~ avg_rainfall, data = data_var_ubijalar_sumut)
-
-# Ringkasan hasil model
-summary(regresi_ubijalar_2)
-```
-
-### Membuat Prediksi Ubi Jalar SUMUT dengan Model VAR
-
-```{r}
-# Prediksi 10 periode ke depan
-forecast_ubikayu <- predict(var_model_ubikayu_Sumatera, n.ahead = 10)
-forecast_ubikayu
-```
-
-```{r}
-# Mengambil hanya kolom "fcst" dari setiap variabel
-forecast_results_ubikayu <- lapply(forecast_ubikayu$fcst, function(x) x[, "fcst"])
-
-# Menampilkan hasil
-print(forecast_results_ubikayu)
-```
-
-```{r}
-# Membuat data frame untuk hasil prediksi
-predicted_data_ubikayu <- as.data.frame(forecast_results_ubikayu)
-predicted_data_ubikayu
-```
-
-```{r}
-# Menambahkan variabel tahun 2023 sampai 2033
-predicted_data_ubikayu$Tahun <- seq(2023, 2032)
-predicted_data_ubikayu
-```
-
-```{r}
-# Visualisasi tren produksi Ubi kayu
-plot_produksi_ubikayu <- ggplot(predicted_data_ubikayu, aes(x = Tahun, y = Produksi, color = "Prediksi")) +
-  geom_line() +
-  geom_point() +
-  labs(title = "Prediksi Tren Produksi Ubi kayu Sumatera (2023-2033)",
-       x = "Tahun",
-       y = "Produksi Ubi kayu",
-       color = "Metode Prediksi") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal() +
-  theme(legend.position = "right")
-
-# Menampilkan plot
-print(plot_produksi_ubikayu)
-```
-
-```{r}
-# Visualisasi tren produksi Ubi kayu
-plot_produktivitas_ubikayu <- ggplot(predicted_data_ubikayu, aes(x = Tahun, y = Produktivitas, color = "Prediksi")) +
-  geom_line() +
-  geom_point() +
-  labs(title = "Prediksi Tren Produktivitas Ubi kayu Sumatera (2023-2033)",
-       x = "Tahun",
-       y = "Produktivitas Jagung",
-       color = "Metode Prediksi") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal() +
-  theme(legend.position = "right")
-
-# Menampilkan plot
-print(plot_produktivitas_ubikayu)
-```
-
-```{r}
-# Visualisasi tren Curah hujan Sumatera
-plot_avgrainfall_uk <- ggplot(predicted_data_ubikayu, aes(x = Tahun, y = avg_rainfall, color = "Prediksi")) +
-  geom_line() +
-  geom_point() +
-  labs(title = "Prediksi curah hujan Sumatera (2023-2033)",
-       x = "Tahun",
-       y = "Rata-rata curah hujan ",
-       color = "Metode Prediksi") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal() +
-  theme(legend.position = "right")
-
-# Menampilkan plot
-print(plot_avgrainfall_uk)
-```
-
-##6. Ubi kayu palawija SUMUT
-
-```{r}
-# Filter data Palawija "Jagung" berdasarkan jenis komonditi
-ubikayu_palawija<- sumut_palawija %>%
-  filter(Jenis_Komoditi == "Ubi Kayu")
-ubikayu_palawija
-```
-
-## VAR terhadap ubi kayu Sumatera Utara
-
-```{r}
-# Pilih variabel yang akan diprediksi
-
-data_var_ubikayu_sumut <- ubikayu_palawija[, c("Produksi", "avg_rainfall", "Produktivitas")]
-data_var_ubikayu_sumut
-```
-
-Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam format time series (ts)
-
-```{r}
-#Format time series
-ts_data_ubikayu_sumut<- ts(data_var_ubikayu_sumut, start = c(2000,1), frequency = 1)
-ts_data_ubikayu_sumut
-```
-
-```{r}
-best_lag_ubikayu_sumut<- VARselect(ts_data_ubikayu_sumut, lag.max = 5, type = "both")
-best_lag_ubikayu_sumut
-```
-
-### VAR Model terhadap produksi ubikayu Sumatera
-
-```{r}
-
-var_model_ubikayu_sumut <- VAR(ts_data_ubikayu_sumut, p = best_lag_ubikayu_sumut$selection[1], type = "both") # jumlah order dari model VAR
-summary(var_model_ubikayu_sumut)
+rmse_garch_rainfall_uk <- sqrt(mean((data_aktual_rainfall_uk - prediksi_rainfal_uk)^2))
+mape_garch_rainfall_uk <- mean(abs((data_aktual_rainfall_uk - prediksi_rainfal_uk) / data_aktual_rainfall_uk) * 100)
+mae_garch_rainfall_uk <- mean(abs(data_aktual_rainfall_uk - prediksi_rainfal_uk))
+mse_garch_rainfall_uk <- mean((data_aktual_rainfall_uk - prediksi_rainfal_uk)^2)
+
+cat("MAPE from garch:", mape_garch_rainfall_uk, "%\n")
+cat("RMSE:", rmse_garch_rainfall_uk, "\n")
+cat("MAE:", mae_garch_rainfall_uk, "\n")
+cat("MSE:", mse_garch_rainfall_uk, "\n")
+```
+MAPE from garch: 100 %
+RMSE: 7.835492 
+MAE: 7.745103 
+MSE: 61.39494
+
+```{r}
+# Mengatur format angka
+options(digits = 3, scipen = 999)
+result_table$Produktivitas_Ubi_Kayu <- format(result_table$Produktivitas_Ubi_Kayu, nsmall = 2)
+result_table$Produksi_Ubi_Kayu <- format(result_table$Produksi_Ubi_Kayu, nsmall = 2)
+result_table$Produktivitas_Ubi_Jalar <- format(result_table$Produktivitas_Ubi_Jalar, nsmall = 2)
+result_table$Produksi_Ubi_Jalar <- format(result_table$Produksi_Ubi_Jalar, nsmall = 2)
+result_table$Produksi_jagung <- format(result_table$Produksi_jagung, nsmall = 2)
+result_table$Produktivitas_jagung <- format(result_table$Produktivitas_jagung, nsmall = 2)
+result_table$Produksi_Kedelai <- format(result_table$Produksi_Kedelai, nsmall = 2)
+result_table$Produktivitas_kedelai <- format(result_table$Produktivitas_kedelai, nsmall = 2)
+result_table$Produksi_kacang_tanah <- format(result_table$Produksi_kacang_tanah, nsmall = 2)
+result_table$Produktivitas_kacang_tanah <- format(result_table$Produktivitas_kacang_tanah, nsmall = 2)
+result_table$Produksi_kacang_hijau <- format(result_table$Produksi_kacang_hijau, nsmall = 2)
+result_table$Produktivitas_kacang_hijau <- format(result_table$Produktivitas_kacang_hijau, nsmall = 2)
+```
+
+
+```{r}
+# Membuat tabel kosong
+result_table <- data.frame(
+  Metric = character(),
+  Produksi_jagung =numeric(),
+  Produktivitas_jagung =numeric(),
+  Produksi_Kedelai =numeric(),
+  Produktivitas_kedelai =numeric(),
+  Produksi_kacang_tanah =numeric(),
+  Produktivitas_kacang_tanah =numeric(),
+  Produksi_kacang_hijau =numeric(),
+  Produktivitas_kacang_hijau =numeric(),
+  Produktivitas_Ubi_Kayu = numeric(),
+  Produksi_Ubi_Kayu = numeric(),
+  Produktivitas_Ubi_Jalar = numeric(),
+  Produksi_Ubi_Jalar = numeric()
+)
+
+# Menambahkan hasil evaluasi ke tabel
+result_table <- rbind(
+  result_table,
+  data.frame(
+    Metric = "MAPE",
+    Produktivitas_Ubi_Kayu = mape_garch_ptj,
+    Produksi_Ubi_Kayu = mape_garch_uk,
+    Produktivitas_Ubi_Jalar = mape_garch_ptuj,
+    Produksi_Ubi_Jalar = mape_garch_uj,
+    Produksi_jagung = mape_garch_j,
+    Produktivitas_jagung = mape_garch_ptj,
+    Produksi_Kedelai =mape_garch_kk,
+    Produktivitas_kedelai =mape_garch_ptkk,
+    Produksi_kacang_tanah =mape_garch_kt,
+    Produktivitas_kacang_tanah =mape_garch_ptkt,
+    Produksi_kacang_hijau =mape_garch_kh,
+    Produktivitas_kacang_hijau =mape_garch_ptkh
+    
+  ),
+  data.frame(
+    Metric = "RMSE",
+    Produktivitas_Ubi_Kayu = rmse_garch_ptj,
+    Produksi_Ubi_Kayu = rmse_garch_uk,
+    Produktivitas_Ubi_Jalar = rmse_garch_ptuj,
+    Produksi_Ubi_Jalar = rmse_garch_uj,
+    Produksi_jagung = rmse_garch_j,
+    Produktivitas_jagung = rmse_garch_ptj,
+    Produksi_Kedelai =rmse_garch_kk,
+    Produktivitas_kedelai =rmse_garch_ptkk,
+    Produksi_kacang_tanah =rmse_garch_kt,
+    Produktivitas_kacang_tanah =rmse_garch_ptkt,
+    Produksi_kacang_hijau =rmse_garch_kh,
+    Produktivitas_kacang_hijau =rmse_garch_ptkh
+  ),
+  data.frame(
+    Metric = "MAE",
+    Produktivitas_Ubi_Kayu = mae_garch_ptj,
+    Produksi_Ubi_Kayu = mae_garch_uk,
+    Produktivitas_Ubi_Jalar = mae_garch_ptuj,
+    Produksi_Ubi_Jalar = mae_garch_uj,
+    Produksi_jagung = mae_garch_j,
+    Produktivitas_jagung = mae_garch_ptj,
+    Produksi_Kedelai =mae_garch_kk,
+    Produktivitas_kedelai =mae_garch_ptkk,
+    Produksi_kacang_tanah =mae_garch_kt,
+    Produktivitas_kacang_tanah =mae_garch_ptkt,
+    Produksi_kacang_hijau =mae_garch_kh,
+    Produktivitas_kacang_hijau =mae_garch_ptkh
+  ),
+  data.frame(
+    Metric = "MSE",
+    Produktivitas_Ubi_Kayu = mse_garch_ptj,
+    Produksi_Ubi_Kayu = mse_garch_uk,
+    Produktivitas_Ubi_Jalar = mse_garch_ptuj,
+    Produksi_Ubi_Jalar = mse_garch_uj,
+    Produksi_jagung = mse_garch_j,
+    Produktivitas_jagung =mse_garch_ptj,
+    Produksi_Kedelai =mse_garch_kk,
+    Produktivitas_kedelai =mse_garch_ptkk,
+    Produksi_kacang_tanah =mse_garch_kt,
+    Produktivitas_kacang_tanah =mse_garch_ptkt,
+    Produksi_kacang_hijau =mse_garch_kh,
+    Produktivitas_kacang_hijau =mse_garch_ptkh
+    
+  )
+)
+
+# Menampilkan tabel
+result_table
 ```
 
-Estimation results for equation produktivitas: avg_rainfall.l1 -1.371e+00 2.921e-01 -4.693 0.001555 \*\* avg_rainfall.l3 6.605e-01 2.427e-01 2.722 0.026188 \* F-statistik p-value:6.623e-10
 
-### Uji Kolersi Pearson ubikayu
-
-```{r}
-# Menghitung koefisien korelasi Pearson
-kolerasi_ubikayu_sumut1 <- cor(data_var_ubikayu_sumut$Produksi, data_var_ubikayu_sumut$avg_rainfall)
-cat ("Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi:",kolerasi_ubikayu_sumut1)
-```
-
-Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi: 0.22
-
-```{r}
-# Menghitung koefisien korelasi Pearson
-kolerasi_ubikayu_sumut2 <- cor(data_var_ubikayu_sumut$avg_rainfall, data_var_ubikayu_sumut$Produktivitas)
-cat ("Koefisien Korelasi Pearson Rata-rata curah hujan dan produksi:", kolerasi_ubikayu_sumut2)
-```
-
-Koefisien Korelasi Pearson Rata-rata curah hujan dan produksi: 0.25
-
-### Uji Granger Causality ubikayu
-
-```{r}
-# Melakukan uji Granger Causality 
-granger_ubikayu_sumut1 <- causality(var_model_ubikayu_sumut, cause = "avg_rainfall")
-granger_ubikayu_sumut1
-
-#Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
-```
-
-Granger p-value = 0.90 Instant p-value = 0.021 terdapat bukti signifikan sebab akibat avg-rainfall tidak terhadap produksi dan produksivitas dalam jangkah panjang tetapi signiifkan sebab- akibat di jangka instant
-
-```{r}
-# Melakukan uji Granger Causality 
-granger_ubikayu_sumut2 <- causality(var_model_ubikayu_sumut, cause = "Produksi")
-granger_ubikayu_sumut2
-
-```
-
-Granger p-value =0.8724 dan Instant p-value 0.00417 terdapat bukti signifikan sebab akibat avg-rainfall tidak terhadap produksi dan produksivitas dalam jangkah panjang tetapi signiifkan sebab- akibat di jangka instant
-
-### Uji regresi linier ubikayu
-
-```{r}
-# Membuat model regresi linier
-regresi_ubikayu_1 <- lm(Produktivitas ~ avg_rainfall, data = data_var_ubikayu_sumut)
-
-# Ringkasan hasil model
-summary(regresi_ubikayu_1)
-```
-
-```         
-         stimate Std. Error t value Pr(>|t|)
-```
-
-(Intercept) -31.74 190.21 -0.167 0.869 avg_rainfall 33.31 24.27 1.372 0.181
-
-```{r}
-# Membuat model regresi linier
-regresi_ubikayu_2 <- lm(Produksi ~ avg_rainfall, data = data_var_ubikayu_sumut)
-
-# Ringkasan hasil model
-summary(regresi_ubikayu_2)
-```
-
-Estimate Std. Error t value Pr(\>\|t\|) (Intercept) 39232 617773 0.064 0.950 avg_rainfall 94365 78817 1.197 0.241 \# Interpretasi ubikayu SUMUT Berdasarkan Model VAR, regresi dan uji grager dan isntants. Curah hujan tidak berdampak terhadap produktivitas ubikayu sumut dan tidak berdampak pada produksi Ubi Kayu sumut.
-
-#Interpretasi UMUM Berdasarkan proses analsiis model VAR pada setip palawija di provinsi sumatera utara dapat di ambil kesimpulan bahwa *Avg_rainfal hanya berdampak* terhadap Produktivitas jagung.Dan curah hujan *tidak berdampak* terhadap produksi jagung Sumut, Produksi dan produktivitas ubi jalar, Produksi dan produktivitas ubi kayu, Produksi dan produktivitas kacang kedelai, Produksi dan produktivitas kacang tanah dan Produksi dan produktivitas kacang Hijau.
-
-### Membuat Prediksi Ubi kayu SUMUT dengan Model VAR
-
-```{r}
-# Prediksi 10 periode ke depan
-forecast_ubikayu <- predict(var_model_ubikayu_Sumatera, n.ahead = 10)
-forecast_ubikayu
-```
-
-```{r}
-# Mengambil hanya kolom "fcst" dari setiap variabel
-forecast_results_ubikayu <- lapply(forecast_ubikayu$fcst, function(x) x[, "fcst"])
-
-# Menampilkan hasil
-print(forecast_results_ubikayu)
-```
-
-```{r}
-# Membuat data frame untuk hasil prediksi
-predicted_data_ubikayu <- as.data.frame(forecast_results_ubikayu)
-predicted_data_ubikayu
-```
-
-```{r}
-# Menambahkan variabel tahun 2023 sampai 2033
-predicted_data_ubikayu$Tahun <- seq(2023, 2032)
-predicted_data_ubikayu
-```
-
-```{r}
-# Visualisasi tren produksi Ubi kayu
-plot_produksi_ubikayu <- ggplot(predicted_data_ubikayu, aes(x = Tahun, y = Produksi, color = "Prediksi")) +
-  geom_line() +
-  geom_point() +
-  labs(title = "Prediksi Tren Produksi Ubi kayu Sumatera (2023-2033)",
-       x = "Tahun",
-       y = "Produksi Ubi kayu",
-       color = "Metode Prediksi") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal() +
-  theme(legend.position = "right")
-
-# Menampilkan plot
-print(plot_produksi_ubikayu)
-```
-
-```{r}
-# Visualisasi tren produksi Ubi kayu
-plot_produktivitas_ubikayu <- ggplot(predicted_data_ubikayu, aes(x = Tahun, y = Produktivitas, color = "Prediksi")) +
-  geom_line() +
-  geom_point() +
-  labs(title = "Prediksi Tren Produktivitas Ubi kayu Sumatera (2023-2033)",
-       x = "Tahun",
-       y = "Produktivitas Jagung",
-       color = "Metode Prediksi") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal() +
-  theme(legend.position = "right")
-
-# Menampilkan plot
-print(plot_produktivitas_ubikayu)
-```
-
-```{r}
-# Visualisasi tren Curah hujan Sumatera
-plot_avgrainfall_uk <- ggplot(predicted_data_ubikayu, aes(x = Tahun, y = avg_rainfall, color = "Prediksi")) +
-  geom_line() +
-  geom_point() +
-  labs(title = "Prediksi curah hujan Sumatera (2023-2033)",
-       x = "Tahun",
-       y = "Rata-rata curah hujan ",
-       color = "Metode Prediksi") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal() +
-  theme(legend.position = "right")
-
-# Menampilkan plot
-print(plot_avgrainfall_uk)
-```
-
-```{r}
-# Membuat prediksi dengan model VAR
-predictions_jagung_Sumatera <- predict(var_model_jagung_Sumatera, n.ahead = 10)
-predictions_jagung_Sumatera
-```
 
