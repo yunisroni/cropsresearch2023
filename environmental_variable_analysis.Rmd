@@ -1,0 +1,11 @@
+---
+title: "Analisis Dampak Variabel Lingkungan (Suhu, Tekanan Udara, Sinar Matahari, Kecepatan Angin, Kelembapan) terhadap Produksi Palawija"
+author: "Nurul Aina Tasya"
+date: "2024-02-25"
+output: html_document
+---
+
+
+
+
+
