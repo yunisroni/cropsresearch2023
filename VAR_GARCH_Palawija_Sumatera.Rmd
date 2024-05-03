@@ -2614,29 +2614,29 @@ cat("MSE Produksi Ubi kayu:", mse_garch_uk, "\n")
 
 ```{r}
 # Mengambil data produktivitas ubikayu selama 10 tahun terakhir
-data_aktual_ptj <- Sumatera_ubi_kayu[format(Sumatera_ubi_kayu$Tahun, "%Y") >= "2013", "Produktivitas"]
-data_aktual_ptj
+data_aktual_ptuk <- Sumatera_ubi_kayu[format(Sumatera_ubi_kayu$Tahun, "%Y") >= "2013", "Produktivitas"]
+data_aktual_ptuk
 ```
 
 ```{r}
-data_aktual_ptj<- as.numeric(data_aktual_ptj$Produktivitas)
+data_aktual_ptuk<- as.numeric(data_aktual_ptuk$Produktivitas)
 ```
 
 ```{r}
-prediksi_produksi_ptj <- as.numeric(prediksi_garch_ubikayu$Produktivitas)
+prediksi_produksi_ptuk <- as.numeric(prediksi_garch_ubikayu$Produktivitas)
 ```
 
 ```{r}
 # Menghitung nilai RMSE, MAPE, MAE, dan MSE
-rmse_garch_ptj <- sqrt(mean((data_aktual_ptj - prediksi_produksi_ptj)^2))
-mape_garch_ptj <- mean(abs((data_aktual_ptj - prediksi_produksi_ptj) / data_aktual_ptj) * 100)
-mae_garch_ptj <- mean(abs(data_aktual_ptj - prediksi_produksi_ptj))
-mse_garch_ptj <- mean((data_aktual_ptj - prediksi_produksi_ptj)^2)
+rmse_garch_ptuk <- sqrt(mean((data_aktual_ptuk - prediksi_produksi_ptuk)^2))
+mape_garch_ptuk <- mean(abs((data_aktual_ptuk - prediksi_produksi_ptuk) / data_aktual_ptuk) * 100)
+mae_garch_ptuk <- mean(abs(data_aktual_ptuk - prediksi_produksi_ptuk))
+mse_garch_ptuk <- mean((data_aktual_ptuk - prediksi_produksi_ptuk)^2)
 
-cat("MAPE Produktivitas Ubi kayu:", mape_garch_ptj, "%\n")
-cat("RMSE Produktivitas Ubi kayu:", rmse_garch_ptj, "\n")
-cat("MAE Produktivitas Ubi kayu:", mae_garch_ptj, "\n")
-cat("MSE Produktivitas Ubi kayu:", mse_garch_ptj, "\n")
+cat("MAPE Produktivitas Ubi kayu:", mape_garch_ptuk, "%\n")
+cat("RMSE Produktivitas Ubi kayu:", rmse_garch_ptuk, "\n")
+cat("MAE Produktivitas Ubi kayu:", mae_garch_ptuk, "\n")
+cat("MSE Produktivitas Ubi kayu:", mse_garch_ptuk, "\n")
 ```
 
 ```{r}
@@ -2711,7 +2711,7 @@ result_table <- rbind(
   result_table,
   data.frame(
     Metric = "MAPE",
-    Produktivitas_Ubi_Kayu = mape_garch_ptj,
+    Produktivitas_Ubi_Kayu = mape_garch_ptuk,
     Produksi_Ubi_Kayu = mape_garch_uk,
     Produktivitas_Ubi_Jalar = mape_garch_ptuj,
     Produksi_Ubi_Jalar = mape_garch_uj,
@@ -2727,7 +2727,7 @@ result_table <- rbind(
   ),
   data.frame(
     Metric = "RMSE",
-    Produktivitas_Ubi_Kayu = rmse_garch_ptj,
+    Produktivitas_Ubi_Kayu = rmse_garch_ptuk,
     Produksi_Ubi_Kayu = rmse_garch_uk,
     Produktivitas_Ubi_Jalar = rmse_garch_ptuj,
     Produksi_Ubi_Jalar = rmse_garch_uj,
@@ -2742,7 +2742,7 @@ result_table <- rbind(
   ),
   data.frame(
     Metric = "MAE",
-    Produktivitas_Ubi_Kayu = mae_garch_ptj,
+    Produktivitas_Ubi_Kayu = mae_garch_ptuk,
     Produksi_Ubi_Kayu = mae_garch_uk,
     Produktivitas_Ubi_Jalar = mae_garch_ptuj,
     Produksi_Ubi_Jalar = mae_garch_uj,
@@ -2757,7 +2757,7 @@ result_table <- rbind(
   ),
   data.frame(
     Metric = "MSE",
-    Produktivitas_Ubi_Kayu = mse_garch_ptj,
+    Produktivitas_Ubi_Kayu = mse_garch_ptuk,
     Produksi_Ubi_Kayu = mse_garch_uk,
     Produktivitas_Ubi_Jalar = mse_garch_ptuj,
     Produksi_Ubi_Jalar = mse_garch_uj,

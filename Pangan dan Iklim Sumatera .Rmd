@@ -21,38 +21,35 @@ library(summarytools)
 library(cluster)
 library(scales)
 library(vars)
-
 ```
 
 
-```{r}
 
-# Buat vektor untuk mengonversi nama bulan ke angka bulan
-#bulan<- c("Januari" = 1, "Februari" = 2, "Maret" = 3, "April" = 4, "Mei" = 5, "Juni" = 6, "Juli" = 7, "Agustus" = 8, "September" = 9, "Oktober" = 10, "November" = 11, "Desember" = 12)
-# Mengubah variabel bulan menjadi angka
-#Hujan_kab$bulan_angka <- bulan[Hujan_kab$Bulan]
-#Hujan_kab
-
-```
-
-```{r}
-# Mengonversi variabel tahun dan bulan menjadi tipe data Date dengan format "YYYY-MM-01"
-#Hujan_kab$tanggal <- as.Date(paste0(Hujan_kab$Tahun, "-", Hujan_kab$bulan_angka, "-01"))
-#Hujan_kab
-```
 
 # Load Data
 ```{r}
-data_iklim <-read_excel("D:/OneDrive - mikroskil.ac.id/Documents/File R skripsi/Dataset Tanaman Pangan dan Iklim Pulau Sumatera 2006-2015.xlsx")
+data_iklim_sumatera <-read_excel("D:/OneDrive - mikroskil.ac.id/Skripsi/Dataset 2006-2015.xlsx")
+data_iklim_sumatera
+```
+
+
+
+```{r}
+#menghapus variabel Luas panen
+data_iklim_new <-data_iklim_sumatera %>%
+  select(-Luas_Panen)
+```
+
+```{r}
+data_iklim <- subset(data_iklim_sumatera, select = -Luas_Panen)
 data_iklim
 ```
 
 ```{r}
 
-#Merubah type data dari cdouble menjadi numeric agar mudah di operasikan
+#Merubah type data dari double menjadi numeric agar mudah di operasikan
 data_iklim$Produktivitas<-as.numeric(data_iklim$Produktivitas)
 data_iklim$Produksi<-as.numeric(data_iklim$Produksi)
-data_iklim$Luas_Panen<-as.numeric(data_iklim$Luas_Panen)
 data_iklim$Kecepatan_Angin<-as.numeric(data_iklim$Kecepatan_Angin)
 data_iklim$Kelembapan<-as.numeric(data_iklim$Kelembapan)
 data_iklim$Suhu<-as.numeric(data_iklim$Suhu)
@@ -62,30 +59,39 @@ data_iklim
 ```
 
 ```{r}
+#Merubah type data dari double menjadi date agar mudah di operasikan
 data_iklim$Tahun<-make_date(data_iklim$Tahun)
 data_iklim
 ```
+```{r}
+glimpse(data_iklim)
+```
+
 
 ```{r}
 tail(data_iklim)
 ```
 
+```{r}
+# Menampilkan jumlah baris dan kolom pada data_iklim
+dim(data_iklim)
+```
 
 ```{r}
-shapiro.test(data_iklim$Produksi)
-shapiro.test(data_iklim$Produktivitas)
-shapiro.test(data_iklim$Luas_Panen)
-shapiro.test(data_iklim$Kecepatan_Angin)
-shapiro.test(data_iklim$Kelembapan)
-shapiro.test(data_iklim$Suhu)
-shapiro.test(data_iklim$Penyinaran_Matahari)
-shapiro.test(data_iklim$Curah_hujan)
+#shapiro.test(data_iklim$Produksi)
+#shapiro.test(data_iklim$Produktivitas)
+#shapiro.test(data_iklim$Luas_Panen)
+#shapiro.test(data_iklim$Kecepatan_Angin)
+#shapiro.test(data_iklim$Kelembapan)
+#shapiro.test(data_iklim$Suhu)
+#shapiro.test(data_iklim$Penyinaran_Matahari)
+#shapiro.test(data_iklim$Curah_hujan)
 ```
 
 
 ```{r}
-ks.test(data_iklim$Produksi, "pnorm", mean=mean(data_iklim$Produksi), sd=sd(data_iklim$Produksi))
-ks.test(data_iklim$Kelembapan, "pnorm", mean=mean(data_iklim$Kelembapan), sd=sd(data_iklim$Kelembapan))
+#ks.test(data_iklim$Produksi, "pnorm", mean=mean(data_iklim$Produksi), sd=sd(data_iklim$Produksi))
+#ks.test(data_iklim$Kelembapan, "pnorm", mean=mean(data_iklim$Kelembapan), sd=sd(data_iklim$Kelembapan))
 ```
 
 
@@ -104,11 +110,21 @@ summary(Iklim_clean)
 colSums(is.na(Iklim_clean))
 ```
 ```{r}
+glimpse(Iklim_clean)
+```
+
+
+```{r}
 tail(Iklim_clean)
+```
+
+```{r}
+glimpse(Iklim_clean)
 ```
 
 ## Eksplorasi Data Analisis (EDA)
 
+# Hitung total produksi semua tanaman palawija per provinsi di setiap tahun
 ### Jumlah Produksi Tanaman Pangan per Provinsi di Pulau Sumatera
 ```{r}
 # Hitung total produksi semua tanaman pangan per provinsi di sumatera di setiap tahun
@@ -128,35 +144,65 @@ totproduksi_provsumatera <- Iklim_clean %>%
   arrange(desc(total_produksi))
   
 totproduksi_provsumatera
+
 ```
 
 ### visualisasi Produksi Tanaman Pangan per Provinsi di pulau sumatera
 ```{r}
 # Visualisasi Tren Produksi tanaman pangan per provinsi di setiap tahun
-plot_sumatera1 <- ggplot(Iklim_clean, aes(x = Tahun, y = total_produksi, color = Provinsi)) +
+plot_sumatera1 <- ggplot(totproduksi_sumatera, aes(x = Tahun, y = total_produksi, color = Provinsi)) +
   geom_line() +
   geom_point() +
   labs(title = "Tren Produksi Tanaman Pangan di Pulau Sumatera", x = "Tahun", y = "Total Produksi (Ton)") +
   scale_y_continuous(labels = scales::comma) +
   theme_minimal() +
   theme(legend.position = "right")
+
 plot_sumatera1
 ```
 
-```{r}
+### visualisasi Produksi Tanaman Pangan per Provinsi di pulau sumatera
 
-# Visualisasi dengan barplot
-plot_sumatera2 <- ggplot(Iklim_clean, aes(x = Provinsi, y = total_produksi, fill = Provinsi)) +
-  geom_bar(stat = "identity") +
-  labs(title = "Perbandingan Produksi Tanaman pangan antar Provinsi di Sumatera", x = "Provinsi", y = "Total Produksi (Ton)") +
+```{r}
+plot_sumatera <- ggplot(totproduksi_sumatera, aes(x = Tahun, y = total_produksi, color = Provinsi)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Tren Produksi Tanaman Pangan di Pulau Sumatera", x = "Tahun", y = "Total Produksi (Ton)") +
   scale_y_continuous(labels = scales::comma) +
   theme_minimal() +
-  theme(legend.position = "none")  # hilangkan legend
+  theme(legend.position = "right")
 
-# Rotasi sumbu x agar mudah dibaca
-plot_sumatera2 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+plot_sumatera
 ```
+
 Produksi tanaman pangan terbanyak di pulau sumatera dalam kurun waktu 2006 - 2015 adalah dari provinsi dengan Jumlah Produksi .... Ton
+
+
+
+```{r}
+# Hitung total produktivitas semua tanaman pangan per provinsi di sumatera di setiap tahun
+totproduktivitas_sumatera <- Iklim_clean %>% 
+  group_by(Tahun, Provinsi, .drop = FALSE) %>%  # Add .drop argument
+  summarise(total_produktivitas = sum(Produktivitas)) %>%
+  arrange(desc(total_produktivitas))
+
+totproduktivitas_sumatera
+```
+
+```{r}
+# Visualisasi Tren Produktivitas tanaman pangan per provinsi di setiap tahun
+plot_sumatera_produktivitas<- ggplot(totproduktivitas_sumatera, aes(x = Tahun, y = total_produktivitas, color = Provinsi)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Tren ProduktivitasTanaman Pangan di Pulau Sumatera", x = "Tahun", y = "Total Produktivitas") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "right")
+
+plot_sumatera_produktivitas
+```
+
+
 
 ```{r}
 shapiro.test(Iklim_clean$Produksi)
