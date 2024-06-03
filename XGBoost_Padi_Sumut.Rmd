@@ -5,9 +5,6 @@ date: "2023-10-31"
 output: pdf_document
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
 
 # Load Library/Packages
 
@@ -38,474 +35,720 @@ library (prophet)
 ```
 
 
-# Obstain - Load Dataset
+# 1. Obtain
 
+## a. import dataset
 ```{r}
-padi <- read.csv("dataset/Data_Tanaman_Padi_Sumatera_V1.csv")
-padi
+# Dataset padi indonesia
+indo <- read_excel("dataset/pangan_Indonesia.xlsx")
+
+# Dataset padi sumatera utara
+sumut <- read_excel("dataset/padi-sumut_update.xlsx")
 ```
 
+## b. Menampilkan data
+
+### - Dataset indonesia
 ```{r}
-# Merubah nama variabel Kabupaten Kota, Rata-rata Produksi dan Luas Panen
-names(padi)[names(padi) == "Curah.hujan"] <- "Curah_hujan"
-names(padi)[names(padi) == "Suhu.rata.rata"] <- "Suhu_rata_rata"
-names(padi)[names(padi) == "Luas.Panen"] <- "Luas_panen"
-glimpse(padi)
+# Menampilkan 6 data teratas
+head(indo)
+
+# Menampilkan 6 data terbawah
+tail(indo)
+
+# Menampilkan struktur data
+glimpse(indo)
 ```
 
-## a. Merubah type data
+### - Dataset sumatera utara
+```{r}
+# Menampilkan 6 data teratas
+head(sumut)
 
+# Menampilkan 6 data terbawah
+tail(sumut)
+
+# Menampilkan struktur data
+glimpse(sumut)
+```
+
+
+# 2. Scrub
+
+## a. Merubah nama variabel khusus untuk dataset padi sumatera utara
+```{r}
+# Merubah nama variabel Kabupaten Kota, Rata-rata Produksi, dan Luas Panen
+names(sumut)[names(sumut) == "Kabupaten Kota"] <- "Kabupaten_Kota"
+names(sumut)[names(sumut) == "Rata-rata produksi"] <- "Rata_rata_produksi"
+names(sumut)[names(sumut) == "Luas Panen"] <- "Luas_Panen"
+glimpse(sumut)
+```
+
+## b. Menghasilkan daftar unik dari provinsi dan kabupaten_kota yang tercatat dalam dataset indo dan sumut, tanpa ada duplikat.
+```{r}
+# Dataset padi indonesia
+unique(indo$Provinsi)
+```
+```{r}
+# Dataset padi sumatera utara
+unique(sumut$Kabupaten_Kota)
+```
+
+## c. Merubah type data
+
+### - Dataset padi indonesia
 ```{r}
 # Merubah type data karakter menjadi numeric
-padi$Produksi <- as.numeric(padi$Produksi)
-padi$`Luas_panen` <- as.numeric(padi$Luas_panen)
-padi$Curah_hujan <- as.numeric(padi$Curah_hujan)
-padi$Kelembapan <- as.numeric(padi$Kelembapan)
-padi$Suhu_rata_rata <- as.numeric(padi$Suhu_rata_rata)
-padi
+indo$Produksi <- as.numeric(indo$Produksi)
+indo$Produktivitas <- as.numeric(indo$Produktivitas)
+indo$Luas_Panen <- as.numeric(indo$Luas_Panen)
+glimpse(indo)
 ```
-
 ```{r}
 # Merubah type Tahun menjadi Date
-padi$Tahun <- make_date(padi$Tahun)
-glimpse(padi)
+indo$Tahun <- make_date(indo$Tahun)
+glimpse(indo)
 ```
 
-## b. Menghapus Data Kosong
+### - Dataset padi sumatera utara
+```{r}
+# Merubah type data karakter menjadi numeric
+sumut$Rata_rata_produksi <- as.numeric(sumut$Rata_rata_produksi)
+sumut$Produksi <- as.numeric(sumut$Produksi)
+sumut$Luas_Panen <- as.numeric(sumut$Luas_Panen)
+glimpse(sumut)
+```
+```{r}
+# Merubah type Tahun menjadi Date
+sumut$Tahun <- make_date(sumut$Tahun)
+glimpse(sumut)
+```
 
+## d. Menghapus data kosong atau NA's
+
+### - Dataset padi indonesia
 ```{r}
 # Menampilkan variabel dengan baris kosong
-colSums(is.na(padi))
+colSums(is.na(indo))
+```
+```{r}
+# Menghapus data NA's pada variabel dengan baris kosong
+indo_clean <- na.omit(indo)
+colSums(is.na(indo_clean))
+```
+```{r}
+# Menampilkan ringkasan statistik deskriptif
+summary(indo_clean)
 ```
 
+### - Dataset padi sumatera utara
 ```{r}
-unique(padi$Provinsi)
+# Menampilkan variabel dengan baris kosong
+colSums(is.na(sumut))
+```
+```{r}
+# Menghapus data NA's pada variabel dengan baris kosong
+sumut_clean <- na.omit(sumut)
+colSums(is.na(sumut_clean))
+```
+```{r}
+# Menampilkan ringkasan statistik deskriptif
+summary(sumut_clean)
 ```
 
+## e. Filter data padi
+
+### - Dataset padi indonesia
 ```{r}
-# Filter data dari Provinsi "Aceh"
-aceh_data <- padi %>%
-  filter(Provinsi == "Aceh")
-aceh_data
+indo_padi <- indo_clean[indo_clean$Jenis_Komoditi == "Padi", ]
+indo_padi
+```
+### - Dataset padi sumatera utara
+```{r}
+sumut_padi <- sumut_clean[sumut_clean$Kabupaten_Kota != "Sumatera Utara",]
+sumut_padi
 ```
 
+
+# 3. Explore
+
+## a. Visualisasi Data
+
+### - Dataset padi indonesia
 ```{r}
-# Filter data dari Provinsi "Sumatera Utara"
-sumut_data <- padi %>%
-  filter(Provinsi == "Sumatera Utara")
-sumut_data
+# - Jumlah Produksi Padi Per Provinsi (Barplot)
+
+# Hitung total produksi padi per provinsi
+total_produksi_provinsi <- indo_padi %>%
+  group_by(Provinsi) %>%
+  summarise(Total_Produksi = sum(Produksi))
+
+# Visualisasi menggunakan barplot
+ggplot(total_produksi_provinsi, aes(x = reorder(Provinsi, Total_Produksi), y = Total_Produksi)) +
+  geom_bar(stat = "identity", fill = "skyblue") +
+  labs(title = "Jumlah Produksi Padi Per Provinsi",
+       x = "Provinsi",
+       y = "Total Produksi (ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
-
 ```{r}
-# Filter data dari Provinsi "Sumatera Barat"
-sumbar_data <- padi %>%
-  filter(Provinsi == "Sumatera Barat")
-sumbar_data
-```
+# - Tren Produksi Padi Per Provinsi (Grafik Garis)
 
-```{r}
-# Filter data dari Provinsi "Riau"
-riau_data <- padi %>%
-  filter(Provinsi == "Riau")
-riau_data
-```
-
-```{r}
-# Filter data dari Provinsi "Jambi"
-jambi_data <- padi %>%
-  filter(Provinsi == "Jambi")
-jambi_data
-```
-
-```{r}
-# Filter data dari Provinsi "Sumatera Selatan"
-sumsel_data <- padi %>%
-  filter(Provinsi == "Sumatera Selatan")
-sumsel_data
-```
-
-```{r}
-# Filter data dari Provinsi "Bengkulu"
-bengkulu_data <- padi %>%
-  filter(Provinsi == "Bengkulu")
-bengkulu_data
-```
-
-```{r}
-# Filter data dari Provinsi "Lampung"
-lampung_data <- padi %>%
-  filter(Provinsi == "Lampung")
-lampung_data
-```
-
-## Eksplorasi Data Analisis (EDA)
-
-### Jumlah Produksi Padi
-
-```{r}
-plot_padi <- ggplot(sumut_data, aes(x = Tahun, y = Produksi, color = Produksi)) +
+# Visualisasi tren produksi padi per provinsi
+ggplot(indo_padi, aes(x = Tahun, y = Produksi, color = Provinsi)) +
   geom_line() +
-  geom_point() +
-  labs(title = "Jumlah Produksi Padi di Sumatera Utara", x = "Tahun", y = "Produksi Padi (Ha)") +
+  labs(title = "Tren Produksi Padi Per Provinsi",
+       x = "Tahun",
+       y = "Produksi (ton)") +
   scale_y_continuous(labels = scales::comma) +
   theme_minimal() +
   theme(legend.position = "right")
-plot_padi
+
 ```
-
 ```{r}
-# Hitung Pearson correlation coefficient
-correlation_padi <- cor(padi$Luas_panen, padi$Produksi)
+# - Perbandingan Produksi Padi Per Provinsi (Barplot)
 
-# Nilai correlation coefficient
-cat("Koefisien Korelasi Pearson Luas Panen dan Produksi:", correlation_padi)
-```
-
-Berdasarkan grafik diatas bisa lihat bahwa ada korelasi antara luas panen dan produksi. Hubungan korelasi adalah besar dengan nilai korelasi sebesar 0,905. Hubungan luas panen dan produksi padi bisa disimpulkan bahwa jumlah panen yang besar akan meningkatkan jumlah produksi padi.
-
-```{r}
-# Hitung Pearson correlation coefficient
-correlation_hujan <- cor(padi$Curah_hujan, padi$Produksi)
-
-# Nilai correlation coefficient
-cat("Koefisien Korelasi Pearson Curah Hujan dan Produksi:", correlation_hujan)
-```
-
-```{r}
-# Menghitung total produksi untuk setiap tahun
-summary_padi <- padi %>%
-  group_by(Tahun) %>%
-  summarise(TotalProduksi = sum(Produksi))
-summary_padi
-```
-
-```{r}
-# Visulisasi Produksi Padi Sepanjang Tahun 1993-2022
-ggplot(summary_padi, aes(x = Tahun, y = TotalProduksi)) +
-  geom_line() +
+# Visualisasi perbandingan produksi padi per provinsi
+ggplot(indo_padi, aes(x = reorder(Provinsi, Produksi), y = Produksi, fill = Provinsi)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Perbandingan Produksi Padi Per Provinsi",
+       x = "Provinsi",
+       y = "Produksi (ton)") +
   scale_y_continuous(labels = scales::comma) +
   theme_minimal() +
-  labs(title = "Perubahan Jumlah Produksi Padi dari 1993 - 2020",
-       subtitle = "Pulau Sumatera",
-       x = "Tahun",
-       y = "Total Produksi")
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
-# Model Machine Learning
-
-## Partisi Dataset
 ```{r}
-set.seed(123)  # Untuk hasil yang dapat direproduksi
-splitIndex <- createDataPartition(padi$Produksi, p = 0.7, list = FALSE)
-data_train <- padi[splitIndex, ]  # Data pelatihan (70%)
-data_test <- padi[-splitIndex, ]  # Data pengujian (30%)
-#dim(data_train)
-#dim(data_test)
+# - Perbandingan Produktivitas dengan Produksi Padi (Barplot)
+
+# Hitung total produktivitas padi per provinsi
+total_produktivitas_provinsi <- indo_padi %>%
+  group_by(Provinsi) %>%
+  summarise(Total_Produktivitas = sum(Produktivitas))
+
+# Visualisasi perbandingan produktivitas dengan produksi padi
+ggplot(total_produktivitas_provinsi, aes(x = reorder(Provinsi, Total_Produktivitas), y = Total_Produktivitas)) +
+  geom_bar(stat = "identity", fill = "lightgreen") +
+  labs(title = "Perbandingan Produktivitas dengan Produksi Padi",
+       x = "Provinsi",
+       y = "Total Produktivitas") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+```{r}
+# - Korelasi Luas Panen dan Produksi Padi (Scatterplot)
+
+# Visualisasi korelasi luas panen dan produksi padi
+ggplot(indo_padi, aes(x = Luas_Panen, y = Produksi, color = Provinsi)) +
+  geom_point() +
+  labs(title = "Korelasi Luas Panen dan Produksi Padi",
+       x = "Luas Panen (hektar)",
+       y = "Produksi (ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "right")
 ```
 
 
-## Model XGBoost
+### - Dataset padi sumatera utara
+```{r}
+# - Jumlah Produksi Padi per Kabupaten/Kota (Barplot)
+
+# Hitung total produksi padi per kabupaten/kota
+total_produksi_kabkota <- sumut_padi %>%
+  group_by(Kabupaten_Kota) %>%
+  summarise(Total_Produksi = sum(Produksi))
+
+# Visualisasi menggunakan barplot
+ggplot(total_produksi_kabkota, aes(x = reorder(Kabupaten_Kota, Total_Produksi), y = Total_Produksi)) +
+  geom_bar(stat = "identity", fill = "skyblue") +
+  labs(title = "Jumlah Produksi Padi per Kabupaten/Kota",
+       x = "Kabupaten/Kota",
+       y = "Total Produksi (ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+```{r}
+# - Tren Produksi Padi per Kabupaten/Kota (Grafik Garis)
+
+# Visualisasi tren produksi padi per kabupaten/kota
+ggplot(sumut_padi, aes(x = Tahun, y = Produksi, color = Kabupaten_Kota)) +
+  geom_line() +
+  labs(title = "Tren Produksi Padi per Kabupaten/Kota",
+       x = "Tahun",
+       y = "Produksi (ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "right")
+```
+
+```{r}
+# - Perbandingan Produksi Padi per Kabupaten/Kota (Barplot)
+
+# Visualisasi perbandingan produksi padi per kabupaten/kota
+ggplot(sumut_padi, aes(x = reorder(Kabupaten_Kota, Produksi), y = Produksi, fill = Kabupaten_Kota)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Perbandingan Produksi Padi per Kabupaten/Kota",
+       x = "Kabupaten/Kota",
+       y = "Produksi (ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+```{r}
+# - Perbandingan Rata-rata Produksi Padi per Kabupaten/Kota (Barplot)
+
+# Hitung rata-rata produksi padi per kabupaten/kota
+rata_rata_produksi_kabkota <- sumut_padi %>%
+  group_by(Kabupaten_Kota) %>%
+  summarise(Rata_Rata_Produksi = mean(Produksi))
+
+# Visualisasi perbandingan rata-rata produksi padi per kabupaten/kota
+ggplot(rata_rata_produksi_kabkota, aes(x = reorder(Kabupaten_Kota, Rata_Rata_Produksi), y = Rata_Rata_Produksi)) +
+  geom_bar(stat = "identity", fill = "lightgreen") +
+  labs(title = "Perbandingan Rata-rata Produksi Padi per Kabupaten/Kota",
+       x = "Kabupaten/Kota",
+       y = "Rata-Rata Produksi (ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+```{r}
+# - Korelasi Luas Panen dan Produksi Padi (Scatterplot)
+
+# Visualisasi korelasi luas panen dan produksi padi
+ggplot(sumut_padi, aes(x = Luas_Panen, y = Produksi, color = Kabupaten_Kota)) +
+  geom_point() +
+  labs(title = "Korelasi Luas Panen dan Produksi Padi",
+       x = "Luas Panen (hektar)",
+       y = "Produksi (ton)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(legend.position = "right")
+```
+
+
+## b. Analisis Deskriptif
+
+### - Hitung Pearson Correlation Coefficient
+```{r}
+# - Dataset padi indonesia
+
+# Hitung korelasi antara luas panen dan produksi padi
+correlation_coefficient <- cor(indo_padi$Luas_Panen, indo_padi$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson Luas Panen dan Produksi:", correlation_coefficient)
+```
+```{r}
+# - Dataset padi sumatera utara
+
+# Hitung korelasi antara luas panen dan produksi padi
+correlation_coefficient <- cor(sumut_padi$Luas_Panen, sumut_padi$Produksi)
+
+# Nilai correlation coefficient
+cat("Koefisien Korelasi Pearson Luas Panen dan Produksi:", correlation_coefficient)
+```
+
+Berdasarkan grafik diatas bisa dilihat bahwa ada korelasi antara luas panen dan produksi. Hubungan korelasinya adalah 0,991. Jadi, hubungan luas panen dan produksi padi bisa disimpulkan bahwa luas panen yang besar akan meningkatkan jumlah produksi padi.
+
+
+# 4. Model: XGBoost dan Prophet
+
+# Model XGBoost
+
+## Mengonversi Data Frame ke Matriks
+### Dataset indo_padi
+```{r}
+# Partisi dataset
+set.seed(123)
+train_index <- createDataPartition(indo_padi$Produksi, p = 0.8, list = FALSE)
+train_data_indo <- indo_padi[train_index, ]
+test_data_indo <- indo_padi[-train_index, ]
+```
+```{r}
+# Mengonversi Data Frame ke Matriks
+# Mengonversi data frame ke matriks
+X_train_indo <- data.matrix(train_data_indo[, c("Produktivitas", "Luas_Panen")])
+y_train_indo <- train_data_indo$Produksi
+X_test_indo <- data.matrix(test_data_indo[, c("Produktivitas","Luas_Panen")])
+```
+### Dataset sumut_padi
+```{r}
+# Partisi dataset
+set.seed(123)
+train_index <- createDataPartition(sumut_padi$Produksi, p = 0.8, list = FALSE)
+train_data_sumut <- sumut_padi[train_index, ]
+test_data_sumut <- sumut_padi[-train_index, ]
+```
 ```{r}
 # Mengonversi data frame ke matriks
-X_train <- data.matrix(data_train[, c("Curah_hujan", "Kelembapan", "Luas_panen", "Suhu_rata_rata")])
-y_train <- data_train$Produksi
-X_test <- data.matrix(data_test[, c("Curah_hujan", "Kelembapan", "Luas_panen", "Suhu_rata_rata")])
-
+X_train_sumut <- data.matrix(train_data_sumut[, c("Rata_rata_produksi","Luas_Panen")])
+y_train_sumut <- train_data_sumut$Produksi
+X_test_sumut <- data.matrix(test_data_sumut[, c("Rata_rata_produksi","Luas_Panen")])
 ```
 
+## Membuat dan Melatih Model XGBoost
+### Dataset indo_padi
 ```{r}
-# Membuat model XGBoost
-xgb_data_train <- xgb.DMatrix(data = X_train, label = y_train)
-xgb_model <- xgboost(data = xgb_data_train, nrounds = 100)
+xgb_data_train_indo <- xgb.DMatrix(data = X_train_indo, label = y_train_indo)
+xgb_model_indo <- xgboost(data = xgb_data_train_indo, nrounds = 100, objective = "reg:squarederror")
 ```
 
+### Dataset sumut_padi
+```{r}
+# Membuat dan melatih model XGBoost
+xgb_data_train_sumut <- xgb.DMatrix(data = X_train_sumut, label = y_train_sumut)
+xgb_model_sumut <- xgboost(data = xgb_data_train_sumut, nrounds = 100, objective = "reg:squarederror")
+```
+
+## Melakukan Prediksi pada Data Pengujian
+### Dataset indo_padi
 ```{r}
 # Melakukan prediksi pada data pengujian
-xgb_data_test <- xgb.DMatrix(data = X_test)
-predictions_xgb <- predict(xgb_model, newdata = xgb_data_test)
+xgb_data_test_indo <- xgb.DMatrix(data = X_test_indo)
+predictions_xgb_indo <- predict(xgb_model_indo, newdata = xgb_data_test_indo)
+```
+### Dataset sumut_padi
+```{r}
+# Melakukan prediksi pada data pengujian
+xgb_data_test_sumut <- xgb.DMatrix(data = X_test_sumut)
+predictions_xgb_sumut <- predict(xgb_model_sumut, newdata = xgb_data_test_sumut)
 ```
 
+## Visualisasi Hasil Prediksi
+### Dataset indo_padi
 ```{r}
 # Visualisasi hasil prediksi
-result_data_xgb <- data.frame(Produksi = data_test$Produksi, Predictions = predictions_xgb)
+result_data_xgb_indo <- data.frame(Produksi = test_data_indo$Produksi, Predictions = predictions_xgb_indo)
 
 # Buat grafik garis
-ggplot(data = result_data_xgb, aes(x = 1:length(data_test$Produksi))) +
-  geom_line(aes(y = data_test$Produksi, color = "Aktual"), size = 1) +
-  geom_line(aes(y = predictions_xgb, color = "Prediksi"), size = 1) +
+ggplot(data = result_data_xgb_indo, aes(x = 1:length(test_data_indo$Produksi))) +
+  geom_line(aes(y = test_data_indo$Produksi, color = "Aktual"), linewidth = 1) +
+  geom_line(aes(y = predictions_xgb_indo, color = "Prediksi"), linewidth = 1) +
   labs(x = "Observasi", y = "Produksi (Ton)") +
   scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
-  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model XGBoost") +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model XGBoost (indo_padi)") +
   scale_y_continuous(labels = scales::comma) +
   theme_minimal()
 ```
-
 ```{r}
-ggplot(data = result_data_xgb, aes(x = Produksi, y = Predictions)) +
+ggplot(data = result_data_xgb_indo, aes(x = Produksi, y = Predictions)) +
   geom_point() +
   geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
   labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
   scale_x_continuous(labels = scales::comma) +
   scale_y_continuous(labels = scales::comma) +
-  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model XGBoost") +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model XGBoost (indo_padi)") +
+  theme_minimal()
+```
+### Dataset sumut_padi
+```{r}
+# Visualisasi hasil prediksi
+result_data_xgb_sumut <- data.frame(Produksi = test_data_sumut$Produksi, Predictions = predictions_xgb_sumut)
+
+# Buat grafik garis
+ggplot(data = result_data_xgb_sumut, aes(x = 1:length(test_data_sumut$Produksi))) +
+  geom_line(aes(y = test_data_sumut$Produksi, color = "Aktual"), linewidth = 1) +
+  geom_line(aes(y = predictions_xgb_sumut, color = "Prediksi"), linewidth = 1) +
+  labs(x = "Observasi", y = "Produksi (Ton)") +
+  scale_color_manual(values = c("Aktual" = "blue", "Prediksi" = "red")) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model XGBoost (sumut_padi)") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal()
+```
+```{r}
+ggplot(data = result_data_xgb_sumut, aes(x = Produksi, y = Predictions)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  labs(x = "Produksi Aktual (Ton)", y = "Prediksi Produksi (Ton)") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  ggtitle("Perbandingan Produksi Aktual dan Prediksi Model XGBoost (sumut_padi)") +
   theme_minimal()
 ```
 
+## Melihat Variabel yang Penting
+### Dataset indo_padi
+```{r}
+# Melihat variabel yang penting
+importance_xgb_indo <- xgb.importance(model = xgb_model_indo)
+print(importance_xgb_indo)
+```
+### Dataset sumut_padi
+```{r}
+# Melihat variabel yang penting
+importance_xgb_sumut <- xgb.importance(model = xgb_model_sumut)
+print(importance_xgb_sumut)
+```
+Berdasarkan hasil  diatas dapat dilihat bahwa variabel yang sangat penting yang mempengaruhi produksi adalah luas panen dengan nilai Gain 0,99. 
+
+## Evaluasi Model XGBoost
+### Dataset indo_padi
 ```{r}
 # Evaluasi XGBoost Model
 
 # Hitung MAE
-mae_value_xgb <- mae(data_test$Produksi, predictions_xgb)
+mae_value_xgb_indo <- mae(test_data_indo$Produksi, predictions_xgb_indo)
 
 # Hitung MSE
-mse_value_xgb <- mse(data_test$Produksi, predictions_xgb)
+mse_value_xgb_indo <- mse(test_data_indo$Produksi, predictions_xgb_indo)
 
 # Hitung RMSE
-rmse_value_xgb <- rmse(data_test$Produksi, predictions_xgb)
+rmse_value_xgb_indo <- rmse(test_data_indo$Produksi, predictions_xgb_indo)
 
 # Hitung MAPE
-mape_value_xgb <- mape(data_test$Produksi, predictions_xgb)
+mape_value_xgb_indo <- mape(test_data_indo$Produksi, predictions_xgb_indo)
 
 # Tampilkan hasil evaluasi
-cat(paste("MAE: ", mae_value_xgb, "\n"))
-cat(paste("MSE: ", mse_value_xgb, "\n"))
-cat(paste("RMSE: ", rmse_value_xgb, "\n"))
-cat(paste("MAPE: ", mape_value_xgb, "%\n"))
+cat(paste("MAE: ", mae_value_xgb_indo, "\n"))
+cat(paste("MSE: ", mse_value_xgb_indo, "\n"))
+cat(paste("RMSE: ", rmse_value_xgb_indo, "\n"))
+cat(paste("MAPE: ", mape_value_xgb_indo, "%\n"))
 ```
-
-Kesimpulan yang dapat diambil adalah bahwa model XGBoost memiliki kesalahan yang signifikan dalam memprediksi data, terutama jika kita melihat nilai MSE dan RMSE yang tinggi. Dengan MAPE sekitar 0.25%, model ini mungkin memiliki kinerja yang lebih baik dalam memprediksi data secara relatif, tetapi kesalahan mutlak rata-rata (MAE) masih cukup tinggi.
-
-## Model XGBoost dengan dataset Dataset Tanaman Pangan Indonesia (1993-2022)
-
-# Obstain - Load Dataset
-
+### Dataset sumut_padi
 ```{r}
-# Import Data
-padi_lengkap <- read_xlsx("dataset/pangan_Indonesia.xlsx")
-padi_lengkap
+# Evaluasi XGBoost Model
+
+# Hitung MAE
+mae_value_xgb_sumut <- mae(test_data_sumut$Produksi, predictions_xgb_sumut)
+
+# Hitung MSE
+mse_value_xgb_sumut <- mse(test_data_sumut$Produksi, predictions_xgb_sumut)
+
+# Hitung RMSE
+rmse_value_xgb_sumut <- rmse(test_data_sumut$Produksi, predictions_xgb_sumut)
+
+# Hitung MAPE
+mape_value_xgb_sumut <- mape(test_data_sumut$Produksi, predictions_xgb_sumut)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_value_xgb_sumut, "\n"))
+cat(paste("MSE: ", mse_value_xgb_sumut, "\n"))
+cat(paste("RMSE: ", rmse_value_xgb_sumut, "\n"))
+cat(paste("MAPE: ", mape_value_xgb_sumut, "%\n"))
 ```
 
+
+# Model Prophet
+
+## Model Prophet untuk Dataset indo_padi
 ```{r}
-# Menampilkan Contoh Data
-## Menampilkan 6 data teratas
-head(padi_lengkap)
+# Memisahkan data berdasarkan variabel Produksi
+train_data_index_indo_pp <- createDataPartition(indo_padi$Produksi, p = 0.7, list = FALSE)
+train_data_indo_pp <- indo_padi[train_data_index_indo_pp, ]
+test_data_indo_pp <- indo_padi[-train_data_index_indo_pp, ]
+
+# Mengelompokkan dan menyiapkan data pelatihan berdasarkan variabel Produksi
+yearly_train_indo <- train_data_indo_pp %>% 
+  group_by(Tahun) %>% 
+  summarise(jum_pd = sum(Produksi))
+
+# Merubah format data menjadi ds dan y
+train_yearly_indo <- yearly_train_indo %>% 
+  rename(ds = "Tahun", y = "jum_pd")
+
+# Membuat model Prophet dengan data pelatihan
+prophet_model_indo <- prophet(yearly.seasonality = TRUE, seasonality.prior.scale = 0.1) %>% 
+  fit.prophet(train_yearly_indo)
+
+# Melakukan prediksi untuk produksi 3 tahun ke depan
+future_prophet_indo <- make_future_dataframe(prophet_model_indo, periods = 365 * 3)
+
+# Menampilkan hasil prediksi
+forecast_prophet_indo <- predict(prophet_model_indo, future_prophet_indo)
+plot(prophet_model_indo, forecast_prophet_indo)
+
+# Visualisasi komponen dari model forecast
+prophet_plot_components(prophet_model_indo, forecast_prophet_indo)
+
+# Melihat komponen forecast
+forecast_prophet_indo %>% 
+  dplyr::select(ds, trend, yearly, yhat)
+
+# Melihat trend produksi
+plot(prophet_model_indo, forecast_prophet_indo) +
+  add_changepoints_to_plot(prophet_model_indo, threshold = 0)
+
+# Membuat subset data untuk tahun 2023-2026
+forecast_subset_indo <- forecast_prophet_indo[forecast_prophet_indo$ds >= as.Date("2023-01-01") & forecast_prophet_indo$ds <= as.Date("2026-12-31"), ]
+forecast_yhat_2023_2026_indo <- forecast_subset_indo[, c("ds", "yhat")]
+print(forecast_yhat_2023_2026_indo)
+tail(forecast_yhat_2023_2026_indo, 10)
+
+# Mengelompokkan dan menyiapkan data pengujian berdasarkan variabel Produksi
+yearly_test_indo <- test_data_indo_pp %>% 
+  group_by(Tahun) %>% 
+  summarise(jum_pd = sum(Produksi))
+
+# Merubah format data menjadi ds dan y
+test_yearly_indo <- yearly_test_indo %>% 
+  rename(ds = "Tahun", y = "jum_pd")
+
+# Model Final
+model_final_indo <- prophet(changepoint.prior.scale = 0.05,
+                          yearly.seasonality = TRUE) %>% 
+  add_seasonality(name = "yearly", period = 365, fourier.order = 5) %>% 
+  fit.prophet(train_yearly_indo)
+
+future_final_indo <- make_future_dataframe(model_final_indo, periods = nrow(test_yearly_indo) + 1)
+forecast_final_indo <- predict(model_final_indo, future_final_indo)
+plot(model_final_indo, forecast_final_indo)
+
+# Melakukan prediksi dengan data pengujian
+prediction_test_indo <- predict(model_final_indo, test_yearly_indo)
+
+# Visualisasi Komponen dari model forecasting
+prophet_plot_components(model_final_indo, prediction_test_indo)
+
+# Evaluasi Model
+# Hitung MAE
+mae_value_prophet_indo <- mae(test_yearly_indo$y, prediction_test_indo$yhat)
+
+# Hitung MSE
+mse_value_prophet_indo <- mse(test_yearly_indo$y, prediction_test_indo$yhat)
+
+# Hitung RMSE
+rmse_value_prophet_indo <- rmse(test_yearly_indo$y, prediction_test_indo$yhat)
+
+# Hitung MAPE
+mape_value_prophet_indo <- mape(test_yearly_indo$y, prediction_test_indo$yhat)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_value_prophet_indo, "\n"))
+cat(paste("MSE: ", mse_value_prophet_indo, "\n"))
+cat(paste("RMSE: ", rmse_value_prophet_indo, "\n"))
+cat(paste("MAPE: ", mape_value_prophet_indo, "%\n"))
 ```
 
+## Model Prophet untuk Dataset sumut_padi
 ```{r}
-## Menampilkan 6 data terbawah
-tail(padi_lengkap)
+# Memisahkan data berdasarkan variabel Produksi
+train_data_index_sumut_pp <- createDataPartition(sumut_padi$Produksi, p = 0.7, list = FALSE)
+train_data_sumut_pp <- sumut_padi[train_data_index_sumut_pp, ]
+test_data_sumut_pp <- sumut_padi[-train_data_index_sumut_pp, ]
+
+# Mengelompokkan dan menyiapkan data pelatihan berdasarkan variabel Produksi
+yearly_train_sumut <- train_data_sumut_pp %>% 
+  group_by(Tahun) %>% 
+  summarise(jum_pd = sum(Produksi))
+
+# Merubah format data menjadi ds dan y
+train_yearly_sumut <- yearly_train_sumut %>% 
+  rename(ds = "Tahun", y = "jum_pd")
+
+# Membuat model Prophet dengan data pelatihan
+prophet_model_sumut <- prophet(yearly.seasonality = TRUE, seasonality.prior.scale = 0.1) %>% 
+  fit.prophet(train_yearly_sumut)
+
+# Melakukan prediksi untuk produksi 3 tahun ke depan
+future_prophet_sumut <- make_future_dataframe(prophet_model_sumut, periods = 365 * 3)
+
+# Menampilkan hasil prediksi
+forecast_prophet_sumut <- predict(prophet_model_sumut, future_prophet_sumut)
+plot(prophet_model_sumut, forecast_prophet_sumut)
+
+# Visualisasi komponen dari model forecast
+prophet_plot_components(prophet_model_sumut, forecast_prophet_sumut)
+
+# Melihat komponen forecast
+forecast_prophet_sumut %>% 
+  dplyr::select(ds, trend, yearly, yhat)
+
+# Melihat trend produksi
+plot(prophet_model_sumut, forecast_prophet_sumut) +
+  add_changepoints_to_plot(prophet_model_sumut, threshold = 0)
+
+# Membuat subset data untuk tahun 2023-2026
+forecast_subset_sumut <- forecast_prophet_sumut[forecast_prophet_sumut$ds >= as.Date("2023-01-01") & forecast_prophet_sumut$ds <= as.Date("2026-12-31"), ]
+forecast_yhat_2023_2026_sumut <- forecast_subset_sumut[, c("ds", "yhat")]
+print(forecast_yhat_2023_2026_sumut)
+tail(forecast_yhat_2023_2026_sumut, 10)
+
+# Mengelompokkan dan menyiapkan data pengujian berdasarkan variabel Produksi
+yearly_test_sumut <- test_data_sumut_pp %>% 
+  group_by(Tahun) %>% 
+  summarise(jum_pd = sum(Produksi))
+
+# Merubah format data menjadi ds dan y
+test_yearly_sumut <- yearly_test_sumut %>% 
+  rename(ds = "Tahun", y = "jum_pd")
+
+# Model Final
+model_final_sumut <- prophet(changepoint.prior.scale = 0.05,
+                          yearly.seasonality = TRUE) %>% 
+  add_seasonality(name = "yearly", period = 365, fourier.order = 5) %>% 
+  fit.prophet(train_yearly_sumut)
+
+future_final_sumut <- make_future_dataframe(model_final_sumut, periods = nrow(test_yearly_sumut) + 1)
+forecast_final_sumut <- predict(model_final_sumut, future_final_sumut)
+plot(model_final_sumut, forecast_final_sumut)
+
+# Melakukan prediksi dengan data pengujian
+prediction_test_sumut <- predict(model_final_sumut, test_yearly_sumut)
+
+# Visualisasi Komponen dari model forecasting
+prophet_plot_components(model_final_sumut, prediction_test_sumut)
+
+# Evaluasi Model
+# Hitung MAE
+mae_value_prophet_sumut <- mae(test_yearly_sumut$y, prediction_test_sumut$yhat)
+
+# Hitung MSE
+mse_value_prophet_sumut <- mse(test_yearly_sumut$y, prediction_test_sumut$yhat)
+
+# Hitung RMSE
+rmse_value_prophet_sumut <- rmse(test_yearly_sumut$y, prediction_test_sumut$yhat)
+
+# Hitung MAPE
+mape_value_prophet_sumut <- mape(test_yearly_sumut$y, prediction_test_sumut$yhat)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_value_prophet_sumut, "\n"))
+cat(paste("MSE: ", mse_value_prophet_sumut, "\n"))
+cat(paste("RMSE: ", rmse_value_prophet_sumut, "\n"))
+cat(paste("MAPE: ", mape_value_prophet_sumut, "%\n"))
 ```
 
+
+# Interpret
+
+## Dataset indo_padi
 ```{r}
-# Untuk melihat struktur data
-glimpse(padi_lengkap)
+model_performance_indo <- data.frame(
+  No = c(1:2),
+  Model = c("Prophet", "XGBoost"),
+  MAE = c(mae_value_prophet_indo, mae_value_xgb_indo),
+  MSE = c(mse_value_prophet_indo, mse_value_xgb_indo),
+  RSME = c(rmse_value_prophet_indo, rmse_value_xgb_indo),
+  MAPE = c(mape_value_prophet_indo, mape_value_xgb_indo),
+  stringsAsFactors = FALSE
+  
+)
+model_performance_indo
 ```
-# Scrub Data - membersihkan atau memproses data
+Berdasarkan hasil di atas, kalau dilihat dari performance matriks tingkat kesalahan yang paling rendah (MAE), maka model XGBoost dianggap sebagai model terbaik dalam hal akurasi prediksi produksi padi. Dibandingkan dengan model Prophet, XGBoost memiliki tingkat kesalahan yang lebih rendah dengan MAE sebesar 43136.34, sementara MAE dari model Prophet sebesar 20946444.34. Oleh karena itu, untuk tujuan prediksi produksi padi, model XGBoost lebih disarankan.
 
+## Dataset sumut_padi
 ```{r}
-# a. Menghapus Data Kosong
-## Menampilkan variabel dengan baris kosong
-glimpse(padi_lengkap)
-colSums(is.na(padi_lengkap))
+model_performance_sumut <- data.frame(
+  No = c(1:2),
+  Model = c("Prophet", "XGBoost"),
+  MAE = c(mae_value_prophet_sumut, mae_value_xgb_sumut),
+  MSE = c(mse_value_prophet_sumut, mse_value_xgb_sumut),
+  RSME = c(rmse_value_prophet_sumut, rmse_value_xgb_sumut),
+  MAPE = c(mape_value_prophet_sumut, mape_value_xgb_sumut),
+  stringsAsFactors = FALSE
+  
+)
+model_performance_sumut
 ```
-Menunjukkan bahwa dataset memiliki 7,140 baris dan 6 kolom. Tahun, Provinsi, dan Jenis_Komoditi tidak memiliki nilai kosong (0). Produksi memiliki 893 nilai kosong. Produktivitas memiliki 899 nilai kosong. Luas_Panen memiliki 884 nilai kosong.
+Berdasarkan hasil di atas, kalau dilihat dari performance matriks tingkat kesalahan yang paling rendah (MAE), maka model XGBoost dianggap sebagai model terbaik dalam hal akurasi prediksi produksi padi. Dibandingkan dengan model Prophet, XGBoost memiliki tingkat kesalahan yang lebih rendah dengan MAE sebesar 4864.314, sementara MAE dari model Prophet sebesar 1415080.961. Oleh karena itu, untuk tujuan prediksi produksi padi, model XGBoost lebih disarankan.
 
-```{r}
-## Menghapus data NA'S
-padi_lengkap_clean <- na.omit(padi_lengkap)
-colSums(is.na(padi_lengkap_clean))
-summary(padi_lengkap_clean)
-```
-Hasil ini menunjukkan bahwa setelah menghapus nilai kosong, tidak ada nilai kosong yang tersisa dalam setiap kolom. Angka 0 menunjukkan bahwa tidak ada nilai kosong yang terdeteksi. Length:6239 menunjukkan bahwa setelah pembersihan, dataset memiliki 6239 baris.
-
-```{r}
-# Melihat struktur data kembali
-glimpse(padi_lengkap_clean)
-```
-
-```{r}
-# b. Merubah type data
-## Merubah type data karakter menjadi numeric
-padi_lengkap_clean$Produksi <- as.numeric(padi_lengkap_clean$Produksi)
-padi_lengkap_clean$Produktivitas <- as.numeric(padi_lengkap_clean$Produktivitas)
-padi_lengkap_clean$Luas_Panen <- as.numeric(padi_lengkap_clean$Luas_Panen)
-glimpse(padi_lengkap_clean)
-```
-```{r}
-## Merubah type Tahun menjadi Date
-padi_lengkap_clean$Tahun <- make_date(padi_lengkap_clean$Tahun)
-glimpse(padi_lengkap_clean)
-```
-```{r}
-head(padi_lengkap_clean)
-```
-```{r}
-tail(padi_lengkap_clean)
-```
-
-# Explore Data Analysis (EDA)
-
-```{r}
-# Tampilkan Dataset
-glimpse(padi_lengkap_clean)
-```
-
-```{r}
-# Menampilkan hasil statistik deskriptif
-descr(padi_lengkap_clean)
-```
-Memberi tahu bahwa variabel non-numerik seperti Tahun, Provinsi, dan Jenis_Komoditi diabaikan dalam perhitungan statistik deskriptif. Yang termasuk perhitungan statistik deskriptif adalah Luas_Panen, Produksi, Produktivitas. Mean: Rata-rata.
-Statistik deskriptif melibatkan beberapa ukuran yang merangkum distribusi dari masing-masing variabel numerik:
-Std.Dev: Deviasi standar.
-Min: Nilai minimum.
-Q1: Kuartil pertama (25%).
-Median: Median (50%).
-Q3: Kuartil ketiga (75%).
-Max: Nilai maksimum.
-MAD: Deviasi absolut median.
-IQR: Rentang antarkuartil.
-CV: Koefisien variasi.
-Skewness: Skewness (ukuran asimetri distribusi).
-SE.Skewness: Standar error dari skewness.
-Kurtosis: Kurtosis (ukuran kekerucutan distribusi).
-N.Valid: Jumlah observasi yang valid.
-Pct.Valid: Persentase observasi yang valid dari total.
-
-```{r}
-# Filter data Padi
-Padi <- filter(padi_lengkap_clean, Jenis_Komoditi == "Padi")
-Padi
-```
-Menunjukkan jumlah baris 930 setelah di filter
-
-```{r}
-# Jumlah Produksi Padi Per Provinsi
-plot_padi_1 <- ggplot(Padi, aes(x = Tahun, y = Produksi, group = Provinsi, color = Provinsi)) +
-  geom_line() +
-  labs(title = "Jumlah Produksi Padi", x = "Tahun", y = "Produksi Padi (Kuintal)") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal() +
-  theme(legend.position = "right")
-plot_padi_1
-```
-
-```{r}
-## Hitung total produksi per provinsi
-totalproduksi_padi <- Padi %>% 
-  #mutate(first_date_month = floor_date(Tahun, unit = "year")) %>% 
-  group_by(Provinsi) %>% 
-  summarise(JumlahProduksi = sum(Produksi)) %>% 
-  arrange(JumlahProduksi)
-totalproduksi_padi
-```
-
-```{r}
-## Turn off dplyr summarise() warning
-options(dplyr.summarise.inform = FALSE)
-
-## Hitung total produksi per provinsi/tahun
-totalproduksi_padi <- Padi %>% 
-  group_by(Tahun, Provinsi, .drop = FALSE) %>%  # Add .drop argument
-  summarise(TotalProduksi = sum(Produksi))
-
-totalproduksi_padi
-```
-
-```{r}
-summary(totalproduksi_padi)
-```
-
-```{r}
-# Tren Produksi Padi Per Provinsi
-## Visualisasi Tren Produksi Padi
-plot_padi_2 <- ggplot(totalproduksi_padi, aes(x = Tahun, y = TotalProduksi, color = Provinsi)) +
-  geom_line() +
-  geom_point() +
-  labs(title = "Tren Produksi Padi", x = "Tahun", y = "Total Produksi (Kuintal)") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal() +
-  theme(legend.position = "right")
-plot_padi_2
-```
-
-```{r}
-# Perbandingan Produksi Padi Per Provinsi
-## Hitung total produksi Padi per Provinsi
-totalproduksi_padi_provinsi <- Padi %>% 
-  group_by(Provinsi) %>% 
-  summarise(TotalProduksi = sum(Produksi))
-totalproduksi_padi_provinsi
-
-# Visualisasi dengan barplot
-plot_padi_3 <- ggplot(totalproduksi_padi_provinsi, aes(x = Provinsi, y = TotalProduksi, fill = Provinsi)) +
-  geom_bar(stat = "identity") +
-  labs(title = "Perbandingan Produksi Padi antar Provinsi", x = "Provinsi", y = "Total Produksi (Kuintal)") +
-  scale_y_continuous(labels = scales::comma) +
-  theme_minimal() +
-  theme(legend.position = "none")  # hilangkan legend
-
-# Rotasi sumbu x agar mudah dibaca
-plot_padi_3 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
-```
-Perbandingan produksi Padi dalam kurun waktu 1993 - 2022 adalah dari provinsi Jawa Barat yang terbanyak dengan Jumlah Produksi Padi sebesar 311260660 Kuintal.
-
-Di atas masih belum siap, segera saya lanjutkan
-## Model Arima
-```{r}
-# Memuat paket forecast
-library(forecast)
-```
-
-
-```{r}
-# Membaca dataset padi (gantilah 'dataset_padi.csv' dengan nama file yang sesuai)
-padi <- read.csv("dataset_padi.csv")
-```
-
-
-```{r}
-# Memastikan kolom tanggal (timestamp) dalam format yang benar
-padi$Tanggal <- as.Date(padi$Tanggal, format = "%Y-%m-%d")
-```
-
-
-```{r}
-# Menggabungkan variabel-variabel yang ingin digunakan
-data <- padi[, c("Curah_hujan", "Kelembapan", "Luas_panen", "Suhu_rata_rata")]
-```
-
-
-```{r}
-# Membuat deret waktu dengan variabel yang ingin digunakan sebagai indeks
-ts_data <- ts(data[, -1], start = c(1993, 1), end = c(2020, 225), frequency = 225)
-```
-
-Kesalahan dimulai dari sini atau terdapat pesan error
-```{r}
-# Memodelkan deret waktu dengan model ARIMA
-arima_model <- auto.arima(ts_data)
-```
-
-
-```{r}
-# Menampilkan informasi tentang model ARIMA
-summary(arima_model)
-```
-
-
-```{r}
-# Melakukan peramalan dengan model ARIMA
-forecast_values <- forecast(arima_model, h = 12)  # Menghasilkan peramalan untuk 12 bulan ke depan
-```
-
-
-```{r}
-# Menampilkan hasil peramalan
-print(forecast_values)
-```
-
-
-```{r}
-# Menampilkan plot peramalan
-plot(forecast_values)
-```
