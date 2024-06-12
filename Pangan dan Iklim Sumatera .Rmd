@@ -46,7 +46,6 @@ data_iklim
 ```
 
 ```{r}
-
 #Merubah type data dari double menjadi numeric agar mudah di operasikan
 data_iklim$Produktivitas<-as.numeric(data_iklim$Produktivitas)
 data_iklim$Produksi<-as.numeric(data_iklim$Produksi)
@@ -1731,5 +1730,46 @@ Kesimpulan uji regresi linier:
 Terdapat pengaruh kecepatan angin dengan p-value 4.43e-06 *** terhadap produktivitas kacang tanah dan nilai f-statistik p-valuenya adalah 4.819e-07
 
 
+```{r}
+library(ggplot2)
+library(dplyr)
+```
 
+```{r}
+# Pilih variabel yang akan diprediksi
+
+padi_glm_sumatera1 <- Iklim_padi[, c("Produksi", "Kecepatan_Angin", "Kelembapan", "Suhu", "Penyinaran_Matahari", "Curah_hujan")]
+padi_glm_sumatera1
+```
+
+```{r}
+# Membangun model GLM untuk Produksi Padi
+glm_produksi <- glm(Produksi ~ Kecepatan_Angin + Kelembapan + Suhu + Penyinaran_Matahari + Curah_hujan, 
+                    data = padi_glm_sumatera1, family = gaussian())
+glm_produksi
+```
+```{r}
+summary(glm_produksi)
+```
+
+```{r}
+# Prediksi Produksi menggunakan model GLM
+pred_produksi <- predict(glm_produksi, newdata = padi_glm_sumatera1, type = "response")
+pred_produksi
+```
+
+```{r}
+# Menambahkan prediksi ke dataframe
+padi_glm_sumatera1$Pred_Produksi <- pred_produksi
+```
+
+```{r}
+# Visualisasi hasil prediksi untuk Produksi
+ggplot(padi_glm_sumatera1, aes(x = 1:nrow(padi_glm_sumatera1))) +
+  geom_line(aes(y = Produksi, color = "Produksi Asli")) +
+  geom_line(aes(y = Pred_Produksi, color = "Prediksi Produksi"), linetype = "dashed") +
+  labs(title = "Prediksi Produksi Padi di Pulau Sumatera", x = "Tahun", y = "Produksi") +
+  scale_color_manual(name = "Legenda", values = c("Produksi Asli" = "blue", "Prediksi Produksi" = "red")) +
+  theme_minimal()
+```
 

@@ -23,9 +23,9 @@ library(tseries)
 library(tidyverse)
 library(Metrics)
 library(caret)
-library(tsutils) # for time series manipulation and decomposition
-library(forecast) # for GARCH model implementation
-library(stats) # for statistical tests
+library(tsutils)
+library(forecast) 
+library(stats) 
 library(MASS)
 library(nortest)
 library(forecast)
