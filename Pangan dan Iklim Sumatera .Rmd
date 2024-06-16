@@ -2325,3 +2325,816 @@ cat(paste("MSE: ", mse_value_glm_6, "\n"))
 cat(paste("RMSE: ", rmse_value_glm_6, "\n"))
 cat(paste("MAPE: ", mape_value_glm_6, "%\n"))
 ```
+
+## Produksi ubi_kayu sumatera - GLM
+
+```{r}
+# Pilih variabel yang akan diprediksi
+produksi_ubikayu_glm <- Iklim_ubikayu[, c("Produksi", "Kecepatan_Angin", "Kelembapan", "Suhu", "Penyinaran_Matahari", "Curah_hujan")]
+produksi_ubikayu_glm
+```
+
+```{r}
+# Membagi dataset menjadi data pelatihan dan pengujian
+set.seed(123) # Set seed untuk reproduktibilitas
+split_produksi_ubikayu <- sample.split(produksi_ubikayu_glm$Produksi, SplitRatio = 0.7) # 70% untuk data pelatihan, 30% untuk data pengujian
+```
+
+```{r}
+# Membuat subset data pelatihan dan pengujian
+train_ps_ubikayu_glm <- subset(produksi_ubikayu_glm, split_produksi_ubikayu == TRUE)
+test_ps_ubikayu_glm <- subset(produksi_ubikayu_glm, split_produksi_ubikayu == FALSE)
+```
+
+```{r}
+dim(train_ps_ubikayu_glm)
+dim(test_ps_ubikayu_glm)
+```
+
+### GLM model Iklim terhadap Produksi ubikayu
+```{r}
+#model GLM
+glm_produksi_ubikayu <- glm(Produksi ~ Curah_hujan + Suhu + Penyinaran_Matahari+ Kecepatan_Angin + Kelembapan, 
+                      data = train_ps_ubikayu_glm, 
+                      family = gaussian(link = "identity"),
+                      control = list(epsilon = 1e-8, maxit = 100))
+```
+
+```{r}
+summary(glm_produksi_ubikayu)
+```
+
+
+### Prediksi data testing dengan model
+```{r}
+# Melakukan prediksi dengan model GLM pada data testing
+predict_ps_ubikayu_glm <- predict(glm_produksi_ubikayu, newdata = test_ps_ubikayu_glm, type = "response")
+```
+
+```{r}
+# Menampilkan hasil prediksi
+head(predict_ps_ubikayu_glm)
+```
+```{r}
+head(predict_ps_ubikayu_glm)
+```
+
+```{r}
+# Visualisasi Hasil
+result_ps_ubikayu_glm <- data.frame(Produksi_4 = test_ps_ubikayu_glm$Produksi, Predictions_7 = predict_ps_ubikayu_glm)
+
+# Visualisasi Perbandingan Produksi Aktual dengan Hasil Prediksi
+ggplot(data = result_ps_ubikayu_glm, aes(x = Produksi_4, y = Predictions_7)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  labs(x = "Actual Produksi", y = "Predicted Produksi") +
+  ggtitle("Comparison of Actual Produksi and GLM Model Prediction") +
+  theme_minimal()
+```
+
+```{r}
+# Visualisasi Produksi Aktual dengan Hasil Prediksi
+ggplot(data = result_ps_ubikayu_glm, aes(x = 1:length(Produksi_4))) +
+  geom_line(aes(y = Produksi_4, color = "Actual"), size = 1) +
+  geom_line(aes(y = Predictions_7, color = "GLM Prediction"), size = 1) +
+  labs(x = "Observation", y = "Produksi") +
+  scale_color_manual(values = c("Actual" = "blue", "GLM Prediction" = "red")) +
+  ggtitle("Comparison of Actual Sales and GLM Model Prediction") +
+  theme_minimal()
+```
+
+
+### Evaluasi Model
+```{r}
+# Hitung MAE (Mean Absolute Error)
+mae_value_glm_7 <- mae(test_ps_ubikayu_glm$Produksi, predict_ps_ubikayu_glm)
+
+# Hitung MSE (Mean Squared Error)
+mse_value_glm_7 <- mse(tes_ps_ubikayu_glm$Produksi, predict_ps_ubikayu_glm)
+
+# Hitung RMSE (Root Mean Square Error)
+rmse_value_glm_7 <- rmse(test_ps_ubikayu_glm$Produksi, predict_ps_ubikayu_glm)
+
+# Hitung MAPE (Mean Absolute Percent Error)
+mape_value_glm_7 <- mape(test_ps_ubikayu_glm$Produksi, predict_ps_ubikayu_glm)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_value_glm_7, "\n"))
+cat(paste("MSE: ", mse_value_glm_7, "\n"))
+cat(paste("RMSE: ", rmse_value_glm_7, "\n"))
+cat(paste("MAPE: ", mape_value_glm_7, "%\n"))
+```
+MAE:  1272921.36158324 
+MSE:  2100608327097.84 
+RMSE:  1449347.55221025 
+MAPE:  160.734034463418 %
+
+
+## Produktivitas ubikayu - GLM
+```{r}
+# Pilih variabel yang akan diprediksi
+produktivitas_ubikayu_glm <- Iklim_ubikayu[, c("Produktivitas", "Kecepatan_Angin", "Kelembapan", "Suhu", "Penyinaran_Matahari", "Curah_hujan")]
+produktivitas_ubikayu_glm
+```
+
+
+```{r}
+# Membagi dataset menjadi data pelatihan dan pengujian
+set.seed(123) # Set seed untuk reproduktibilitas
+split_pt_ubikayu <- sample.split(produktivitas_ubikayu_glm$Produksi, SplitRatio = 0.7) # 70% untuk data pelatihan, 30% untuk data pengujian
+```
+
+```{r}
+# Membuat subset data pelatihan dan pengujian
+train_pt_ubikayu_glm <- subset(produktivitas_ubikayu_glm, split_pt_ubikayu == TRUE)
+test_pt_ubikayu_glm <- subset(produktivitas_ubikayu_glm, split_pt_ubikayu == FALSE)
+```
+
+```{r}
+dim(train_pt_ubikayu_glm)
+dim(test_pt_ubikayu_glm)
+```
+
+
+### GLM model Iklim terhadap Produktivitas ubikayu
+```{r}
+glm_Produktivitas_ubikayu <- glm(Produktivitas ~ Curah_hujan + Suhu + Penyinaran_Matahari+ Kecepatan_Angin + Kelembapan, 
+                      data = test_pt_ubikayu_glm, 
+                      family = gaussian(link = "identity"),
+                      control = list(epsilon = 1e-8, maxit = 100))
+```
+
+```{r}
+summary(glm_Produktivitas_ubikayu)
+```
+
+
+### Prediksi data testing dengan model
+```{r}
+# Melakukan prediksi dengan model GLM pada data testing
+predict_pt_ubikayu_glm <- predict(glm_Produktivitas_ubikayu, newdata = test_pt_ubikayu_glm, type = "response")
+```
+
+```{r}
+# Menampilkan hasil prediksi
+head(predict_pt_ubikayu_glm)
+```
+
+```{r}
+# Visualisasi Hasil
+result_pt_ubikayu_glm <- data.frame(Produktivitas_4 = test_pt_ubikayu_glm$Produktivitas, Predictions_8 = predict_pt_ubikayu_glm)
+
+# Visualisasi Perbandingan Produktivitas Aktual dengan Hasil Prediksi
+ggplot(data = result_pt_ubikayu_glm, aes(x = Produktivitas_4, y = Predictions_8)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  labs(x = "Actual Produktivitas", y = "Predicted Produktivitas") +
+  ggtitle("Comparison of Actual Produktivitas and GLM Model Prediction") +
+  theme_minimal()
+```
+
+```{r}
+# Visualisasi Produktivitas Aktual dengan Hasil Prediksi
+ggplot(data = result_pt_ubikayu_glm, aes(x = 1:length(Produktivitas_4))) +
+  geom_line(aes(y = Produktivitas_4, color = "Actual"), size = 1) +
+  geom_line(aes(y = Predictions_8, color = "GLM Prediction"), size = 1) +
+  labs(x = "Observation", y = "Produktivitas") +
+  scale_color_manual(values = c("Actual" = "blue", "GLM Prediction" = "red")) +
+  ggtitle("Comparison of Actual Sales and GLM Model Prediction") +
+  theme_minimal()
+```
+
+
+### Evaluasi Model
+```{r}
+# Hitung MAE (Mean Absolute Error)
+mae_value_glm_8 <- mae(test_pt_ubikayu_glm$Produktivitas, predict_pt_ubikayu_glm)
+
+# Hitung MSE (Mean Squared Error)
+mse_value_glm_8 <- mse(test_pt_ubikayu_glm$Produktivitas, predict_pt_ubikayu_glm)
+
+# Hitung RMSE (Root Mean Square Error)
+rmse_value_glm_8 <- rmse(test_pt_ubikayu_glm$Produktivitas, predict_pt_ubikayu_glm)
+
+# Hitung MAPE (Mean Absolute Percent Error)
+mape_value_glm_8 <- mape(test_pt_ubikayu_glm$Produktivitas, predict_pt_ubikayu_glm)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_value_glm_8, "\n"))
+cat(paste("MSE: ", mse_value_glm_8, "\n"))
+cat(paste("RMSE: ", rmse_value_glm_8, "\n"))
+cat(paste("MAPE: ", mape_value_glm_8, "%\n"))
+```
+
+
+## Produksi Kacang kedelai sumatera - GLM
+
+```{r}
+# Pilih variabel yang akan diprediksi
+produksi_Kedelai_glm <- Iklim_Kedelai[, c("Produksi", "Kecepatan_Angin", "Kelembapan", "Suhu", "Penyinaran_Matahari", "Curah_hujan")]
+produksi_Kedelai_glm
+```
+
+```{r}
+# Membagi dataset menjadi data pelatihan dan pengujian
+set.seed(123) # Set seed untuk reproduktibilitas
+split_produksi_Kedelai <- sample.split(produksi_Kedelai_glm$Produksi, SplitRatio = 0.7) # 70% untuk data pelatihan, 30% untuk data pengujian
+```
+
+```{r}
+# Membuat subset data pelatihan dan pengujian
+train_ps_Kedelai_glm <- subset(produksi_Kedelai_glm, split_produksi_Kedelai == TRUE)
+test_ps_Kedelai_glm <- subset(produksi_Kedelai_glm, split_produksi_Kedelai == FALSE)
+```
+
+```{r}
+dim(train_ps_Kedelai_glm)
+dim(test_ps_Kedelai_glm)
+```
+
+### GLM model Iklim terhadap Produksi Kedelai
+```{r}
+#model GLM
+glm_produksi_Kedelai <- glm(Produksi ~ Curah_hujan + Suhu + Penyinaran_Matahari+ Kecepatan_Angin + Kelembapan, 
+                      data = train_ps_Kedelai_glm, 
+                      family = gaussian(link = "identity"),
+                      control = list(epsilon = 1e-8, maxit = 100))
+```
+
+```{r}
+summary(glm_produksi_Kedelai)
+```
+
+
+### Prediksi data testing dengan model
+```{r}
+# Melakukan prediksi dengan model GLM pada data testing
+predict_ps_Kedelai_glm <- predict(glm_produksi_Kedelai, newdata = test_ps_Kedelai_glm, type = "response")
+```
+
+```{r}
+# Menampilkan hasil prediksi
+head(predict_ps_Kedelai_glm)
+```
+```{r}
+head(predict_ps_Kedelai_glm)
+```
+
+```{r}
+# Visualisasi Hasil
+result_ps_Kedelai_glm <- data.frame(Produksi_5 = test_ps_Kedelai_glm$Produksi, Predictions_9 = predict_ps_Kedelai_glm)
+
+# Visualisasi Perbandingan Produksi Aktual dengan Hasil Prediksi
+ggplot(data = result_ps_Kedelai_glm, aes(x = Produksi_5, y = Predictions_9)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  labs(x = "Actual Produksi", y = "Predicted Produksi") +
+  ggtitle("Comparison of Actual Produksi and GLM Model Prediction") +
+  theme_minimal()
+```
+
+```{r}
+# Visualisasi Produksi Aktual dengan Hasil Prediksi
+ggplot(data = result_ps_Kedelai_glm, aes(x = 1:length(Produksi_5))) +
+  geom_line(aes(y = Produksi_5, color = "Actual"), size = 1) +
+  geom_line(aes(y = Predictions_9, color = "GLM Prediction"), size = 1) +
+  labs(x = "Observation", y = "Produksi") +
+  scale_color_manual(values = c("Actual" = "blue", "GLM Prediction" = "red")) +
+  ggtitle("Comparison of Actual Sales and GLM Model Prediction") +
+  theme_minimal()
+```
+
+
+### Evaluasi Model
+```{r}
+# Hitung MAE (Mean Absolute Error)
+mae_value_glm_9 <- mae(test_ps_Kedelai_glm$Produksi, predict_ps_Kedelai_glm)
+
+# Hitung MSE (Mean Squared Error)
+mse_value_glm_9 <- mse(tes_ps_Kedelai_glm$Produksi, predict_ps_Kedelai_glm)
+
+# Hitung RMSE (Root Mean Square Error)
+rmse_value_glm_9 <- rmse(test_ps_Kedelai_glm$Produksi, predict_ps_Kedelai_glm)
+
+# Hitung MAPE (Mean Absolute Percent Error)
+mape_value_glm_9 <- mape(test_ps_Kedelai_glm$Produksi, predict_ps_Kedelai_glm)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_value_glm_9, "\n"))
+cat(paste("MSE: ", mse_value_glm_9, "\n"))
+cat(paste("RMSE: ", rmse_value_glm_9, "\n"))
+cat(paste("MAPE: ", mape_value_glm_9, "%\n"))
+```
+
+
+
+## Produktivitas Kedelai - GLM
+```{r}
+# Pilih variabel yang akan diprediksi
+produktivitas_Kedelai_glm <- Iklim_Kedelai[, c("Produktivitas", "Kecepatan_Angin", "Kelembapan", "Suhu", "Penyinaran_Matahari", "Curah_hujan")]
+produktivitas_Kedelai_glm
+```
+
+
+```{r}
+# Membagi dataset menjadi data pelatihan dan pengujian
+set.seed(123) # Set seed untuk reproduktibilitas
+split_pt_Kedelai <- sample.split(produktivitas_Kedelai_glm$Produksi, SplitRatio = 0.7) # 70% untuk data pelatihan, 30% untuk data pengujian
+```
+
+```{r}
+# Membuat subset data pelatihan dan pengujian
+train_pt_Kedelai_glm <- subset(produktivitas_Kedelai_glm, split_pt_Kedelai == TRUE)
+test_pt_Kedelai_glm <- subset(produktivitas_Kedelai_glm, split_pt_Kedelai == FALSE)
+```
+
+```{r}
+dim(train_pt_Kedelai_glm)
+dim(test_pt_Kedelai_glm)
+```
+
+
+### GLM model Iklim terhadap Produktivitas Kedelai
+```{r}
+glm_Produktivitas_Kedelai <- glm(Produktivitas ~ Curah_hujan + Suhu + Penyinaran_Matahari+ Kecepatan_Angin + Kelembapan, 
+                      data = test_pt_Kedelai_glm, 
+                      family = gaussian(link = "identity"),
+                      control = list(epsilon = 1e-8, maxit = 100))
+```
+
+```{r}
+summary(glm_Produktivitas_Kedelai)
+```
+
+
+### Prediksi data testing dengan model
+```{r}
+# Melakukan prediksi dengan model GLM pada data testing
+predict_pt_Kedelai_glm <- predict(glm_Produktivitas_Kedelai, newdata = test_pt_Kedelai_glm, type = "response")
+```
+
+```{r}
+# Menampilkan hasil prediksi
+head(predict_pt_Kedelai_glm)
+```
+
+```{r}
+# Visualisasi Hasil
+result_pt_Kedelai_glm <- data.frame(Produktivitas_5 = test_pt_Kedelai_glm$Produktivitas, Predictions_10 = predict_pt_Kedelai_glm)
+
+# Visualisasi Perbandingan Produktivitas Aktual dengan Hasil Prediksi
+ggplot(data = result_pt_Kedelai_glm, aes(x = Produktivitas_5, y = Predictions_10)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  labs(x = "Actual Produktivitas", y = "Predicted Produktivitas") +
+  ggtitle("Comparison of Actual Produktivitas and GLM Model Prediction") +
+  theme_minimal()
+```
+
+```{r}
+# Visualisasi Produktivitas Aktual dengan Hasil Prediksi
+ggplot(data = result_pt_Kedelai_glm, aes(x = 1:length(Produktivitas_5))) +
+  geom_line(aes(y = Produktivitas_5, color = "Actual"), size = 1) +
+  geom_line(aes(y = Predictions_10, color = "GLM Prediction"), size = 1) +
+  labs(x = "Observation", y = "Produktivitas") +
+  scale_color_manual(values = c("Actual" = "blue", "GLM Prediction" = "red")) +
+  ggtitle("Comparison of Actual Sales and GLM Model Prediction") +
+  theme_minimal()
+```
+
+
+### Evaluasi Model
+```{r}
+# Hitung MAE (Mean Absolute Error)
+mae_value_glm_10 <- mae(test_pt_Kedelai_glm$Produktivitas, predict_pt_Kedelai_glm)
+
+# Hitung MSE (Mean Squared Error)
+mse_value_glm_10 <- mse(test_pt_Kedelai_glm$Produktivitas, predict_pt_Kedelai_glm)
+
+# Hitung RMSE (Root Mean Square Error)
+rmse_value_glm_10 <- rmse(test_pt_Kedelai_glm$Produktivitas, predict_pt_Kedelai_glm)
+
+# Hitung MAPE (Mean Absolute Percent Error)
+mape_value_glm_10 <- mape(test_pt_Kedelai_glm$Produktivitas, predict_pt_Kedelai_glm)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_value_glm_10, "\n"))
+cat(paste("MSE: ", mse_value_glm_10, "\n"))
+cat(paste("RMSE: ", rmse_value_glm_10, "\n"))
+cat(paste("MAPE: ", mape_value_glm_10, "%\n"))
+```
+
+
+
+## Produksi Kacang hijau sumatera - GLM
+
+```{r}
+# Pilih variabel yang akan diprediksi
+produksi_kcgHijau_glm <- Iklim_kacanghijau[, c("Produksi", "Kecepatan_Angin", "Kelembapan", "Suhu", "Penyinaran_Matahari", "Curah_hujan")]
+produksi_kcgHijau_glm
+```
+
+```{r}
+# Membagi dataset menjadi data pelatihan dan pengujian
+set.seed(123) # Set seed untuk reproduktibilitas
+split_produksi_kcgHijau <- sample.split(produksi_kcgHijau_glm$Produksi, SplitRatio = 0.7) # 70% untuk data pelatihan, 30% untuk data pengujian
+```
+
+```{r}
+# Membuat subset data pelatihan dan pengujian
+train_ps_kcgHijau_glm <- subset(produksi_kcgHijau_glm, split_produksi_kcgHijau == TRUE)
+test_ps_kcgHijau_glm <- subset(produksi_kcgHijau_glm, split_produksi_kcgHijau == FALSE)
+```
+
+```{r}
+dim(train_ps_kcgHijau_glm)
+dim(test_ps_kcgHijau_glm)
+```
+
+### GLM model Iklim terhadap Produksi kacang Hijau
+```{r}
+#model GLM
+glm_produksi_kcgHijau <- glm(Produksi ~ Curah_hujan + Suhu + Penyinaran_Matahari+ Kecepatan_Angin + Kelembapan, 
+                      data = train_ps_kcgHijau_glm, 
+                      family = gaussian(link = "identity"),
+                      control = list(epsilon = 1e-8, maxit = 100))
+```
+
+```{r}
+summary(glm_produksi_kcgHijau)
+```
+
+
+### Prediksi data testing dengan model
+```{r}
+# Melakukan prediksi dengan model GLM pada data testing
+predict_ps_kcgHijau_glm <- predict(glm_produksi_kcgHijau, newdata = test_ps_kcgHijau_glm, type = "response")
+```
+
+```{r}
+# Menampilkan hasil prediksi
+head(predict_ps_kcgHijau_glm)
+```
+```{r}
+head(predict_ps_kcgHijau_glm)
+```
+
+```{r}
+# Visualisasi Hasil
+result_ps_kcgHijau_glm <- data.frame(Produksi_6 = test_ps_kcgHijau_glm$Produksi, Predictions_11 = predict_ps_kcgHijau_glm)
+
+# Visualisasi Perbandingan Produksi Aktual dengan Hasil Prediksi
+ggplot(data = result_ps_kcgHijau_glm, aes(x = Produksi_6, y = Predictions_11)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  labs(x = "Actual Produksi", y = "Predicted Produksi") +
+  ggtitle("Comparison of Actual Produksi and GLM Model Prediction") +
+  theme_minimal()
+```
+
+```{r}
+# Visualisasi Produksi Aktual dengan Hasil Prediksi
+ggplot(data = result_ps_kcgHijau_glm, aes(x = 1:length(Produksi_6))) +
+  geom_line(aes(y = Produksi_6, color = "Actual"), size = 1) +
+  geom_line(aes(y = Predictions_11, color = "GLM Prediction"), size = 1) +
+  labs(x = "Observation", y = "Produksi") +
+  scale_color_manual(values = c("Actual" = "blue", "GLM Prediction" = "red")) +
+  ggtitle("Comparison of Actual Sales and GLM Model Prediction") +
+  theme_minimal()
+```
+
+
+### Evaluasi Model
+```{r}
+# Hitung MAE (Mean Absolute Error)
+mae_value_glm_11 <- mae(test_ps_kcgHijau_glm$Produksi, predict_ps_kcgHijau_glm)
+
+# Hitung MSE (Mean Squared Error)
+mse_value_glm_11 <- mse(tes_ps_kcgHijau_glm$Produksi, predict_ps_kcgHijau_glm)
+
+# Hitung RMSE (Root Mean Square Error)
+rmse_value_glm_11 <- rmse(test_ps_kcgHijau_glm$Produksi, predict_ps_kcgHijau_glm)
+
+# Hitung MAPE (Mean Absolute Percent Error)
+mape_value_glm_11 <- mape(test_ps_kcgHijau_glm$Produksi, predict_ps_kcgHijau_glm)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_value_glm_11, "\n"))
+cat(paste("MSE: ", mse_value_glm_11, "\n"))
+cat(paste("RMSE: ", rmse_value_glm_11, "\n"))
+cat(paste("MAPE: ", mape_value_glm_11, "%\n"))
+```
+
+
+
+## Produktivitas kacang Hijau - GLM
+```{r}
+# Pilih variabel yang akan diprediksi
+produktivitas_kcgHijau_glm <- Iklim_kacanghijau[, c("Produktivitas", "Kecepatan_Angin", "Kelembapan", "Suhu", "Penyinaran_Matahari", "Curah_hujan")]
+produktivitas_kcgHijau_glm
+```
+
+
+```{r}
+# Membagi dataset menjadi data pelatihan dan pengujian
+set.seed(123) # Set seed untuk reproduktibilitas
+split_pt_kcgHijau <- sample.split(produktivitas_kcgHijau_glm$Produksi, SplitRatio = 0.7) # 70% untuk data pelatihan, 30% untuk data pengujian
+```
+
+```{r}
+# Membuat subset data pelatihan dan pengujian
+train_pt_kcgHijau_glm <- subset(produktivitas_kcgHijau_glm, split_pt_kcgHijau == TRUE)
+test_pt_kcgHijau_glm <- subset(produktivitas_kcgHijau_glm, split_pt_kcgHijau == FALSE)
+```
+
+```{r}
+dim(train_pt_kcgHijau_glm)
+dim(test_pt_kcgHijau_glm)
+```
+
+
+### GLM model Iklim terhadap Produktivitas kacang Hijau
+```{r}
+glm_Produktivitas_kcgHijau <- glm(Produktivitas ~ Curah_hujan + Suhu + Penyinaran_Matahari+ Kecepatan_Angin + Kelembapan, 
+                      data = test_pt_kcgHijau_glm, 
+                      family = gaussian(link = "identity"),
+                      control = list(epsilon = 1e-8, maxit = 100))
+```
+
+```{r}
+summary(glm_Produktivitas_kcgHijau)
+```
+
+
+### Prediksi data testing dengan model
+```{r}
+# Melakukan prediksi dengan model GLM pada data testing
+predict_pt_kcgHijau_glm <- predict(glm_Produktivitas_kcgHijau, newdata = test_pt_kcgHijau_glm, type = "response")
+```
+
+```{r}
+# Menampilkan hasil prediksi
+head(predict_pt_kcgHijau_glm)
+```
+
+```{r}
+# Visualisasi Hasil
+result_pt_kcgHijau_glm <- data.frame(Produktivitas_6 = test_pt_kcgHijau_glm$Produktivitas, Predictions_12 = predict_pt_kcgHijau_glm)
+
+# Visualisasi Perbandingan Produktivitas Aktual dengan Hasil Prediksi
+ggplot(data = result_pt_kcgHijau_glm, aes(x = Produktivitas_6, y = Predictions_12)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  labs(x = "Actual Produktivitas", y = "Predicted Produktivitas") +
+  ggtitle("Comparison of Actual Produktivitas and GLM Model Prediction") +
+  theme_minimal()
+```
+
+```{r}
+# Visualisasi Produktivitas Aktual dengan Hasil Prediksi
+ggplot(data = result_pt_kcgHijau_glm, aes(x = 1:length(Produktivitas_6))) +
+  geom_line(aes(y = Produktivitas_6, color = "Actual"), size = 1) +
+  geom_line(aes(y = Predictions_12, color = "GLM Prediction"), size = 1) +
+  labs(x = "Observation", y = "Produktivitas") +
+  scale_color_manual(values = c("Actual" = "blue", "GLM Prediction" = "red")) +
+  ggtitle("Comparison of Actual Sales and GLM Model Prediction") +
+  theme_minimal()
+```
+
+
+### Evaluasi Model
+```{r}
+# Hitung MAE (Mean Absolute Error)
+mae_value_glm_12 <- mae(test_pt_kcgHijau_glm$Produktivitas, predict_pt_kcgHijau_glm)
+
+# Hitung MSE (Mean Squared Error)
+mse_value_glm_12 <- mse(test_pt_kcgHijau_glm$Produktivitas, predict_pt_kcgHijau_glm)
+
+# Hitung RMSE (Root Mean Square Error)
+rmse_value_glm_12 <- rmse(test_pt_kcgHijau_glm$Produktivitas, predict_pt_kcgHijau_glm)
+
+# Hitung MAPE (Mean Absolute Percent Error)
+mape_value_glm_12 <- mape(test_pt_kcgHijau_glm$Produktivitas, predict_pt_kcgHijau_glm)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_value_glm_12, "\n"))
+cat(paste("MSE: ", mse_value_glm_12, "\n"))
+cat(paste("RMSE: ", rmse_value_glm_12, "\n"))
+cat(paste("MAPE: ", mape_value_glm_12, "%\n"))
+```
+
+
+
+## Produksi Kacang tanah sumatera - GLM
+
+```{r}
+# Pilih variabel yang akan diprediksi
+produksi_kcgtanah_glm <- Iklim_kacangtanah[, c("Produksi", "Kecepatan_Angin", "Kelembapan", "Suhu", "Penyinaran_Matahari", "Curah_hujan")]
+produksi_kcgtanah_glm
+```
+
+```{r}
+# Membagi dataset menjadi data pelatihan dan pengujian
+set.seed(123) # Set seed untuk reproduktibilitas
+split_produksi_kcgtanah <- sample.split(produksi_kcgtanah_glm$Produksi, SplitRatio = 0.7) # 70% untuk data pelatihan, 30% untuk data pengujian
+```
+
+```{r}
+# Membuat subset data pelatihan dan pengujian
+train_ps_kcgtanah_glm <- subset(produksi_kcgtanah_glm, split_produksi_kcgtanah == TRUE)
+test_ps_kcgtanah_glm <- subset(produksi_kcgtanah_glm, split_produksi_kcgtanah == FALSE)
+```
+
+```{r}
+dim(train_ps_kcgtanah_glm)
+dim(test_ps_kcgtanah_glm)
+```
+
+### GLM model Iklim terhadap Produksi kacang tanah
+```{r}
+#model GLM
+glm_produksi_kcgtanah <- glm(Produksi ~ Curah_hujan + Suhu + Penyinaran_Matahari+ Kecepatan_Angin + Kelembapan, 
+                      data = train_ps_kcgtanah_glm, 
+                      family = gaussian(link = "identity"),
+                      control = list(epsilon = 1e-8, maxit = 100))
+```
+
+```{r}
+summary(glm_produksi_kcgtanah)
+```
+
+
+### Prediksi data testing dengan model
+```{r}
+# Melakukan prediksi dengan model GLM pada data testing
+predict_ps_kcgtanah_glm <- predict(glm_produksi_kcgtanah, newdata = test_ps_kcgtanah_glm, type = "response")
+```
+
+```{r}
+# Menampilkan hasil prediksi
+head(predict_ps_kcgtanah_glm)
+```
+```{r}
+head(predict_ps_kcgtanah_glm)
+```
+
+```{r}
+# Visualisasi Hasil
+result_ps_kcgtanah_glm <- data.frame(Produksi_7 = test_ps_kcgtanah_glm$Produksi, Predictions_13 = predict_ps_kcgtanah_glm)
+
+# Visualisasi Perbandingan Produksi Aktual dengan Hasil Prediksi
+ggplot(data = result_ps_kcgtanah_glm, aes(x = Produksi_7, y = Predictions_13)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  labs(x = "Actual Produksi", y = "Predicted Produksi") +
+  ggtitle("Comparison of Actual Produksi and GLM Model Prediction") +
+  theme_minimal()
+```
+
+```{r}
+# Visualisasi Produksi Aktual dengan Hasil Prediksi
+ggplot(data = result_ps_kcgtanah_glm, aes(x = 1:length(Produksi_7))) +
+  geom_line(aes(y = Produksi_7, color = "Actual"), size = 1) +
+  geom_line(aes(y = Predictions_13, color = "GLM Prediction"), size = 1) +
+  labs(x = "Observation", y = "Produksi") +
+  scale_color_manual(values = c("Actual" = "blue", "GLM Prediction" = "red")) +
+  ggtitle("Comparison of Actual Sales and GLM Model Prediction") +
+  theme_minimal()
+```
+
+
+### Evaluasi Model
+```{r}
+# Hitung MAE (Mean Absolute Error)
+mae_value_glm_13 <- mae(test_ps_kcgtanah_glm$Produksi, predict_ps_kcgtanah_glm)
+
+# Hitung MSE (Mean Squared Error)
+mse_value_glm_13 <- mse(tes_ps_kcgtanah_glm$Produksi, predict_ps_kcgtanah_glm)
+
+# Hitung RMSE (Root Mean Square Error)
+rmse_value_glm_13 <- rmse(test_ps_kcgtanah_glm$Produksi, predict_ps_kcgtanah_glm)
+
+# Hitung MAPE (Mean Absolute Percent Error)
+mape_value_glm_13 <- mape(test_ps_kcgtanah_glm$Produksi, predict_ps_kcgtanah_glm)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_value_glm_13, "\n"))
+cat(paste("MSE: ", mse_value_glm_13, "\n"))
+cat(paste("RMSE: ", rmse_value_glm_13, "\n"))
+cat(paste("MAPE: ", mape_value_glm_13, "%\n"))
+```
+
+
+
+## Produktivitas kacang tanah - GLM
+```{r}
+# Pilih variabel yang akan diprediksi
+produktivitas_kcgtanah_glm <- Iklim_kacangtanah[, c("Produktivitas", "Kecepatan_Angin", "Kelembapan", "Suhu", "Penyinaran_Matahari", "Curah_hujan")]
+produktivitas_kcgtanah_glm
+```
+
+
+```{r}
+# Membagi dataset menjadi data pelatihan dan pengujian
+set.seed(123) # Set seed untuk reproduktibilitas
+split_pt_kcgtanah <- sample.split(produktivitas_kcgtanah_glm$Produksi, SplitRatio = 0.7) # 70% untuk data pelatihan, 30% untuk data pengujian
+```
+
+```{r}
+# Membuat subset data pelatihan dan pengujian
+train_pt_kcgtanah_glm <- subset(produktivitas_kcgtanah_glm, split_pt_kcgtanah == TRUE)
+test_pt_kcgtanah_glm <- subset(produktivitas_kcgtanah_glm, split_pt_kcgtanah == FALSE)
+```
+
+```{r}
+dim(train_pt_kcgtanah_glm)
+dim(test_pt_kcgtanah_glm)
+```
+
+
+### GLM model Iklim terhadap Produktivitas kacang tanah
+```{r}
+glm_Produktivitas_kcgtanah <- glm(Produktivitas ~ Curah_hujan + Suhu + Penyinaran_Matahari+ Kecepatan_Angin + Kelembapan, 
+                      data = test_pt_kcgtanah_glm, 
+                      family = gaussian(link = "identity"),
+                      control = list(epsilon = 1e-8, maxit = 100))
+```
+
+```{r}
+summary(glm_Produktivitas_kcgtanah)
+```
+
+
+### Prediksi data testing dengan model
+```{r}
+# Melakukan prediksi dengan model GLM pada data testing
+predict_pt_kcgtanah_glm <- predict(glm_Produktivitas_kcgtanah, newdata = test_pt_kcgtanah_glm, type = "response")
+```
+
+```{r}
+# Menampilkan hasil prediksi
+head(predict_pt_kcgtanah_glm)
+```
+
+```{r}
+# Visualisasi Hasil
+result_pt_kcgtanah_glm <- data.frame(Produktivitas_7 = test_pt_kcgtanah_glm$Produktivitas, Predictions_14 = predict_pt_kcgtanah_glm)
+
+# Visualisasi Perbandingan Produktivitas Aktual dengan Hasil Prediksi
+ggplot(data = result_pt_kcgtanah_glm, aes(x = Produktivitas_7, y = Predictions_14)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  labs(x = "Actual Produktivitas", y = "Predicted Produktivitas") +
+  ggtitle("Comparison of Actual Produktivitas and GLM Model Prediction") +
+  theme_minimal()
+```
+
+```{r}
+# Visualisasi Produktivitas Aktual dengan Hasil Prediksi
+ggplot(data = result_pt_kcgtanah_glm, aes(x = 1:length(Produktivitas_7))) +
+  geom_line(aes(y = Produktivitas_7, color = "Actual"), size = 1) +
+  geom_line(aes(y = Predictions_14, color = "GLM Prediction"), size = 1) +
+  labs(x = "Observation", y = "Produktivitas") +
+  scale_color_manual(values = c("Actual" = "blue", "GLM Prediction" = "red")) +
+  ggtitle("Comparison of Actual Sales and GLM Model Prediction") +
+  theme_minimal()
+```
+
+
+### Evaluasi Model
+```{r}
+# Hitung MAE (Mean Absolute Error)
+mae_value_glm_14 <- mae(test_pt_kcgtanah_glm$Produktivitas, predict_pt_kcgtanah_glm)
+
+# Hitung MSE (Mean Squared Error)
+mse_value_glm_14 <- mse(test_pt_kcgtanah_glm$Produktivitas, predict_pt_kcgtanah_glm)
+
+# Hitung RMSE (Root Mean Square Error)
+rmse_value_glm_14 <- rmse(test_pt_kcgtanah_glm$Produktivitas, predict_pt_kcgtanah_glm)
+
+# Hitung MAPE (Mean Absolute Percent Error)
+mape_value_glm_14 <- mape(test_pt_kcgtanah_glm$Produktivitas, predict_pt_kcgtanah_glm)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_value_glm_14, "\n"))
+cat(paste("MSE: ", mse_value_glm_14, "\n"))
+cat(paste("RMSE: ", rmse_value_glm_14, "\n"))
+cat(paste("MAPE: ", mape_value_glm_14, "%\n"))
+```
+
