@@ -23,10 +23,11 @@ library(scales)
 library(vars)
 library(glm2)
 library(Metrics)
+library(caTools)
 ```
 
 
-# Load Data
+# 1. Load Data
 ```{r}
 data_iklim_sumatera <-read_excel("D:/OneDrive - mikroskil.ac.id/Skripsi/Dataset 2006-2015.xlsx")
 data_iklim_sumatera
@@ -73,24 +74,7 @@ tail(data_iklim)
 dim(data_iklim)
 ```
 
-```{r}
-#shapiro.test(data_iklim$Produksi)
-#shapiro.test(data_iklim$Produktivitas)
-#shapiro.test(data_iklim$Luas_Panen)
-#shapiro.test(data_iklim$Kecepatan_Angin)
-#shapiro.test(data_iklim$Kelembapan)
-#shapiro.test(data_iklim$Suhu)
-#shapiro.test(data_iklim$Penyinaran_Matahari)
-#shapiro.test(data_iklim$Curah_hujan)
-```
-
-
-```{r}
-#ks.test(data_iklim$Produksi, "pnorm", mean=mean(data_iklim$Produksi), sd=sd(data_iklim$Produksi))
-#ks.test(data_iklim$Kelembapan, "pnorm", mean=mean(data_iklim$Kelembapan), sd=sd(data_iklim$Kelembapan))
-```
-
-# Membersihkan Data
+# 2. Membersihkan Data
 ```{r}
 # Menampikan variabel dengan baris kosong
 colSums(is.na(data_iklim))
@@ -117,7 +101,7 @@ tail(Iklim_clean)
 glimpse(Iklim_clean)
 ```
 
-# Eksplorasi Data Analisis (EDA)
+# 3. Eksplorasi Data Analisis (EDA)
 
 # Hitung total produksi semua tanaman palawija per provinsi di setiap tahun
 ### Jumlah Produksi Tanaman Pangan per Provinsi di Pulau Sumatera
@@ -198,43 +182,12 @@ plot_sumatera_produktivitas
 ```
 
 
-
-```{r}
-shapiro.test(Iklim_clean$Produksi)
-shapiro.test(Iklim_clean$Produktivitas)
-shapiro.test(Iklim_clean$Luas_Panen)
-shapiro.test(Iklim_clean$Kecepatan_Angin)
-shapiro.test(Iklim_clean$Kelembapan)
-shapiro.test(Iklim_clean$Suhu)
-shapiro.test(Iklim_clean$Penyinaran_Matahari)
-shapiro.test(Iklim_clean$Curah_hujan)
-```
-
-```{r}
-#hist(data$variabel_dependen) untuk variabel dependen numerik yang hasilnya menunjukkan bahwa distribusi data tidak normal 
-hist(Iklim_clean$Produksi)
-hist(Iklim_clean$Produktivitas)
-```
-```{r}
-# Melakukan transformasi logaritmik pada variabel Produktivitas
-Iklim_clean$Produktivitas_transformed <- log(Iklim_clean$Produktivitas)
-
-# Melakukan transformasi logaritmik pada variabel Produksi
-Iklim_clean$Produksi_transformed <- log(Iklim_clean$Produksi)
-```
-
-
-```{r}
-hist(Iklim_clean$Produksi_transformed)
-hist(Iklim_clean$Produktivitas_transformed)
-```
-
-
+# 4. Pemodelan 
 # A. MODEL VAR
 Melakukan Analisis Iklim terhadap tanaman pangan di pulau Sumatera tahun 2006-2015 dengan model VAR
 
 
-## Produksi Padi- VAR
+## Produksi Padi - VAR
 
 ```{r}
 #Mengambil tanaman pangan padi di pulau sumatera
@@ -251,11 +204,23 @@ padi_var_sumatera1 <- Iklim_padi[, c("Produksi", "Kecepatan_Angin", "Kelembapan"
 padi_var_sumatera1
 ```
 
+```{r}
+# Tentukan ukuran data pelatihan (train) dan pengujian (test)
+train_size1 <- floor(0.7 * nrow(padi_var_sumatera1))  # 70% untuk pelatihan
+test_size1 <- nrow(padi_var_sumatera1) - train_size1   
+```
+
+```{r}
+# Pisahkan data menjadi train dan test berdasarkan urutan waktu
+train_ps_padi_var <- padi_var_sumatera1[1:train_size1, ]
+test_ps_padi_var <- padi_var_sumatera1[(train_size1 + 1):nrow(padi_var_sumatera1), ]
+```
+
 Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam format time series (ts)
 
 ```{r}
 #Format time series
-ts_data_padi_sumatera <- ts(padi_var_sumatera1, start = c(2006,1), frequency = 1)
+ts_data_padi_sumatera <- ts(train_ps_padi_var, start = c(2006,1), frequency = 1)
 ts_data_padi_sumatera
 ```
 
@@ -271,72 +236,129 @@ var_model_Padi_sumatera <- VAR(ts_data_padi_sumatera, p = best_lag_padi_sumatera
 summary(var_model_Padi_sumatera)
 ```
 
-### Uji Kolersi Pearson
+*Hasil*
+Berdasarkan hasil di atas menunjukkan bahwa variabel yg berdampak terhadap *produksi padi* adalah variabel *penyinaran matahari* di lag 1 (p-vauenya 0.0133 * ) dan *kecepatan angin* di lag 3 (p-valuenya 0.0341 *)
+
+
+
+### Uji Kolersi Pearson padi terhadap variabel iklim
 ```{r}
 # Menghitung koefisien korelasi Pearson produksi padi terhadap curah hujan
 kolerasi_padi1 <- cor(padi_var_sumatera1$Produksi, padi_var_sumatera1$Curah_hujan)
 cat ("Koefisien Korelasi Pearson Curah hujan dan Produksipadi:",kolerasi_padi1)
 ```
-Koefisien Korelasi Pearson Curah hujan dan Produksi: 
-
+Koefisien Korelasi Pearson Curah hujan dan Produksi: 0.04788761
 
 ```{r}
 # Menghitung koefisien korelasi Pearson 
 kolerasi_padi3 <- cor(padi_var_sumatera1$Produksi, padi_var_sumatera1$Kecepatan_Angin)
 cat ("Koefisien Korelasi Pearson Kecepatan Angin dan Produksi padi:", kolerasi_padi3)
 ```
-Koefisien Korelasi Pearson Kecepatan Angin dan Produksi: 
+Koefisien Korelasi Pearson Kecepatan Angin dan Produksi: -0.1299345
+
 
 ```{r}
 # Menghitung koefisien korelasi Pearson
 kolerasi_padi4 <- cor(padi_var_sumatera1$Produksi, padi_var_sumatera1$Kelembapan)
 cat ("Koefisien Korelasi Pearson Kelembapan dan Produksi padi:", kolerasi_padi4)
 ```
-Koefisien Korelasi Pearson Kelembapan dan Produksi: 0.003511531
+Koefisien Korelasi Pearson Kelembapan dan Produksi padi: 0.002375779
 
 ```{r}
 # Menghitung koefisien korelasi Pearson
 kolerasi_padi5 <- cor(padi_var_sumatera1$Produksi, padi_var_sumatera1$Penyinaran_Matahari)
 cat ("Koefisien Korelasi Pearson Penyinaran_Matahari dan Produksi padi:", kolerasi_padi5)
 ```
-Koefisien Korelasi Pearson Penyinaran_Matahari dan Produksi: -8.509364e-05
+Koefisien Korelasi Pearson Penyinaran_Matahari dan Produksi: -0.007067399
 
 ```{r}
 # Menghitung koefisien korelasi Pearson
 kolerasi_padi6 <- cor(padi_var_sumatera1$Produksi, padi_var_sumatera1$Suhu)
 cat ("Koefisien Korelasi Pearson Suhu dan Produksi padi:", kolerasi_padi6)
 ```
-Koefisien Korelasi Pearson Suhu dan Produksi: 0.03617682
+Koefisien Korelasi Pearson Suhu dan Produksi: 0.02729455
+
 
 ### Uji Granger Causality
 ```{r}
 # Melakukan uji Granger Causality 
-granger_padi_sumatera1 <- causality(var_model_Padi_sumatera, cause = "Curah_hujan")
+granger_padi_sumatera1 <- causality(var_model_Padi_sumatera, cause = "Penyinaran_Matahari")
 granger_padi_sumatera1
 
 #Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
 ```
 
-
 ```{r}
 # Melakukan uji Granger Causality 
-granger_padi_sumatera3 <- causality(var_model_Padi_sumatera, cause = "Suhu")
+granger_padi_sumatera3 <- causality(var_model_Padi_sumatera, cause = "Kecepatan_Angin")
 granger_padi_sumatera3
 
 #Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
 ```
 
+### prediksi dengan model VAR pada data testing
 
-### Uji regresi linier
 ```{r}
-# Membuat model regresi linier
-regresi_padi_sumatera <- lm(Produksi ~ Curah_hujan + Kelembapan + Suhu + Kecepatan_Angin + Penyinaran_Matahari, data = padi_var_sumatera1)
-
-# Ringkasan hasil model
-summary(regresi_padi_sumatera)
+# Melakukan prediksi dengan model VAR pada data testing
+predictions_padi_var1 <- predict(var_model_Padi_sumatera, n.ahead = test_size1)
 ```
 
-KESIMPULAN:
+```{r}
+# Ekstraksi hasil prediksi untuk variabel Produksi
+predict_ps_padi_var <- predictions_padi_var1$fcst$Produksi[, "fcst"]
+
+```
+
+```{r}
+# Menyusun data untuk visualisasi
+result_ps_padi_VAR <- data.frame(Produksi_actual1 = test_ps_padi_var$Produksi, Produksi_pred1 = predict_ps_padi_var)
+
+# Visualisasi Perbandingan Produksi Aktual dengan Hasil Prediksi
+ggplot(data = result_ps_padi_VAR, aes(x = Produksi_actual1, y = Produksi_pred1)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  labs(x = "Actual Produksi", y = "Predicted Produksi") +
+  ggtitle("Perbandingan Produksi Padi Aktual dengan Prediksi Model VAR") +
+  theme_minimal()
+```
+
+```{r}
+# Visualisasi Produksi Aktual dengan Hasil Prediksi
+ggplot(data = result_ps_padi_VAR, aes(x = 1:nrow(result_ps_padi_VAR))) +
+  geom_line(aes(y = Produksi_actual1, color = "Actual"), size = 1) +
+  geom_line(aes(y = Produksi_pred1, color = "VAR Prediction"), size = 1) +
+  labs(x = "Observation", y = "Produksi") +
+  scale_color_manual(values = c("Actual" = "blue", "VAR Prediction" = "red")) +
+  ggtitle("Produksi Padi: Aktual vs Prediksi Model VAR") +
+  theme_minimal()
+
+```
+
+
+### evaluasi model
+```{r}
+# Hitung MAE (Mean Absolute Error)
+mae_ps_padi_VAR <- mae(test_ps_padi_var$Produksi, predict_ps_padi_var)
+
+# Hitung MSE (Mean Squared Error)
+mse_ps_padi_VAR <- mse(test_ps_padi_var$Produksi, predict_ps_padi_var)
+
+# Hitung RMSE (Root Mean Square Error)
+rmse_ps_padi_VAR <- rmse(test_ps_padi_var$Produksi, predict_ps_padi_var)
+
+# Hitung MAPE (Mean Absolute Percent Error)
+mape_ps_padi_VAR <- mape(test_ps_padi_var$Produksi, predict_ps_padi_var)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_ps_padi_VAR, "\n"))
+cat(paste("MSE: ", mse_ps_padi_VAR, "\n"))
+cat(paste("RMSE: ", rmse_ps_padi_VAR, "\n"))
+cat(paste("MAPE: ", mape_ps_padi_VAR, "%\n"))
+
+```
+
 
 
 ## Produktivitas Padi- VAR
@@ -348,11 +370,25 @@ padi_var_sumatera2 <- Iklim_padi[, c("Produktivitas", "Kecepatan_Angin", "Kelemb
 padi_var_sumatera2
 ```
 
+
+```{r}
+# Tentukan ukuran data pelatihan (train) dan pengujian (test)
+train_size2 <- floor(0.7 * nrow(padi_var_sumatera2))  # 70% untuk pelatihan
+test_size2 <- nrow(padi_var_sumatera2) - train_size2   # Sisa untuk pengujian
+```
+
+```{r}
+# Pisahkan data menjadi train dan test berdasarkan urutan waktu
+train_pt_padi_var <- padi_var_sumatera2[1:train_size2, ]
+test_pt_padi_var <- padi_var_sumatera2[(train_size2 + 1):nrow(padi_var_sumatera2), ]
+```
+
+
 Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam
 format time series (ts)
 
 ```{r}
-ts_padi_sumatera2 <- ts(padi_var_sumatera2, start = c(2006,1), frequency = 1)
+ts_padi_sumatera2 <- ts(train_pt_padi_var, start = c(2006,1), frequency = 1)
 ts_padi_sumatera2
 ```
 
@@ -368,56 +404,51 @@ var_model_Padi_sumatera2 <- VAR(ts_padi_sumatera2, p = best_lag_padi_sumatera2$s
 summary(var_model_Padi_sumatera2)
 ```
 
+*Hasil*
+Berdasarkan hasil di atas menunjukkan bahwa variabel iklim yang berdamppak terhadap *produktivitas padi* adalah variabel *penyinaran matahari* di lag1 dengan p-value 0.04093 *  
+
+  
 ### Uji Kolerasi Pearson
 ```{r}
 # Menghitung koefisien korelasi Pearson
 kolerasi_padi7 <- cor(padi_var_sumatera2$Produktivitas, padi_var_sumatera2$Curah_hujan)
 cat ("Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi:",kolerasi_padi7)
 ```
-Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi: 0.04455614
-
-
 ```{r}
 # Menghitung koefisien korelasi Pearson
 kolerasi_padi9 <- cor(padi_var_sumatera2$Produktivitas, padi_var_sumatera2$Kecepatan_Angin)
 cat ("Koefisien Korelasi Pearson Kecepatan Angin dan Produktivitas:", kolerasi_padi9)
 ```
-Koefisien Korelasi Pearson Kecepatan Angin dan Produktivitas: -0.51
+Koefisien Korelasi Pearson Kecepatan Angin dan Produktivitas: -0.5
 
 ```{r}
 # Menghitung koefisien korelasi Pearson
 kolerasi_padi10<- cor(padi_var_sumatera2$Produktivitas, padi_var_sumatera2$Kelembapan)
 cat ("Koefisien Korelasi Pearson Kelembapan dan Produktivitas:", kolerasi_padi10)
 ```
-Koefisien Korelasi Pearson Kelembapan dan Produktivitas: -0.09
+Koefisien Korelasi Pearson Kelembapan dan Produktivitas: -0.08
 
 ```{r}
 # Menghitung koefisien korelasi Pearson
 kolerasi_padi11 <- cor(padi_var_sumatera2$Produktivitas, padi_var_sumatera2$Penyinaran_Matahari)
 cat ("Koefisien Korelasi Pearson Penyinaran_Matahari dan Produktivitas:", kolerasi_padi11)
 ```
-Koefisien Korelasi Pearson Penyinaran_Matahari dan Produktivitas : 0.013
+Koefisien Korelasi Pearson Penyinaran_Matahari dan Produktivitas : -0.005796283
 
 ```{r}
 # Menghitung koefisien korelasi Pearson
 kolerasi_padi6 <- cor(padi_var_sumatera2$Produktivitas, padi_var_sumatera2$Suhu)
 cat ("Koefisien Korelasi Pearson Suhu dan Produktivitas:", kolerasi_padi6)
 ```
-Koefisien Korelasi Pearson Suhu dan Produktivitas: -0.085
+Koefisien Korelasi Pearson Suhu dan Produktivitas: -0.10
 
 
 ### Uji Granger Causality
-```{r}
-# Melakukan uji Granger Causality 
-granger_padi_sumatera8 <- causality(var_model_Padi_sumatera2, cause = "Curah_hujan")
-granger_padi_sumatera8
 
-#Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
-```
 
 ```{r}
 # Melakukan uji Granger Causality 
-granger_padi_sumatera9 <- causality(var_model_Padi_sumatera2, cause = "kelembapan")
+granger_padi_sumatera9 <- causality(var_model_Padi_sumatera2, cause = "Kecepatan_Angin")
 granger_padi_sumatera9
 
 #Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
@@ -431,19 +462,68 @@ granger_padi_sumatera10
 #Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
 ```
 
+### prediksi dengan model VAR pada data testing pada Produktivitas padi
 
-### Uji regresi linier
 ```{r}
-# Membuat model regresi linier
-regresi_padi_sumatera2 <- lm(Produktivitas ~ Curah_hujan + Kelembapan + Suhu + Kecepatan_Angin + Penyinaran_Matahari, data = padi_var_sumatera2)
+# Melakukan prediksi dengan model VAR pada data testing
+predictions_padi_var2 <- predict(var_model_Padi_sumatera2, n.ahead = test_size2)
+```
 
-# Ringkasan hasil model
-summary(regresi_padi_sumatera2)
+```{r}
+# Ekstraksi hasil prediksi untuk variabel Produktivitas
+predict_pt_padi_var <- predictions_padi_var2$fcst$Produktivitas[, "fcst"]
+
+```
+
+```{r}
+# Menyusun data untuk visualisasi
+result_pt_padi_VAR <- data.frame(Produktivitas_actual1 = test_pt_padi_var$Produktivitas, Produktivitas_pred1 = predict_pt_padi_var)
+
+# Visualisasi Perbandingan Produktivitas Aktual dengan Hasil Prediksi
+ggplot(data = result_pt_padi_VAR, aes(x = Produktivitas_actual1, y = Produktivitas_pred1)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  labs(x = "Actual Produktivitas", y = "Predicted Produktivitas") +
+  ggtitle("Perbandingan Produktivitas Padi Aktual dengan Prediksi Model VAR") +
+  theme_minimal()
+```
+
+```{r}
+# Visualisasi Produktivitas Aktual dengan Hasil Prediksi
+ggplot(data = result_pt_padi_VAR, aes(x = 1:nrow(result_pt_padi_VAR))) +
+  geom_line(aes(y = Produktivitas_actual1, color = "Actual"), size = 1) +
+  geom_line(aes(y = Produktivitas_pred1, color = "VAR Prediction"), size = 1) +
+  labs(x = "Observation", y = "Produktivitas") +
+  scale_color_manual(values = c("Actual" = "blue", "VAR Prediction" = "red")) +
+  ggtitle("Produktivitas Padi: Aktual vs Prediksi Model VAR") +
+  theme_minimal()
+
 ```
 
 
-KESIMPULAN
+### evaluasi model
+```{r}
+# Hitung MAE (Mean Absolute Error)
+mae_pt_padi_VAR <- mae(test_pt_padi_var$Produktivitas, predict_pt_padi_var)
 
+# Hitung MSE (Mean Squared Error)
+mse_pt_padi_VAR <- mse(test_pt_padi_var$Produktivitas, predict_pt_padi_var)
+
+# Hitung RMSE (Root Mean Square Error)
+rmse_pt_padi_VAR <- rmse(test_pt_padi_var$Produktivitas, predict_pt_padi_var)
+
+# Hitung MAPE (Mean Absolute Percent Error)
+mape_pt_padi_VAR <- mape(test_pt_padi_var$Produktivitas, predict_pt_padi_var)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_pt_padi_VAR, "\n"))
+cat(paste("MSE: ", mse_pt_padi_VAR, "\n"))
+cat(paste("RMSE: ", rmse_pt_padi_VAR, "\n"))
+cat(paste("MAPE: ", mape_pt_padi_VAR, "%\n"))
+
+```
 
 
 ## Produksi Jagung - VAR
@@ -463,11 +543,23 @@ jagung_var_sumatera1 <- Iklim_jagung[, c("Produksi", "Kecepatan_Angin", "Kelemba
 jagung_var_sumatera1
 ```
 
+```{r}
+# Tentukan ukuran data pelatihan (train) dan pengujian (test)
+train_size3 <- floor(0.7 * nrow(jagung_var_sumatera1))  # 70% untuk pelatihan
+test_size3 <- nrow(jagung_var_sumatera1) - train_size3   # Sisa untuk pengujian
+```
+
+```{r}
+# Pisahkan data menjadi train dan test berdasarkan urutan waktu
+train_ps_jagung_var <- jagung_var_sumatera1[1:train_size3, ]
+test_ps_jagung_var <-jagung_var_sumatera1 [(train_size3 + 1):nrow(jagung_var_sumatera1), ]
+```
+
 Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam
 format time series (ts)
 
 ```{r}
-ts_jagung_sumatera <- ts(jagung_var_sumatera1, start = c(2006,1), frequency = 1)
+ts_jagung_sumatera <- ts(train_ps_jagung_var, start = c(2006,1), frequency = 1)
 ts_jagung_sumatera
 ```
 
@@ -477,12 +569,19 @@ best_lag_jagung_sumatera<- VARselect(ts_jagung_sumatera, lag.max = 5, type = "bo
 best_lag_jagung_sumatera
 ```
 
+
+
 ### VAR Model Iklim terhadap produksi Jagung sumatera
 ```{r}
 
 var_model_jagung_sumatera <- VAR(ts_jagung_sumatera, p = best_lag_jagung_sumatera$selection[1], type = "both") # jumlah order dari model VAR
 summary(var_model_jagung_sumatera)
 ```
+
+*Hasil*
+
+Berdasarkan hasil di atas menunjukkan bahwa variabel iklim yg berdampak terhadap produksi jagung adalah variabel *kecepatan angin* di lag 1 (p-valuenya 0.00433 ** ), *kelembapan* di lag 1 (p-valuenya  0.01586 * ), *penyinaran matahari* di lag 1 (p-valuenya 0.01339 *  ) dan *curah hujan* di lag 1 (p-valuenya 0.04253 *)
+
 
 ### Uji Kolereasi Pearson
 ```{r}
@@ -531,7 +630,7 @@ granger_jagung_sumatera1
 
 ```{r}
 # Melakukan uji Granger Causality 
-granger_jagung_sumatera2 <- causality(var_model_jagung_sumatera, cause = "kelembapan")
+granger_jagung_sumatera2 <- causality(var_model_jagung_sumatera, cause = "Kelembapan")
 granger_jagung_sumatera2
 
 #Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
@@ -539,19 +638,74 @@ granger_jagung_sumatera2
 
 ```{r}
 # Melakukan uji Granger Causality 
-granger_jagung_sumatera3 <- causality(var_model_jagung_sumatera, cause = "Suhu")
+granger_jagung_sumatera3 <- causality(var_model_jagung_sumatera, cause = "Kecepatan_Angin")
 granger_jagung_sumatera3
 
 #Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
 ```
 
-### Uji regresi linier
-```{r}
-# Membuat model regresi linier
-regresi_jagung_sumatera1 <- lm(Produksi ~ Curah_hujan + Kelembapan  + Suhu + Kecepatan_Angin + Penyinaran_Matahari, data = jagung_var_sumatera1)
 
-# Ringkasan hasil model
-summary(regresi_jagung_sumatera1)
+### prediksi Produksi jagung dengan model VAR pada data testing 
+
+```{r}
+# Melakukan prediksi dengan model VAR pada data testing
+predictions_jagung_var <- predict(var_model_jagung_sumatera, n.ahead = test_size3)
+```
+
+```{r}
+# Ekstraksi hasil prediksi untuk variabel Produksi
+predict_ps_jagung_var <- predictions_jagung_var$fcst$Produksi[, "fcst"]
+```
+
+```{r}
+# Menyusun data untuk visualisasi
+result_ps_jagung_VAR <- data.frame(Produksi_actual2 = test_ps_jagung_var$Produksi, Produksi_pred2 = predict_ps_jagung_var)
+
+
+# Visualisasi Perbandingan Produksi Jagung Aktual dengan Hasil Prediksi
+ggplot(data = result_ps_jagung_VAR, aes(x = Produksi_actual2, y = Produksi_pred2)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  labs(x = "Actual Produksi", y = "Predicted Produksi") +
+  ggtitle("Perbandingan Produksi Jagung Aktual dengan Prediksi Model VAR") +
+  theme_minimal()
+```
+
+```{r}
+# Visualisasi Produksi Aktual dengan Hasil Prediksi
+ggplot(data = result_ps_jagung_VAR, aes(x = 1:nrow(result_ps_jagung_VAR))) +
+  geom_line(aes(y = Produksi_actual2, color = "Actual"), size = 1) +
+  geom_line(aes(y = Produksi_pred2, color = "VAR Prediction"), size = 1) +
+  labs(x = "Observation", y = "Produksi") +
+  scale_color_manual(values = c("Actual" = "blue", "VAR Prediction" = "red")) +
+  ggtitle("Produksi Jagung: Aktual vs Prediksi Model VAR") +
+  theme_minimal()
+
+```
+
+
+### evaluasi model
+```{r}
+# Hitung MAE (Mean Absolute Error)
+mae_ps_jagung_VAR <- mae(test_ps_jagung_var$Produksi, predict_ps_jagung_var)
+
+# Hitung MSE (Mean Squared Error)
+mse_ps_jagung_VAR <- mse(test_ps_jagung_var$Produksi, predict_ps_jagung_var)
+
+# Hitung RMSE (Root Mean Square Error)
+rmse_ps_jagung_VAR <- rmse(test_ps_jagung_var$Produksi, predict_ps_jagung_var)
+
+# Hitung MAPE (Mean Absolute Percent Error)
+mape_ps_jagung_VAR <- mape(test_ps_jagung_var$Produksi, predict_ps_jagung_var)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_ps_jagung_VAR, "\n"))
+cat(paste("MSE: ", mse_ps_jagung_VAR, "\n"))
+cat(paste("RMSE: ", rmse_ps_jagung_VAR, "\n"))
+cat(paste("MAPE: ", mape_ps_jagung_VAR, "%\n"))
+
 ```
 
 
@@ -564,11 +718,23 @@ jagung_var_sumatera2 <- Iklim_jagung[, c("Produktivitas", "Kecepatan_Angin", "Ke
 jagung_var_sumatera2
 ```
 
+```{r}
+# Tentukan ukuran data pelatihan (train) dan pengujian (test)
+train_size4 <- floor(0.7 * nrow(jagung_var_sumatera2))  # 70% untuk pelatihan
+test_size4 <- nrow(jagung_var_sumatera2) - train_size4   # 30% untuk pengujian
+```
+
+```{r}
+# Pisahkan data menjadi train dan test berdasarkan urutan waktu
+train_pt_jagung_var <- jagung_var_sumatera2[1:train_size4, ]
+test_pt_jagung_var <-jagung_var_sumatera2[(train_size4 + 1):nrow(jagung_var_sumatera2), ]
+```
+
 Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam
 format time series (ts)
 
 ```{r}
-ts_jagung_sumatera2 <- ts(jagung_var_sumatera2, start = c(2006,1), frequency = 1)
+ts_jagung_sumatera2 <- ts(train_pt_jagung_var, start = c(2006,1), frequency = 1)
 ts_jagung_sumatera2
 ```
 
@@ -578,6 +744,7 @@ best_lag_jagung_sumatera2<- VARselect(ts_jagung_sumatera2, lag.max = 5, type = "
 best_lag_jagung_sumatera2
 ```
 
+
 ### VAR Model Iklim terhadap produktivitas Jagung sumatera
 ```{r}
 
@@ -585,14 +752,18 @@ var_model_jagung_sumatera2 <- VAR(ts_jagung_sumatera2, p = best_lag_jagung_sumat
 summary(var_model_jagung_sumatera2)
 ```
 
+*Hasil*
+
+Berdasarkan hasil di atas menunjukkan bahwa variabel iklim yg berdampak terhadap produktivitas jagung adalah variabel  *penyinaran matahari* di lag 4 (p-valuenya 0.0436 * ) 
+
+
 ### Uji kolerasi Pearson jagung
 ```{r}
 # Menghitung koefisien korelasi Pearson
 kolerasi_padi7 <- cor(jagung_var_sumatera2$Produktivitas, jagung_var_sumatera2$Curah_hujan)
 cat ("Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi:",kolerasi_padi7)
 ```
-Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi: 0.0405
-
+Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi: 0.04170687
 
 ```{r}
 # Menghitung koefisien korelasi Pearson
@@ -625,7 +796,7 @@ Koefisien Korelasi Pearson Suhu dan Produktivitas: -0.16
 ### Uji Granger Causality produktivitas jagung
 ```{r}
 # Melakukan uji Granger Causality 
-granger_jagung_produktivitas1 <- causality(var_model_jagung_sumatera2, cause = "Curah_hujan")
+granger_jagung_produktivitas1 <- causality(var_model_jagung_sumatera2, cause = "Penyinaran_Matahari")
 granger_jagung_produktivitas1
 
 #Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
@@ -633,7 +804,7 @@ granger_jagung_produktivitas1
 
 ```{r}
 # Melakukan uji Granger Causality 
-granger_jagung_produktivitas2 <- causality(var_model_jagung_sumatera, cause = "kelembapan")
+granger_jagung_produktivitas2 <- causality(var_model_jagung_sumatera2, cause = "Kelembapan")
 granger_jagung_produktivitas2
 
 #Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
@@ -641,22 +812,74 @@ granger_jagung_produktivitas2
 
 ```{r}
 # Melakukan uji Granger Causality 
-granger_jagung_produktivitas3 <- causality(var_model_jagung_sumatera, cause = "Suhu")
+granger_jagung_produktivitas3 <- causality(var_model_jagung_sumatera2, cause = "Suhu")
 granger_jagung_produktivitas3
 
 #Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
 ```
 
-### Uji regresi linier produktivitas Jagung
-```{r}
-# Membuat model regresi linier
-regresi_jagung_sumatera2 <- lm(Produktivitas ~ Curah_hujan + Kelembapan + Suhu + Kecepatan_Angin + Penyinaran_Matahari, data = jagung_var_sumatera2)
 
-# Ringkasan hasil model
-summary(regresi_jagung_sumatera2)
+### prediksi Produktivitas jagung dengan model VAR pada data testing 
+```{r}
+# Melakukan prediksi dengan model VAR pada data testing
+predictions_jagung_var2 <- predict(var_model_jagung_sumatera2, n.ahead = test_size4)
+```
+
+```{r}
+# Ekstraksi hasil prediksi untuk variabel Produktivitas
+predict_pt_jagung_var <- predictions_jagung_var2$fcst$Produktivitas[, "fcst"]
+```
+
+```{r}
+# Menyusun data untuk visualisasi
+result_pt_jagung_VAR <- data.frame(Produktivitas_actual2 = test_pt_jagung_var$Produktivitas, Produktivitas_pred2 = predict_pt_jagung_var)
+
+
+# Visualisasi Perbandingan Produktivitas Jagung Aktual dengan Hasil Prediksi
+ggplot(data = result_pt_jagung_VAR, aes(x = Produktivitas_actual2, y = Produktivitas_pred2)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  labs(x = "Actual Produktivitas", y = "Predicted Produktivitas") +
+  ggtitle("Perbandingan Produktivitas Jagung Aktual dengan Prediksi Model VAR") +
+  theme_minimal()
+```
+
+```{r}
+# Visualisasi Produktivitas Aktual dengan Hasil Prediksi
+ggplot(data = result_pt_jagung_VAR, aes(x = 1:nrow(result_pt_jagung_VAR))) +
+  geom_line(aes(y = Produktivitas_actual2, color = "Actual"), size = 1) +
+  geom_line(aes(y = Produktivitas_pred2, color = "VAR Prediction"), size = 1) +
+  labs(x = "Observation", y = "Produktivitas") +
+  scale_color_manual(values = c("Actual" = "blue", "VAR Prediction" = "red")) +
+  ggtitle("Produktivitas Jagung: Aktual vs Prediksi Model VAR") +
+  theme_minimal()
+
 ```
 
 
+### evaluasi model
+```{r}
+# Hitung MAE (Mean Absolute Error)
+mae_pt_jagung_VAR <- mae(test_pt_jagung_var$Produktivitas, predict_pt_jagung_var)
+
+# Hitung MSE (Mean Squared Error)
+mse_pt_jagung_VAR <- mse(test_pt_jagung_var$Produktivitas, predict_pt_jagung_var)
+
+# Hitung RMSE (Root Mean Square Error)
+rmse_pt_jagung_VAR <- rmse(test_pt_jagung_var$Produktivitas, predict_pt_jagung_var)
+
+# Hitung MAPE (Mean Absolute Percent Error)
+mape_pt_jagung_VAR <- mape(test_pt_jagung_var$Produktivitas, predict_pt_jagung_var)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_pt_jagung_VAR, "\n"))
+cat(paste("MSE: ", mse_pt_jagung_VAR, "\n"))
+cat(paste("RMSE: ", rmse_pt_jagung_VAR, "\n"))
+cat(paste("MAPE: ", mape_pt_jagung_VAR, "%\n"))
+
+```
 
 ##  Produksi Ubi Jalar - VAR
 
@@ -676,11 +899,22 @@ ubi_jalar_var_sumatera1 <- Iklim_ubi_jalar[, c("Produksi", "Kecepatan_Angin", "K
 ubi_jalar_var_sumatera1
 ```
 
-Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam
-format time series (ts)
+```{r}
+# Tentukan ukuran data pelatihan (train) dan pengujian (test)
+train_size5 <- floor(0.7 * nrow(ubi_jalar_var_sumatera1))  # 70% untuk pelatihan
+test_size5 <- nrow(ubi_jalar_var_sumatera1) - train_size5   # 30% untuk pengujian
+```
 
 ```{r}
-ts_ubi_jalar_sumatera <- ts(ubi_jalar_var_sumatera1, start = c(2006,1), frequency = 1)
+# Pisahkan data menjadi train dan test berdasarkan urutan waktu
+train_ps_ubijalar_var <- ubi_jalar_var_sumatera1[1:train_size5, ]
+test_ps_ubijalar_var <-ubi_jalar_var_sumatera1[(train_size5 + 1):nrow(ubi_jalar_var_sumatera1), ]
+```
+
+Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam
+format time series (ts)
+```{r}
+ts_ubi_jalar_sumatera <- ts(train_ps_ubijalar_var, start = c(2006,1), frequency = 1)
 ts_ubi_jalar_sumatera
 ```
 
@@ -695,6 +929,13 @@ lag_ubijalar_sumatera
 var_model_ubijalar_sumatera <- VAR(ts_ubi_jalar_sumatera, p = lag_ubijalar_sumatera$selection[1], type = "both") # jumlah order dari model VAR
 summary(var_model_ubijalar_sumatera)
 ```
+
+*Hasil*
+
+Berdasarkan hasil di atas menunjukkan bahwa variabel iklim yg berdampak terhadap *produksi ubi jalar* adalah variabel *Kecepatan angin* pada lag 2 (p-valuenya0.04053 *  ), *Kelembapan* di lag 2 (p-valuenya 0.02557 * ), *kecepatan angin * pada lag 3 (p-valuenya  0.01469 * ) dan  *penyinaran matahari* di lag 4 (p-valuenya 0.00734 ** ) 
+
+
+
 
 ### Uji kolerasi pearson produksi ubi jalar Sumatera
 ```{r}
@@ -736,7 +977,7 @@ Koefisien Korelasi Pearson Suhu dan Produksi: 0.016
 ### Uji Granger Causality produksi Ubijalar
 ```{r}
 # Melakukan uji Granger Causality 
-granger_ubijalar_sumatera1 <- causality(var_model_ubijalar_sumatera, cause = "Curah_hujan")
+granger_ubijalar_sumatera1 <- causality(var_model_ubijalar_sumatera, cause = "Penyinaran_Matahari")
 granger_ubijalar_sumatera1
 
 #Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
@@ -744,7 +985,7 @@ granger_ubijalar_sumatera1
 
 ```{r}
 # Melakukan uji Granger Causality 
-granger_ubijalar_sumatera2 <- causality(var_model_ubijalar_sumatera, cause = "kelembapan")
+granger_ubijalar_sumatera2 <- causality(var_model_ubijalar_sumatera, cause = "Kelembapan")
 granger_ubijalar_sumatera2
 
 #Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
@@ -758,13 +999,66 @@ granger_ubijalar_sumatera3
 #Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
 ```
 
-### Uji regresi linier produksi Ubijalar
+### prediksi Produksi ubijalar dengan model VAR pada data testing 
 ```{r}
-# Membuat model regresi linier
-regresi_ubijalar_sumatera1 <- lm(Produksi ~ Curah_hujan + Kelembapan + Suhu + Kecepatan_Angin + Penyinaran_Matahari, data = ubi_jalar_var_sumatera1)
+# Melakukan prediksi dengan model VAR pada data testing
+predictions_ubijalar_var <- predict(var_model_ubijalar_sumatera, n.ahead = test_size5)
+```
 
-# Ringkasan hasil model
-summary(regresi_ubijalar_sumatera1)
+```{r}
+# Ekstraksi hasil prediksi untuk variabel Produksi
+predict_ps_ubijalar_var <- predictions_ubijalar_var$fcst$Produksi[, "fcst"]
+```
+
+```{r}
+# Menyusun data untuk visualisasi
+result_ps_ubijalar_VAR <- data.frame(Produksi_actual3 = test_ps_ubijalar_var$Produksi, Produksi_pred3 = predict_ps_ubijalar_var)
+
+
+# Visualisasi Perbandingan Produksi ubijalar Aktual dengan Hasil Prediksi
+ggplot(data = result_ps_ubijalar_VAR, aes(x = Produksi_actual3, y = Produksi_pred3)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  labs(x = "Actual Produksi", y = "Predicted Produksi") +
+  ggtitle("Perbandingan Produksi ubijalar Aktual dengan Prediksi Model VAR") +
+  theme_minimal()
+```
+
+```{r}
+# Visualisasi Produksi Aktual dengan Hasil Prediksi
+ggplot(data = result_ps_ubijalar_VAR, aes(x = 1:nrow(result_ps_ubijalar_VAR))) +
+  geom_line(aes(y = Produksi_actual3, color = "Actual"), size = 1) +
+  geom_line(aes(y = Produksi_pred3, color = "VAR Prediction"), size = 1) +
+  labs(x = "Observation", y = "Produksi") +
+  scale_color_manual(values = c("Actual" = "blue", "VAR Prediction" = "red")) +
+  ggtitle("Produksi ubijalar: Aktual vs Prediksi Model VAR") +
+  theme_minimal()
+
+```
+
+
+### evaluasi model
+```{r}
+# Hitung MAE (Mean Absolute Error)
+mae_ps_ubijalar_VAR <- mae(test_ps_ubijalar_var$Produksi, predict_ps_ubijalar_var)
+
+# Hitung MSE (Mean Squared Error)
+mse_ps_ubijalar_VAR <- mse(test_ps_ubijalar_var$Produksi, predict_ps_ubijalar_var)
+
+# Hitung RMSE (Root Mean Square Error)
+rmse_ps_ubijalar_VAR <- rmse(test_ps_ubijalar_var$Produksi, predict_ps_ubijalar_var)
+
+# Hitung MAPE (Mean Absolute Percent Error)
+mape_ps_ubijalar_VAR <- mape(test_ps_ubijalar_var$Produksi, predict_ps_ubijalar_var)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_ps_ubijalar_VAR, "\n"))
+cat(paste("MSE: ", mse_ps_ubijalar_VAR, "\n"))
+cat(paste("RMSE: ", rmse_ps_ubijalar_VAR, "\n"))
+cat(paste("MAPE: ", mape_ps_ubijalar_VAR, "%\n"))
+
 ```
 
 
@@ -777,11 +1071,23 @@ ubijalar_var_sumatera2 <- Iklim_ubi_jalar[, c("Produktivitas", "Kecepatan_Angin"
 ubijalar_var_sumatera2
 ```
 
-Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam
-format time series (ts)
+```{r}
+# Tentukan ukuran data pelatihan (train) dan pengujian (test)
+train_size6 <- floor(0.7 * nrow(ubijalar_var_sumatera2))  # 70% untuk pelatihan
+test_size6 <- nrow(ubijalar_var_sumatera2) - train_size6   # 30% untuk pengujian
+```
 
 ```{r}
-ts_ubijalar_sumatera2 <- ts(ubijalar_var_sumatera2, start = c(2006,1), frequency = 1)
+# Pisahkan data menjadi train dan test berdasarkan urutan waktu
+train_pt_ubijalar_var <- ubijalar_var_sumatera2[1:train_size6, ]
+test_pt_ubijalar_var <-ubijalar_var_sumatera2[(train_size6 + 1):nrow(ubijalar_var_sumatera2), ]
+```
+
+
+Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam
+format time series (ts)
+```{r}
+ts_ubijalar_sumatera2 <- ts(train_pt_ubijalar_var, start = c(2006,1), frequency = 1)
 ts_ubijalar_sumatera2
 ```
 
@@ -797,13 +1103,17 @@ var_model_ubijalar_sumatera2 <- VAR(ts_ubijalar_sumatera2, p = lag_ubijalar_suma
 summary(var_model_ubijalar_sumatera2)
 ```
 
+*Hasil*
+
+Berdasarkan hasil di atas menunjukkan bahwa variabel iklim yg berdampak terhadap *produktivitas ubi jalar* adalah variabel *Kecepatan angin* pada lag 2 (p-valuenya 0.01095 *  )
+
 ### Uji Kolerasi person Produktivitas Ubi jalar
 ```{r}
 # Menghitung koefisien korelasi Pearson
 kolerasi_ubijalar7 <- cor(ubijalar_var_sumatera2$Produktivitas, ubijalar_var_sumatera2$Curah_hujan)
 cat ("Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi:",kolerasi_ubijalar7)
 ```
-Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi: -0.017
+Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi: -0.02
 
 
 ```{r}
@@ -825,7 +1135,7 @@ Koefisien Korelasi Pearson Kelembapan dan Produktivitas: 0.05
 kolerasi_ubijalar11 <- cor(ubijalar_var_sumatera2$Produktivitas, ubijalar_var_sumatera2$Penyinaran_Matahari)
 cat ("Koefisien Korelasi Pearson Penyinaran_Matahari dan Produktivitas:", kolerasi_ubijalar11)
 ```
-Koefisien Korelasi Pearson Penyinaran_Matahari dan Produktivitas : -0.26
+Koefisien Korelasi Pearson Penyinaran_Matahari dan Produktivitas : -0.24
 
 ```{r}
 # Menghitung koefisien korelasi Pearson
@@ -837,7 +1147,7 @@ Koefisien Korelasi Pearson Suhu dan Produktivitas: -0.2519937
 ### Uji Granger Causality produktivitas Ubijalar
 ```{r}
 # Melakukan uji Granger Causality 
-granger_ubijalar_produktivitas1 <- causality(var_model_ubijalar_sumatera2, cause = "Curah_hujan")
+granger_ubijalar_produktivitas1 <- causality(var_model_ubijalar_sumatera2, cause = "Kecepatan_Angin")
 granger_ubijalar_produktivitas1
 
 #Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
@@ -845,29 +1155,76 @@ granger_ubijalar_produktivitas1
 
 ```{r}
 # Melakukan uji Granger Causality 
-granger_ubijalar_produktivitas2 <- causality(var_model_ubijalar_sumatera2, cause = "kelembapan")
+granger_ubijalar_produktivitas2 <- causality(var_model_ubijalar_sumatera2, cause = "Kelembapan")
 granger_ubijalar_produktivitas2
 
 #Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
 ```
 
-```{r}
-# Melakukan uji Granger Causality 
-granger_ubijalar_produktivitas3 <- causality(var_model_ubijalar_sumatera2, cause = "Kecepatan_Angin")
-granger_ubijalar_produktivitas3
 
-#Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
+### prediksi Produktivitas ubijalar dengan model VAR pada data testing 
+```{r}
+# Melakukan prediksi dengan model VAR pada data testing
+predictions_ubijalar_var2 <- predict(var_model_ubijalar_sumatera2, n.ahead = test_size6)
 ```
 
-### Uji regresi linier produktivitas Ubi Jalar
 ```{r}
-# Membuat model regresi linier
-regresi_ubijalar_sumatera2 <- lm(Produktivitas ~ Curah_hujan + Kelembapan  + Suhu + Kecepatan_Angin + Penyinaran_Matahari, data = ubijalar_var_sumatera2)
-
-# Ringkasan hasil model
-summary(regresi_ubijalar_sumatera2)
+# Ekstraksi hasil prediksi untuk variabel Produktivitas
+predict_pt_ubijalar_var <- predictions_ubijalar_var2$fcst$Produktivitas[, "fcst"]
 ```
 
+
+```{r}
+# Menyusun data untuk visualisasi
+result_pt_ubijalar_VAR <- data.frame(Produktivitas_actual3 = test_pt_ubijalar_var$Produktivitas, Produktivitas_pred3 = predict_pt_ubijalar_var)
+
+
+# Visualisasi Perbandingan Produktivitas ubijalar Aktual dengan Hasil Prediksi
+ggplot(data = result_pt_ubijalar_VAR, aes(x = Produktivitas_actual3, y = Produktivitas_pred3)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  labs(x = "Actual Produktivitas", y = "Predicted Produktivitas") +
+  ggtitle("Perbandingan Produktivitas ubijalar Aktual dengan Prediksi Model VAR") +
+  theme_minimal()
+```
+
+```{r}
+# Visualisasi Produktivitas Aktual dengan Hasil Prediksi
+ggplot(data = result_pt_ubijalar_VAR, aes(x = 1:nrow(result_pt_ubijalar_VAR))) +
+  geom_line(aes(y = Produktivitas_actual3, color = "Actual"), size = 1) +
+  geom_line(aes(y = Produktivitas_pred3, color = "VAR Prediction"), size = 1) +
+  labs(x = "Observation", y = "Produktivitas") +
+  scale_color_manual(values = c("Actual" = "blue", "VAR Prediction" = "red")) +
+  ggtitle("Produktivitas ubijalar: Aktual vs Prediksi Model VAR") +
+  theme_minimal()
+
+```
+
+
+### evaluasi model
+
+```{r}
+# Hitung MAE (Mean Absolute Error)
+mae_pt_ubijalar_VAR <- mae(test_pt_ubijalar_var$Produktivitas, predict_pt_ubijalar_var)
+
+# Hitung MSE (Mean Squared Error)
+mse_pt_ubijalar_VAR <- mse(test_pt_ubijalar_var$Produktivitas, predict_pt_ubijalar_var)
+
+# Hitung RMSE (Root Mean Square Error)
+rmse_pt_ubijalar_VAR <- rmse(test_pt_ubijalar_var$Produktivitas, predict_pt_ubijalar_var)
+
+# Hitung MAPE (Mean Absolute Percent Error)
+mape_pt_ubijalar_VAR <- mape(test_pt_ubijalar_var$Produktivitas, predict_pt_ubijalar_var)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_pt_ubijalar_VAR, "\n"))
+cat(paste("MSE: ", mse_pt_ubijalar_VAR, "\n"))
+cat(paste("RMSE: ", rmse_pt_ubijalar_VAR, "\n"))
+cat(paste("MAPE: ", mape_pt_ubijalar_VAR, "%\n"))
+
+```
 
 ## Produksi Ubi Kayu - VAR
 
@@ -886,11 +1243,32 @@ ubikayu_var_sumatera1 <- Iklim_ubikayu[, c("Produksi", "Kecepatan_Angin", "Kelem
 ubikayu_var_sumatera1
 ```
 
-Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam
-format time series (ts)
+```{r}
+# Tentukan ukuran data pelatihan (train) dan pengujian (test)
+train_size7 <- floor(0.7 * nrow(ubikayu_var_sumatera1))  # 70% untuk pelatihan
+test_size7 <- nrow(ubikayu_var_sumatera1) - train_size7   # 30% untuk pengujian
+```
+
 
 ```{r}
-ts_ubikayu_sumatera <- ts(ubikayu_var_sumatera1, start = c(2006,1), frequency = 1)
+# Pisahkan data menjadi train dan test berdasarkan urutan waktu
+train_ps_ubikayu_var <- ubikayu_var_sumatera1[1:train_size7, ]
+test_ps_ubikayu_var <-ubikayu_var_sumatera1[(train_size7 + 1):nrow(ubikayu_var_sumatera1), ]
+test_ps_ubikayu_var
+```
+
+```{r}
+# Periksa ukuran data train dan test
+cat("Ukuran data train: ", nrow(train_ps_ubikayu_var), "\n")
+cat("Ukuran data test: ", nrow(test_ps_ubikayu_var), "\n")
+
+```
+
+
+Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam
+format time series (ts)
+```{r}
+ts_ubikayu_sumatera <- ts(train_ps_ubikayu_var, start = c(2006,1), frequency = 1)
 ts_ubikayu_sumatera
 ```
 
@@ -900,11 +1278,16 @@ lag_ubikayu_sumatera<- VARselect(ts_ubikayu_sumatera, lag.max = 5, type = "both"
 lag_ubikayu_sumatera
 ```
 
-### VAR Model Iklim terhadap produksi ubi jalar Sumatera
+### VAR Model Iklim terhadap produksi ubi kayu Sumatera
 ```{r}
 var_model_ubikayu_sumatera <- VAR(ts_ubikayu_sumatera, p = lag_ubikayu_sumatera$selection[1], type = "both") # jumlah order dari model VAR
 summary(var_model_ubikayu_sumatera)
 ```
+*Hasil*
+
+Berdasarkan hasil di atas menunjukkan bahwa variabel iklim yg berdampak terhadap *produksi ubi kayu* adalah variabel *Kecepatan angin* pada lag 1 dan 2 ( dengan p-valuenya 9.77e-07 *** dan  0.041510 * ), *Kelembapan* pada lag 1 (p-valuenya 0.002397 ** ), *Penyinaran matahari* pada lag 1 (p-valuenya 0.000192 *** ), dan *Curah hujan* pada lag 1 (p-valuenya 0.003981 ** )
+
+
 
 ### Uji kolerasi pearson produksi ubi jalar Sumatera
 ```{r}
@@ -953,7 +1336,7 @@ granger_ubikayu_sumatera1
 
 ```{r}
 # Melakukan uji Granger Causality 
-granger_ubikayu_sumatera2 <- causality(var_model_ubikayu_sumatera, cause = "kelembapan")
+granger_ubikayu_sumatera2 <- causality(var_model_ubikayu_sumatera, cause = "Kelembapan")
 granger_ubikayu_sumatera2
 
 #Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
@@ -961,19 +1344,71 @@ granger_ubikayu_sumatera2
 
 ```{r}
 # Melakukan uji Granger Causality 
-granger_ubikayu_sumatera3 <- causality(var_model_ubikayu_sumatera, cause = "Suhu")
+granger_ubikayu_sumatera3 <- causality(var_model_ubikayu_sumatera, cause = "Penyinaran_Matahari")
 granger_ubikayu_sumatera3
 
 #Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
 ```
 
-### Uji regresi linier produksi Ubijalar
+### prediksi Produksi ubikayu dengan model VAR pada data testing 
 ```{r}
-# Membuat model regresi linier
-regresi_ubikayu_sumatera1 <- lm(Produksi ~ Curah_hujan + Kelembapan + Suhu + Kecepatan_Angin + Penyinaran_Matahari, data = ubikayu_var_sumatera1)
+# Melakukan prediksi dengan model VAR pada data testing
+predictions_ubikayu_var <- predict(var_model_ubikayu_sumatera, n.ahead = test_size7)
+```
 
-# Ringkasan hasil model
-summary(regresi_ubikayu_sumatera1)
+```{r}
+# Ekstraksi hasil prediksi untuk variabel Produksi
+predict_ps_ubikayu_var <- predictions_ubikayu_var$fcst$Produksi[, "fcst"]
+```
+
+```{r}
+# Menyusun data untuk visualisasi
+result_ps_ubikayu_VAR <- data.frame(Produksi_actual4 = test_ps_ubikayu_var$Produksi, Produksi_pred4 = predict_ps_ubikayu_var)
+
+
+# Visualisasi Perbandingan Produksi ubikayu Aktual dengan Hasil Prediksi
+ggplot(data = result_ps_ubikayu_VAR, aes(x = Produksi_actual4, y = Produksi_pred4)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  labs(x = "Actual Produksi", y = "Predicted Produksi") +
+  ggtitle("Perbandingan Produksi ubikayu Aktual dengan Prediksi Model VAR") +
+  theme_minimal()
+```
+
+```{r}
+# Visualisasi Produksi Aktual dengan Hasil Prediksi
+ggplot(data = result_ps_ubikayu_VAR, aes(x = 1:nrow(result_ps_ubikayu_VAR))) +
+  geom_line(aes(y = Produksi_actual4, color = "Actual"), size = 1) +
+  geom_line(aes(y = Produksi_pred4, color = "VAR Prediction"), size = 1) +
+  labs(x = "Observation", y = "Produksi") +
+  scale_color_manual(values = c("Actual" = "blue", "VAR Prediction" = "red")) +
+  ggtitle("Produksi ubikayu: Aktual vs Prediksi Model VAR") +
+  theme_minimal()
+
+```
+
+### evaluasi model
+```{r}
+# Hitung MAE (Mean Absolute Error)
+mae_value_VAR <- mae(test_ps_ubikayu_var$Produksi, predict_ps_ubikayu_var)
+
+# Hitung MSE (Mean Squared Error)
+mse_value_VAR <- mse(test_ps_ubikayu_var$Produksi, predict_ps_ubikayu_var)
+
+# Hitung RMSE (Root Mean Square Error)
+rmse_value_VAR <- rmse(test_ps_ubikayu_var$Produksi, predict_ps_ubikayu_var)
+
+# Hitung MAPE (Mean Absolute Percent Error)
+mape_value_VAR <- mape(test_ps_ubikayu_var$Produksi, predict_ps_ubikayu_var)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_value_VAR, "\n"))
+cat(paste("MSE: ", mse_value_VAR, "\n"))
+cat(paste("RMSE: ", rmse_value_VAR, "\n"))
+cat(paste("MAPE: ", mape_value_VAR, "%\n"))
+
 ```
 
 
@@ -986,11 +1421,23 @@ ubikayu_var_sumatera2 <- Iklim_ubikayu[, c("Produktivitas", "Kecepatan_Angin", "
 ubikayu_var_sumatera2
 ```
 
+```{r}
+# Tentukan ukuran data pelatihan (train) dan pengujian (test)
+train_size8 <- floor(0.7 * nrow(ubikayu_var_sumatera2))  # 70% untuk pelatihan
+test_size8 <- nrow(ubikayu_var_sumatera2) - train_size8   # 30% untuk pengujian
+```
+
+```{r}
+# Pisahkan data menjadi train dan test berdasarkan urutan waktu
+train_pt_ubikayu_var <- ubikayu_var_sumatera2[1:train_size8, ]
+test_pt_ubikayu_var <-ubikayu_var_sumatera2[(train_size8 + 1):nrow(ubikayu_var_sumatera2), ]
+```
+
 Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam
 format time series (ts)
 
 ```{r}
-ts_ubikayu_sumatera2 <- ts(ubikayu_var_sumatera2, start = c(2006,1), frequency = 1)
+ts_ubikayu_sumatera2 <- ts(train_pt_ubikayu_var, start = c(2006,1), frequency = 1)
 ts_ubikayu_sumatera2
 ```
 
@@ -1006,6 +1453,11 @@ lag_ubikayu_sumatera2
 var_model_ubikayu_sumatera2 <- VAR(ts_ubikayu_sumatera2, p = lag_ubikayu_sumatera2$selection[1], type = "both") # jumlah order dari model VAR
 summary(var_model_ubikayu_sumatera2)
 ```
+
+*Hasil*
+Berdasarkan hasil di atas menunjukkan bahwa variabel iklim yg berdampak terhadap *produktivitas ubi kayu* adalah variabel *Kecepatan angin* pada lag 3  ( dengan p-valuenya 0.0041 **  ), dan *Penyinaran matahari* pada lag 5 (p-valuenya 0.0436 * )
+
+  
 
 ### Uji Kolerasi person Produktivitas Ubi kayu
 ```{r}
@@ -1047,7 +1499,7 @@ Koefisien Korelasi Pearson Suhu dan Produktivitas: -0.06
 ### Uji Granger Causality produktivitas UbiKayu
 ```{r}
 # Melakukan uji Granger Causality 
-granger_ubikayu_produktivitas1 <- causality(var_model_ubikayu_sumatera2, cause = "Curah_hujan")
+granger_ubikayu_produktivitas1 <- causality(var_model_ubikayu_sumatera2, cause = "Kecepatan_Angin")
 granger_ubikayu_produktivitas1
 
 #Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
@@ -1055,29 +1507,73 @@ granger_ubikayu_produktivitas1
 
 ```{r}
 # Melakukan uji Granger Causality 
-granger_ubikayu_produktivitas2 <- causality(var_model_ubikayu_sumatera2, cause = "kelembapan")
+granger_ubikayu_produktivitas2 <- causality(var_model_ubikayu_sumatera2, cause = "Penyinaran_Matahari")
 granger_ubikayu_produktivitas2
 
 #Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
 ```
 
-```{r}
-# Melakukan uji Granger Causality 
-granger_ubikayu_produktivitas3 <- causality(var_model_ubikayu_sumatera2, cause = "Suhu")
-granger_ubikayu_produktivitas3
 
-#Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
+### prediksi Produktivitas ubikayu dengan model VAR pada data testing 
+```{r}
+# Melakukan prediksi dengan model VAR pada data testing
+predictions_ubikayu_var2 <- predict(var_model_ubikayu_sumatera2, n.ahead = test_size8)
 ```
 
-### Uji regresi linier produktivitas Ubi Kayu
 ```{r}
-# Membuat model regresi linier
-regresi_ubikayu_sumatera2 <- lm(Produktivitas ~ Curah_hujan + Kelembapan  + Suhu + Kecepatan_Angin + Penyinaran_Matahari, data = ubikayu_var_sumatera2)
-
-# Ringkasan hasil model
-summary(regresi_ubikayu_sumatera2)
+# Ekstraksi hasil prediksi untuk variabel Produktivitas
+predict_pt_ubikayu_var <- predictions_ubikayu_var2$fcst$Produktivitas[, "fcst"]
 ```
 
+```{r}
+# Menyusun data untuk visualisasi
+result_pt_ubikayu_VAR <- data.frame(Produktivitas_actual4 = test_pt_ubikayu_var$Produktivitas, Produktivitas_pred4 = predict_pt_ubikayu_var)
+
+
+# Visualisasi Perbandingan Produktivitas ubikayu Aktual dengan Hasil Prediksi
+ggplot(data = result_pt_ubikayu_VAR, aes(x = Produktivitas_actual4, y = Produktivitas_pred4)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  labs(x = "Actual Produktivitas", y = "Predicted Produktivitas") +
+  ggtitle("Perbandingan Produktivitas ubikayu Aktual dengan Prediksi Model VAR") +
+  theme_minimal()
+```
+
+```{r}
+# Visualisasi Produktivitas Aktual dengan Hasil Prediksi
+ggplot(data = result_pt_ubikayu_VAR, aes(x = 1:nrow(result_pt_ubikayu_VAR))) +
+  geom_line(aes(y = Produktivitas_actual4, color = "Actual"), size = 1) +
+  geom_line(aes(y = Produktivitas_pred4, color = "VAR Prediction"), size = 1) +
+  labs(x = "Observation", y = "Produktivitas") +
+  scale_color_manual(values = c("Actual" = "blue", "VAR Prediction" = "red")) +
+  ggtitle("Produktivitas ubikayu: Aktual vs Prediksi Model VAR") +
+  theme_minimal()
+
+```
+
+### evaluasi model
+```{r}
+# Hitung MAE (Mean Absolute Error)
+mae_pt_ubikayu_VAR <- mae(test_pt_ubikayu_var$Produktivitas, predict_pt_ubikayu_var)
+
+# Hitung MSE (Mean Squared Error)
+mse_pt_ubikayu_VAR <- mse(test_pt_ubikayu_var$Produktivitas, predict_pt_ubikayu_var)
+
+# Hitung RMSE (Root Mean Square Error)
+rmse_pt_ubikayu_VAR <- rmse(test_pt_ubikayu_var$Produktivitas, predict_pt_ubikayu_var)
+
+# Hitung MAPE (Mean Absolute Percent Error)
+mape_pt_ubikayu_VAR <- mape(test_pt_ubikayu_var$Produktivitas, predict_pt_ubikayu_var)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_pt_ubikayu_VAR, "\n"))
+cat(paste("MSE: ", mse_pt_ubikayu_VAR, "\n"))
+cat(paste("RMSE: ", rmse_pt_ubikayu_VAR, "\n"))
+cat(paste("MAPE: ", mape_pt_ubikayu_VAR, "%\n"))
+
+```
 
 ## Produksi Kacang kedelai - VAR
 
@@ -1096,11 +1592,25 @@ kedelai_var_sumatera1<- Iklim_Kedelai[, c("Produksi", "Kecepatan_Angin", "Kelemb
 kedelai_var_sumatera1
 ```
 
+
+```{r}
+# Tentukan ukuran data pelatihan (train) dan pengujian (test)
+train_size9 <- floor(0.7 * nrow(kedelai_var_sumatera1))  # 70% untuk pelatihan
+test_size9 <- nrow(kedelai_var_sumatera1) - train_size9   # 30% untuk pengujian
+```
+
+```{r}
+# Pisahkan data menjadi train dan test berdasarkan urutan waktu
+train_ps_kedelai_var <- kedelai_var_sumatera1[1:train_size9, ]
+test_ps_kedelai_var <-kedelai_var_sumatera1[(train_size9 + 1):nrow(kedelai_var_sumatera1), ]
+```
+
+
 Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam
 format time series (ts)
 
 ```{r}
-ts_kedelai_sumatera1 <- ts(kedelai_var_sumatera1, start = c(2006,1), frequency = 1)
+ts_kedelai_sumatera1 <- ts(train_ps_kedelai_var, start = c(2006,1), frequency = 1)
 ts_kedelai_sumatera1
 ```
 
@@ -1115,6 +1625,11 @@ lag_kedelai_sumatera1
 var_model_kedelai_sumatera1 <- VAR(ts_kedelai_sumatera1, p = lag_kedelai_sumatera1$selection[1], type = "both") # jumlah order dari model VAR
 summary(var_model_kedelai_sumatera1)
 ```
+
+*Hasil*
+Berdasarkan hasil di atas menunjukkan bahwa variabel iklim yg berdampak terhadap *produksi kacang kedelai* adalah variabel *Kecepatan angin* pada lag 3 dan lag 4 ( dengan p-valuenya  0.04860 * dan 0.00954 ** ), dan *Suhu* pada lag 1 (p-valuenya  0.04459 *  )
+
+
 
 ### Uji kolerasi pearson produksi kedelai Sumatera
 ```{r}
@@ -1156,7 +1671,7 @@ Koefisien Korelasi Pearson Suhu dan Produksi: 0.059
 ### Uji Granger Causality produksi kacang kedelai
 ```{r}
 # Melakukan uji Granger Causality 
-granger_kedelai_sumatera1 <- causality(var_model_kedelai_sumatera1, cause = "Curah_hujan")
+granger_kedelai_sumatera1 <- causality(var_model_kedelai_sumatera1, cause = "Kecepatan_Angin")
 granger_kedelai_sumatera1
 
 #Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
@@ -1164,7 +1679,7 @@ granger_kedelai_sumatera1
 
 ```{r}
 # Melakukan uji Granger Causality 
-granger_kedelai_sumatera2 <- causality(var_model_kedelai_sumatera1, cause = "kelembapan")
+granger_kedelai_sumatera2 <- causality(var_model_kedelai_sumatera1, cause = "Kelembapan")
 granger_kedelai_sumatera2
 
 #Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
@@ -1178,15 +1693,67 @@ granger_kedelai_sumatera3
 #Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
 ```
 
-### Uji regresi linier produksi kacang kedelai
-```{r}
-# Membuat model regresi linier
-regresi_kedelai_sumatera1 <- lm(Produksi ~ Curah_hujan + Kelembapan + Suhu + Kecepatan_Angin + Penyinaran_Matahari, data = kedelai_var_sumatera1)
 
-# Ringkasan hasil model
-summary(regresi_kedelai_sumatera1)
+### prediksi Produksi kedelai dengan model VAR pada data testing 
+```{r}
+# Melakukan prediksi dengan model VAR pada data testing
+predictions_kedelai_var <- predict(var_model_kedelai_sumatera1, n.ahead = test_size9)
 ```
 
+```{r}
+# Ekstraksi hasil prediksi untuk variabel Produksi
+predict_ps_kedelai_var <- predictions_kedelai_var$fcst$Produksi[, "fcst"]
+```
+
+```{r}
+# Menyusun data untuk visualisasi
+result_ps_kedelai_VAR <- data.frame(Produksi_actual5 = test_ps_kedelai_var$Produksi, Produksi_pred5 = predict_ps_kedelai_var)
+
+
+# Visualisasi Perbandingan Produksi kedelai Aktual dengan Hasil Prediksi
+ggplot(data = result_ps_kedelai_VAR, aes(x = Produksi_actual5, y = Produksi_pred5)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  labs(x = "Actual Produksi", y = "Predicted Produksi") +
+  ggtitle("Perbandingan Produksi kedelai Aktual dengan Prediksi Model VAR") +
+  theme_minimal()
+```
+
+```{r}
+# Visualisasi Produksi Aktual dengan Hasil Prediksi
+ggplot(data = result_ps_kedelai_VAR, aes(x = 1:nrow(result_ps_kedelai_VAR))) +
+  geom_line(aes(y = Produksi_actual5, color = "Actual"), size = 1) +
+  geom_line(aes(y = Produksi_pred5, color = "VAR Prediction"), size = 1) +
+  labs(x = "Observation", y = "Produksi") +
+  scale_color_manual(values = c("Actual" = "blue", "VAR Prediction" = "red")) +
+  ggtitle("Produksi kedelai: Aktual vs Prediksi Model VAR") +
+  theme_minimal()
+
+```
+
+### evaluasi model
+```{r}
+# Hitung MAE (Mean Absolute Error)
+mae_ps_kedelai_VAR <- mae(test_ps_kedelai_var$Produksi, predict_ps_kedelai_var)
+
+# Hitung MSE (Mean Squared Error)
+mse_ps_kedelai_VAR <- mse(test_ps_kedelai_var$Produksi, predict_ps_kedelai_var)
+
+# Hitung RMSE (Root Mean Square Error)
+rmse_ps_kedelai_VAR <- rmse(test_ps_kedelai_var$Produksi, predict_ps_kedelai_var)
+
+# Hitung MAPE (Mean Absolute Percent Error)
+mape_ps_kedelai_VAR <- mape(test_ps_kedelai_var$Produksi, predict_ps_kedelai_var)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_ps_kedelai_VAR, "\n"))
+cat(paste("MSE: ", mse_ps_kedelai_VAR, "\n"))
+cat(paste("RMSE: ", rmse_ps_kedelai_VAR, "\n"))
+cat(paste("MAPE: ", mape_ps_kedelai_VAR, "%\n"))
+
+```
 
 ## Produktivitas Kacang kedelai - VAR
 
@@ -1197,14 +1764,25 @@ kedelai_var_sumatera2 <- Iklim_Kedelai[, c("Produktivitas", "Kecepatan_Angin", "
 kedelai_var_sumatera2
 ```
 
-Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam
-format time series (ts)
-
 ```{r}
-ts_kedelai_sumatera2 <- ts(kedelai_var_sumatera2, start = c(2006,1), frequency = 1)
-ts_kedelai_sumatera2
+# Tentukan ukuran data pelatihan (train) dan pengujian (test)
+train_size10 <- floor(0.7 * nrow(kedelai_var_sumatera2))  # 70% untuk pelatihan
+test_size10 <- nrow(kedelai_var_sumatera2) - train_size10   # 30% untuk pengujian
 ```
 
+```{r}
+# Pisahkan data menjadi train dan test berdasarkan urutan waktu
+train_pt_kedelai_var <- kedelai_var_sumatera2[1:train_size10, ]
+test_pt_kedelai_var <-kedelai_var_sumatera2[(train_size10 + 1):nrow(kedelai_var_sumatera2), ]
+```
+
+
+Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam
+format time series (ts)
+```{r}
+ts_kedelai_sumatera2 <- ts(train_pt_kedelai_var, start = c(2006,1), frequency = 1)
+ts_kedelai_sumatera2
+```
 
 ```{r}
 lag_kedelai_sumatera2<- VARselect(ts_kedelai_sumatera2, lag.max = 5, type = "both")
@@ -1218,13 +1796,18 @@ var_model_kedelai_sumatera2 <- VAR(ts_kedelai_sumatera2, p = lag_kedelai_sumater
 summary(var_model_kedelai_sumatera2)
 ```
 
+*Hasil*
+Berdasarkan hasil di atas menunjukkan bahwa variabel iklim yg berdampak terhadap *produktivitas Kacang kedelai* adalah variabel *Kecepatan angin* pada lag 3 ( dengan p-valuenya 0.04304 * ), *Suhu* pada lag 3 (p-valuenya  0.02009 * ), *Curah hujan* pada lag 3 dan 5 (dengan p-valuenya 0.00906 ** dan 0.01908 * )  dan *Penyinaran matahari* pada lag 4 (p-valuenya 0.02156 *)
+
+
+
 ### Uji Kolerasi person Produktivitas kedelai
 ```{r}
 # Menghitung koefisien korelasi Pearson
 kolerasi_kedelai7 <- cor(kedelai_var_sumatera2$Produktivitas, kedelai_var_sumatera2$Curah_hujan)
 cat ("Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi:",kolerasi_kedelai7)
 ```
-Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi: -0.015
+Koefisien Korelasi Pearson Rata-rata Curah hujan dan Produksi: -0.004
 
 
 ```{r}
@@ -1266,7 +1849,7 @@ granger_kedelai_produktivitas1
 
 ```{r}
 # Melakukan uji Granger Causality 
-granger_kedelai_produktivitas2 <- causality(var_model_kedelai_sumatera2, cause = "kelembapan")
+granger_kedelai_produktivitas2 <- causality(var_model_kedelai_sumatera2, cause = "Kecepatan_Angin")
 granger_kedelai_produktivitas2
 
 #Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
@@ -1281,15 +1864,66 @@ granger_kedelai_produktivitas3
 ```
 
 
-### Uji regresi linier produktivitas kacang kedelai
+### prediksi Produktivitas Kacang kedelai dengan model VAR pada data testing 
 ```{r}
-# Membuat model regresi linier
-regresi_kedelai_sumatera2 <- lm(Produktivitas ~ Curah_hujan + Kelembapan + Suhu + Kecepatan_Angin + Penyinaran_Matahari, data = kedelai_var_sumatera2)
-
-# Ringkasan hasil model
-summary(regresi_kedelai_sumatera2)
+# Melakukan prediksi dengan model VAR pada data testing
+predictions_kedelai_var2 <- predict(var_model_kedelai_sumatera2, n.ahead = test_size10)
 ```
 
+```{r}
+# Ekstraksi hasil prediksi untuk variabel Produktivitas
+predict_pt_kedelai_var <- predictions_kedelai_var2$fcst$Produktivitas[, "fcst"]
+```
+
+```{r}
+# Menyusun data untuk visualisasi
+result_pt_kedelai_VAR <- data.frame(Produktivitas_actual5 = test_pt_kedelai_var$Produktivitas, Produktivitas_pred5 = predict_pt_kedelai_var)
+
+
+# Visualisasi Perbandingan Produktivitas kedelai Aktual dengan Hasil Prediksi
+ggplot(data = result_pt_kedelai_VAR, aes(x = Produktivitas_actual5, y = Produktivitas_pred5)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  labs(x = "Actual Produktivitas", y = "Predicted Produktivitas") +
+  ggtitle("Perbandingan Produktivitas kacang kedelai Aktual dengan Prediksi Model VAR") +
+  theme_minimal()
+```
+
+```{r}
+# Visualisasi Produktivitas Aktual dengan Hasil Prediksi
+ggplot(data = result_pt_kedelai_VAR, aes(x = 1:nrow(result_pt_kedelai_VAR))) +
+  geom_line(aes(y = Produktivitas_actual5, color = "Actual"), size = 1) +
+  geom_line(aes(y = Produktivitas_pred5, color = "VAR Prediction"), size = 1) +
+  labs(x = "Observation", y = "Produktivitas") +
+  scale_color_manual(values = c("Actual" = "blue", "VAR Prediction" = "red")) +
+  ggtitle("Produktivitas kacang kedelai: Aktual vs Prediksi Model VAR") +
+  theme_minimal()
+
+```
+
+### evaluasi model
+```{r}
+# Hitung MAE (Mean Absolute Error)
+mae_pt_kedelai_VAR <- mae(test_pt_kedelai_var$Produktivitas, predict_pt_kedelai_var)
+
+# Hitung MSE (Mean Squared Error)
+mse_pt_kedelai_VAR <- mse(test_pt_kedelai_var$Produktivitas, predict_pt_kedelai_var)
+
+# Hitung RMSE (Root Mean Square Error)
+rmse_pt_kedelai_VAR <- rmse(test_pt_kedelai_var$Produktivitas, predict_pt_kedelai_var)
+
+# Hitung MAPE (Mean Absolute Percent Error)
+mape_pt_kedelai_VAR <- mape(test_pt_kedelai_var$Produktivitas, predict_pt_kedelai_var)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_pt_kedelai_VAR, "\n"))
+cat(paste("MSE: ", mse_pt_kedelai_VAR, "\n"))
+cat(paste("RMSE: ", rmse_pt_kedelai_VAR, "\n"))
+cat(paste("MAPE: ", mape_pt_kedelai_VAR, "%\n"))
+
+```
 
 ## Produksi Kacang Hijau - VAR
 
@@ -1308,15 +1942,25 @@ Iklim_kacanghijau
 kacanghijau_var_sumatera1<- Iklim_kacanghijau[, c("Produksi", "Kecepatan_Angin", "Kelembapan", "Suhu", "Penyinaran_Matahari", "Curah_hujan")]
 kacanghijau_var_sumatera1
 ```
+```{r}
+# Tentukan ukuran data pelatihan (train) dan pengujian (test)
+train_size11 <- floor(0.7 * nrow(kacanghijau_var_sumatera1))  # 70% untuk pelatihan
+test_size11 <- nrow(kacanghijau_var_sumatera1) - train_size11   # 30% untuk pengujian
+```
+
+```{r}
+# Pisahkan data menjadi train dan test berdasarkan urutan waktu
+train_ps_kcgHijau_var <- kacanghijau_var_sumatera1[1:train_size11, ]
+test_ps_kcgHijau_var <-kacanghijau_var_sumatera1[(train_size11 + 1):nrow(kacanghijau_var_sumatera1), ]
+```
+
 
 Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam
 format time series (ts)
-
 ```{r}
-ts_kacanghijau_sumatera1 <- ts(kacanghijau_var_sumatera1, start = c(2006,1), frequency = 1)
+ts_kacanghijau_sumatera1 <- ts(train_ps_kcgHijau_var, start = c(2006,1), frequency = 1)
 ts_kacanghijau_sumatera1
 ```
-
 
 ```{r}
 lag_kacanghijau_sumatera1<- VARselect(ts_kacanghijau_sumatera1, lag.max = 5, type = "both")
@@ -1328,6 +1972,11 @@ lag_kacanghijau_sumatera1
 var_model_kacanghijau_sumatera1 <- VAR(ts_kacanghijau_sumatera1, p = lag_kacanghijau_sumatera1$selection[1], type = "both") # jumlah order dari model VAR
 summary(var_model_kacanghijau_sumatera1)
 ```
+
+*Hasil*
+Berdasarkan hasil di atas menunjukkan bahwa variabel iklim yg berdampak terhadap *produksi Kacang Hijau* adalah variabel *Kelembapan* pada lag 1 ( p-valuenya 0.04293 *  ), *Suhu* pada lag 3 (p-valuenya  0.00501 ** ), *Curah hujan* pada lag 1 ( p-valuenya  0.03630 *  )  dan *Penyinaran matahari* pada lag 1 (p-valuenya 0.00310 **)
+
+ 
 
 ### Uji kolerasi pearson produksi kacang hijau Sumatera
 ```{r}
@@ -1385,16 +2034,78 @@ granger_kacanghijau_sumatera3
 #Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
 ```
 
-### Uji regresi linier produksi kacang hijau
+### prediksi Produksi Kacang Hijau dengan model VAR pada data testing 
 ```{r}
-# Membuat model regresi linier
-regresi_kacanghijau_sumatera1 <- lm(Produksi ~ Curah_hujan + Kelembapan + Suhu + Kecepatan_Angin + Penyinaran_Matahari, data = kacanghijau_var_sumatera1)
-
-# Ringkasan hasil model
-summary(regresi_kacanghijau_sumatera1)
+# Melakukan prediksi dengan model VAR pada data testing
+predictions_kcgHijau_var <- predict(var_model_kacanghijau_sumatera1, n.ahead = test_size11)
 ```
-Kesimpulan
-Variabel yg memiliki hubungan dengan produksi adalah Luas panen=<2e-16*** ,Penyinaran matahari=0.0182* , kelembapan=0.0314* dengan f-statistik p-va;uenya adalah < 2.2e-16
+
+```{r}
+# Ekstraksi hasil prediksi untuk variabel Produksi
+predict_ps_kcgHijau_var <- predictions_kcgHijau_var$fcst$Produksi[, "fcst"]
+```
+
+```{r}
+# Menyusun data untuk visualisasi
+result_ps_kcgHijau_VAR <- data.frame(Produksi_actual6 = test_ps_kcgHijau_var$Produksi, Produksi_pred6 = predict_ps_kcgHijau_var)
+
+
+# Visualisasi Perbandingan Produksi Hijau Aktual dengan Hasil Prediksi
+ggplot(data = result_ps_kcgHijau_VAR, aes(x = Produksi_actual6, y = Produksi_pred6)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  labs(x = "Actual Produksi", y = "Predicted Produksi") +
+  ggtitle("Perbandingan Produksi kacang Hijau Aktual dengan Prediksi Model VAR") +
+  theme_minimal()
+```
+
+```{r}
+# Visualisasi Produksi Aktual dengan Hasil Prediksi
+ggplot(data = result_ps_kcgHijau_VAR, aes(x = 1:nrow(result_ps_kcgHijau_VAR))) +
+  geom_line(aes(y = Produksi_actual6, color = "Actual"), size = 1) +
+  geom_line(aes(y = Produksi_pred6, color = "VAR Prediction"), size = 1) +
+  labs(x = "Observation", y = "Produksi") +
+  scale_color_manual(values = c("Actual" = "blue", "VAR Prediction" = "red")) +
+  ggtitle("Produksi kacang Hijau: Aktual vs Prediksi Model VAR") +
+  theme_minimal()
+
+```
+
+### evaluasi model
+
+```{r}
+# Fungsi untuk menghitung MAPE dengan mengabaikan nilai aktual nol
+mape_safe <- function(actual, forecasted) {
+  non_zero_indices <- actual != 0
+  actual_non_zero <- actual[non_zero_indices]
+  forecasted_non_zero <- forecasted[non_zero_indices]
+  mean(abs((actual_non_zero - forecasted_non_zero) / actual_non_zero)) * 100
+}
+```
+
+```{r}
+# Hitung MAE (Mean Absolute Error)
+mae_ps_kcgHijau_VAR <- mae(test_ps_kcgHijau_var$Produksi, predict_ps_kcgHijau_var)
+
+# Hitung MSE (Mean Squared Error)
+mse_ps_kcgHijau_VAR <- mse(test_ps_kcgHijau_var$Produksi, predict_ps_kcgHijau_var)
+
+# Hitung RMSE (Root Mean Square Error)
+rmse_ps_kcgHijau_VAR <- rmse(test_ps_kcgHijau_var$Produksi, predict_ps_kcgHijau_var)
+
+# Hitung MAPE (Mean Absolute Percent Error)
+mape_ps_kcgHijau_VAR <- mape_safe(test_ps_kcgHijau_var$Produksi, predict_ps_kcgHijau_var)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_ps_kcgHijau_VAR, "\n"))
+cat(paste("MSE: ", mse_ps_kcgHijau_VAR, "\n"))
+cat(paste("RMSE: ", rmse_ps_kcgHijau_VAR, "\n"))
+cat(paste("MAPE: ", mape_ps_kcgHijau_VAR, "%\n"))
+
+```
+
 
 ## Analisis Iklim terhadap Produktivitas Kacang Hijau Sumatera
 
@@ -1404,12 +2115,23 @@ Variabel yg memiliki hubungan dengan produksi adalah Luas panen=<2e-16*** ,Penyi
 kacanghijau_var_sumatera2 <- Iklim_kacanghijau[, c("Produktivitas", "Kecepatan_Angin", "Kelembapan", "Suhu", "Penyinaran_Matahari", "Curah_hujan")]
 kacanghijau_var_sumatera2
 ```
+```{r}
+# Tentukan ukuran data pelatihan (train) dan pengujian (test)
+train_size12 <- floor(0.7 * nrow(kacanghijau_var_sumatera2))  # 70% untuk pelatihan
+test_size12 <- nrow(kacanghijau_var_sumatera2) - train_size12   # 30% untuk pengujian
+```
+
+```{r}
+# Pisahkan data menjadi train dan test berdasarkan urutan waktu
+train_pt_kcgHijau_var <- kacanghijau_var_sumatera2[1:train_size12, ]
+test_pt_kcgHijau_var <-kacanghijau_var_sumatera2[(train_size12 + 1):nrow(kacanghijau_var_sumatera2), ]
+```
+
 
 Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam
 format time series (ts)
-
 ```{r}
-ts_kacanghijau_sumatera2 <- ts(kacanghijau_var_sumatera2, start = c(2006,1), frequency = 1)
+ts_kacanghijau_sumatera2 <- ts(train_pt_kcgHijau_var, start = c(2006,1), frequency = 1)
 ts_kacanghijau_sumatera2
 ```
 
@@ -1426,6 +2148,11 @@ var_model_kacanghijau_sumatera2 <- VAR(ts_kacanghijau_sumatera2, p = lag_kacangh
 summary(var_model_kacanghijau_sumatera2)
 ```
 
+*Hasil*
+Berdasarkan hasil di atas menunjukkan bahwa variabel iklim yg berdampak terhadap *produktivitas Kacang Hijau* adalah variabel *Kelembapan* pada lag 1 ( p-valuenya 0.01175 * ) dan *Curah hujan* pada lag 1 ( p-valuenya  0.01758 *  )  
+
+
+  
 ### Uji Kolerasi person Produktivitas kacanghijau
 ```{r}
 # Menghitung koefisien korelasi Pearson
@@ -1482,15 +2209,66 @@ granger_kacanghijau_produktivitas3
 ```
 
 
-### Uji regresi linier produktivitas kacang Hijau
+### prediksi Produktivitas Kacang Hijau dengan model VAR pada data testing 
 ```{r}
-# Membuat model regresi linier
-regresi_kacanghijau_sumatera2 <- lm(Produktivitas ~ Curah_hujan + Kelembapan + Suhu + Kecepatan_Angin + Penyinaran_Matahari, data = kacanghijau_var_sumatera2)
-
-# Ringkasan hasil model
-summary(regresi_kacanghijau_sumatera2)
+# Melakukan prediksi dengan model VAR pada data testing
+predictions_kcgHijau_var2 <- predict(var_model_kacanghijau_sumatera2, n.ahead = test_size12)
 ```
-Kesimpulan uji regresi linier : hanya terdapat pengaruh variabel penyinaran matahari terhadap produktivitas Kacang hijau dengan p-valuenya = 0.00973 ** dan nilai f statistiknya p-valuennya adalah 0.002694
+
+```{r}
+# Ekstraksi hasil prediksi untuk variabel Produktivitas
+predict_pt_kcgHijau_var <- predictions_kcgHijau_var2$fcst$Produktivitas[, "fcst"]
+```
+
+```{r}
+# Menyusun data untuk visualisasi
+result_pt_kcgHijau_VAR <- data.frame(Produktivitas_actual6 = test_pt_kcgHijau_var$Produktivitas, Produktivitas_pred6 = predict_pt_kcgHijau_var)
+
+
+# Visualisasi Perbandingan Produktivitas Hijau Aktual dengan Hasil Prediksi
+ggplot(data = result_pt_kcgHijau_VAR, aes(x = Produktivitas_actual6, y = Produktivitas_pred6)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  labs(x = "Actual Produktivitas", y = "Predicted Produktivitas") +
+  ggtitle("Perbandingan Produktivitas kacang Hijau Aktual dengan Prediksi Model VAR") +
+  theme_minimal()
+```
+
+```{r}
+# Visualisasi Produktivitas Aktual dengan Hasil Prediksi
+ggplot(data = result_pt_kcgHijau_VAR, aes(x = 1:nrow(result_pt_kcgHijau_VAR))) +
+  geom_line(aes(y = Produktivitas_actual6, color = "Actual"), size = 1) +
+  geom_line(aes(y = Produktivitas_pred6, color = "VAR Prediction"), size = 1) +
+  labs(x = "Observation", y = "Produktivitas") +
+  scale_color_manual(values = c("Actual" = "blue", "VAR Prediction" = "red")) +
+  ggtitle("Produktivitas kacang Hijau: Aktual vs Prediksi Model VAR") +
+  theme_minimal()
+
+```
+
+### evaluasi model
+```{r}
+# Hitung MAE (Mean Absolute Error)
+mae_pt_kcgHijau_VAR <- mae(test_pt_kcgHijau_var$Produktivitas, predict_pt_kcgHijau_var)
+
+# Hitung MSE (Mean Squared Error)
+mse_pt_kcgHijau_VAR <- mse(test_pt_kcgHijau_var$Produktivitas, predict_pt_kcgHijau_var)
+
+# Hitung RMSE (Root Mean Square Error)
+rmse_pt_kcgHijau_VAR <- rmse(test_pt_kcgHijau_var$Produktivitas, predict_pt_kcgHijau_var)
+
+# Hitung MAPE (Mean Absolute Percent Error)
+mape_pt_kcgHijau_VAR <- mape_safe(test_pt_kcgHijau_var$Produktivitas, predict_pt_kcgHijau_var)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_pt_kcgHijau_VAR, "\n"))
+cat(paste("MSE: ", mse_pt_kcgHijau_VAR, "\n"))
+cat(paste("RMSE: ", rmse_pt_kcgHijau_VAR, "\n"))
+cat(paste("MAPE: ", mape_pt_kcgHijau_VAR, "%\n"))
+
+```
 
 
 ## Produksi Kacang Tanah - VAR
@@ -1509,12 +2287,23 @@ Iklim_kacangtanah
 kacangtanah_var_sumatera1<- Iklim_kacangtanah[, c("Produksi", "Kecepatan_Angin", "Kelembapan", "Suhu", "Penyinaran_Matahari", "Curah_hujan")]
 kacangtanah_var_sumatera1
 ```
+```{r}
+# Tentukan ukuran data pelatihan (train) dan pengujian (test)
+train_size13 <- floor(0.7 * nrow(kacangtanah_var_sumatera1))  # 70% untuk pelatihan
+test_size13 <- nrow(kacangtanah_var_sumatera1) - train_size13   # 30% untuk pengujian
+```
+
+```{r}
+# Pisahkan data menjadi train dan test berdasarkan urutan waktu
+train_ps_kcgTanah_var <- kacangtanah_var_sumatera1[1:train_size13, ]
+test_ps_kcgTanah_var <-kacangtanah_var_sumatera1[(train_size13 + 1):nrow(kacangtanah_var_sumatera1), ]
+```
 
 Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam
 format time series (ts)
 
 ```{r}
-ts_kacangtanah_sumatera1 <- ts(kacangtanah_var_sumatera1, start = c(2006,1), frequency = 1)
+ts_kacangtanah_sumatera1 <- ts(train_ps_kcgTanah_var, start = c(2006,1), frequency = 1)
 ts_kacangtanah_sumatera1
 ```
 
@@ -1529,6 +2318,9 @@ lag_kacangtanah_sumatera1
 var_model_kacangtanah_sumatera1 <- VAR(ts_kacangtanah_sumatera1, p = lag_kacangtanah_sumatera1$selection[1], type = "both") # jumlah order dari model VAR
 summary(var_model_kacangtanah_sumatera1)
 ```
+
+*Hasil*
+Berdasarkan hasil di atas menunjukkan bahwa variabel iklim yg berdampak terhadap *produksi Kacang Tanah* adalah variabel *Penyinaran matahari* pada lag 1 ( p-valuenya 0.0106 * ) 
 
 ### Uji kolerasi pearson produksi kacangtanah Sumatera
 ```{r}
@@ -1579,7 +2371,7 @@ granger_kacangtanah_sumatera1
 
 ```{r}
 # Melakukan uji Granger Causality 
-granger_kacangtanah_sumatera2 <- causality(var_model_kacangtanah_sumatera1, cause = "kelembapan")
+granger_kacangtanah_sumatera2 <- causality(var_model_kacangtanah_sumatera1, cause = "Kelembapan")
 granger_kacangtanah_sumatera2
 
 #Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
@@ -1593,16 +2385,77 @@ granger_kacangtanah_sumatera3
 #Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
 ```
 
-### Uji regresi linier produksi kacang tanah
+### prediksi Produksi Kacang tanah dengan model VAR pada data testing 
 ```{r}
-# Membuat model regresi linier
-regresi_kacangtanah_sumatera1 <- lm(Produksi ~ Curah_hujan + Kelembapan + Suhu + Kecepatan_Angin + Penyinaran_Matahari, data = kacangtanah_var_sumatera1)
-
-# Ringkasan hasil model
-summary(regresi_kacangtanah_sumatera1)
+# Melakukan prediksi dengan model VAR pada data testing
+predictions_kcgtanah_var <- predict(var_model_kacangtanah_sumatera1, n.ahead = test_size13)
 ```
-Kesimpulan
-suhu p-valuenya = 0.02125* , Kecepatan_Angin  p-valuenya = 0.00642**  dengna  nilai f-statistik pa-valuenya adalah < 2.2e-16 
+
+```{r}
+# Ekstraksi hasil prediksi untuk variabel Produksi
+predict_ps_kcgtanah_var <- predictions_kcgtanah_var$fcst$Produksi[, "fcst"]
+```
+
+```{r}
+# Menyusun data untuk visualisasi
+result_ps_kcgtanah_VAR <- data.frame(Produksi_actual7 = test_ps_kcgTanah_var$Produksi, Produksi_pred7 = predict_ps_kcgtanah_var)
+
+
+# Visualisasi Perbandingan Produksi tanah Aktual dengan Hasil Prediksi
+ggplot(data = result_ps_kcgtanah_VAR, aes(x = Produksi_actual7, y = Produksi_pred7)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  labs(x = "Actual Produksi", y = "Predicted Produksi") +
+  ggtitle("Perbandingan Produksi kacang tanah Aktual dengan Prediksi Model VAR") +
+  theme_minimal()
+```
+
+```{r}
+# Visualisasi Produksi Aktual dengan Hasil Prediksi
+ggplot(data = result_ps_kcgtanah_VAR, aes(x = 1:nrow(result_ps_kcgtanah_VAR))) +
+  geom_line(aes(y = Produksi_actual7, color = "Actual"), size = 1) +
+  geom_line(aes(y = Produksi_pred7, color = "VAR Prediction"), size = 1) +
+  labs(x = "Observation", y = "Produksi") +
+  scale_color_manual(values = c("Actual" = "blue", "VAR Prediction" = "red")) +
+  ggtitle("Produksi kacang tanah: Aktual vs Prediksi Model VAR") +
+  theme_minimal()
+
+```
+
+### evaluasi model
+
+```{r}
+# Fungsi untuk menghitung MAPE dengan mengabaikan nilai aktual nol
+mape_safe <- function(actual, forecasted) {
+  non_zero_indices <- actual != 0
+  actual_non_zero <- actual[non_zero_indices]
+  forecasted_non_zero <- forecasted[non_zero_indices]
+  mean(abs((actual_non_zero - forecasted_non_zero) / actual_non_zero)) * 100
+}
+```
+
+```{r}
+# Hitung MAE (Mean Absolute Error)
+mae_ps_kcgTanah_VAR <- mae(test_ps_kcgTanah_var$Produksi, predict_ps_kcgtanah_var)
+
+# Hitung MSE (Mean Squared Error)
+mse_ps_kcgTanah_VAR <- mse(test_ps_kcgTanah_var$Produksi, predict_ps_kcgtanah_var)
+
+# Hitung RMSE (Root Mean Square Error)
+rmse_ps_kcgTanah_VAR <- rmse(test_ps_kcgTanah_var$Produksi, predict_ps_kcgtanah_var)
+
+# Hitung MAPE (Mean Absolute Percent Error)
+mape_ps_kcgTanah_VAR <- mape_safe(test_ps_kcgTanah_var$Produksi, predict_ps_kcgtanah_var)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_ps_kcgTanah_VAR, "\n"))
+cat(paste("MSE: ", mse_ps_kcgTanah_VAR, "\n"))
+cat(paste("RMSE: ", rmse_ps_kcgTanah_VAR, "\n"))
+cat(paste("MAPE: ", mape_ps_kcgTanah_VAR, "%\n"))
+
+```
 
 ##  Produktivitas Kacang tanah - VAR
 
@@ -1613,11 +2466,23 @@ kacangtanah_var_sumatera2 <- Iklim_kacangtanah[, c("Produktivitas", "Kecepatan_A
 kacangtanah_var_sumatera2
 ```
 
-Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam
-format time series (ts)
+```{r}
+# Tentukan ukuran data pelatihan (train) dan pengujian (test)
+train_size14 <- floor(0.7 * nrow(kacangtanah_var_sumatera2))  # 70% untuk pelatihan
+test_size14 <- nrow(kacangtanah_var_sumatera2) - train_size14   # 30% untuk pengujian
+```
 
 ```{r}
-ts_kacangtanah_sumatera2 <- ts(kacangtanah_var_sumatera2, start = c(2006,1), frequency = 1)
+# Pisahkan data menjadi train dan test berdasarkan urutan waktu
+train_pt_kcgTanah_var <- kacangtanah_var_sumatera2[1:train_size14, ]
+test_pt_kcgTanah_var <-kacangtanah_var_sumatera2[(train_size14 + 1):nrow(kacangtanah_var_sumatera2), ]
+```
+
+
+Untuk mendukung prediksi dengan Model VAR, data harus dirubah kedalam
+format time series (ts)
+```{r}
+ts_kacangtanah_sumatera2 <- ts(train_pt_kcgTanah_var, start = c(2006,1), frequency = 1)
 ts_kacangtanah_sumatera2
 ```
 
@@ -1633,6 +2498,12 @@ lag_kacangtanah_sumatera2
 var_model_kacangtanah_sumatera2 <- VAR(ts_kacangtanah_sumatera2, p = lag_kacangtanah_sumatera2$selection[1], type = "both") # jumlah order dari model VAR
 summary(var_model_kacangtanah_sumatera2)
 ```
+
+
+*Hasil*
+Berdasarkan hasil di atas menunjukkan bahwa variabel iklim yg berdampak terhadap *produktivitas Kacang Tanah* adalah variabel *Curah hujan* pada lag 1 ( p-valuenya 0.031790 * )  dan *Kecepatan_Angin* pada lag 4 (p-valuenya 0.000563 *** ) 
+
+
 
 ### Uji Kolerasi person Produktivitas tanah
 ```{r}
@@ -1697,17 +2568,77 @@ granger_kacangtanah_produktivitas3
 ```
 
 
-### Uji regresi linier produktivitas kacang tanah
+### prediksi Produktivitas Kacang tanah dengan model VAR pada data testing 
 ```{r}
-# Membuat model regresi linier
-regresi_kacang_tanah2 <- lm(Produktivitas ~ Curah_hujan + Kelembapan  + Suhu + Kecepatan_Angin + Penyinaran_Matahari, data = kacangtanah_var_sumatera2)
-
-# Ringkasan hasil model
-summary(regresi_kacang_tanah2)
+# Melakukan prediksi dengan model VAR pada data testing
+predictions_kcgtanah_var2 <- predict(var_model_kacangtanah_sumatera2, n.ahead = test_size14)
 ```
-Kesimpulan uji regresi linier:
-Terdapat pengaruh kecepatan angin dengan p-value 4.43e-06 *** terhadap produktivitas kacang tanah dan nilai f-statistik p-valuenya adalah 4.819e-07
 
+```{r}
+# Ekstraksi hasil prediksi untuk variabel Produktivitas
+predict_pt_kcgtanah_var <- predictions_kcgtanah_var2$fcst$Produktivitas[, "fcst"]
+```
+
+```{r}
+# Menyusun data untuk visualisasi
+result_pt_kcgtanah_VAR <- data.frame(Produktivitas_actual7 = test_pt_kcgTanah_var$Produktivitas, Produktivitas_pred7 = predict_pt_kcgtanah_var)
+
+
+# Visualisasi Perbandingan Produktivitas tanah Aktual dengan Hasil Prediksi
+ggplot(data = result_pt_kcgtanah_VAR, aes(x = Produktivitas_actual7, y = Produktivitas_pred7)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  labs(x = "Actual Produktivitas", y = "Predicted Produktivitas") +
+  ggtitle("Perbandingan Produktivitas kacang tanah Aktual dengan Prediksi Model VAR") +
+  theme_minimal()
+```
+
+```{r}
+# Visualisasi Produktivitas Aktual dengan Hasil Prediksi
+ggplot(data = result_pt_kcgtanah_VAR, aes(x = 1:nrow(result_pt_kcgtanah_VAR))) +
+  geom_line(aes(y = Produktivitas_actual7, color = "Actual"), size = 1) +
+  geom_line(aes(y = Produktivitas_pred7, color = "VAR Prediction"), size = 1) +
+  labs(x = "Observation", y = "Produktivitas") +
+  scale_color_manual(values = c("Actual" = "blue", "VAR Prediction" = "red")) +
+  ggtitle("Produktivitas kacang tanah: Aktual vs Prediksi Model VAR") +
+  theme_minimal()
+
+```
+
+### evaluasi model
+
+```{r}
+# Fungsi untuk menghitung MAPE dengan mengabaikan nilai aktual nol
+mape_safe <- function(actual, forecasted) {
+  non_zero_indices <- actual != 0
+  actual_non_zero <- actual[non_zero_indices]
+  forecasted_non_zero <- forecasted[non_zero_indices]
+  mean(abs((actual_non_zero - forecasted_non_zero) / actual_non_zero)) * 100
+}
+```
+
+```{r}
+# Hitung MAE (Mean Absolute Error)
+mae_value_VAR <- mae(test_pt_kcgTanah_var$Produktivitas, predict_pt_kcgtanah_var)
+
+# Hitung MSE (Mean Squared Error)
+mse_value_VAR <- mse(test_pt_kcgTanah_var$Produktivitas, predict_pt_kcgtanah_var)
+
+# Hitung RMSE (Root Mean Square Error)
+rmse_value_VAR <- rmse(test_pt_kcgTanah_var$Produktivitas, predict_pt_kcgtanah_var)
+
+# Hitung MAPE (Mean Absolute Percent Error)
+mape_value_VAR <- mape_safe(test_pt_kcgTanah_var$Produktivitas, predict_pt_kcgtanah_var)
+
+# Tampilkan hasil evaluasi
+cat(paste("MAE: ", mae_value_VAR, "\n"))
+cat(paste("MSE: ", mse_value_VAR, "\n"))
+cat(paste("RMSE: ", rmse_value_VAR, "\n"))
+cat(paste("MAPE: ", mape_value_VAR, "%\n"))
+
+```
 
 
 # B. MODEL GLM
@@ -1749,7 +2680,8 @@ glm_produksi_padi <- glm(Produksi ~ Curah_hujan + Suhu + Penyinaran_Matahari+ Ke
 ```{r}
 summary(glm_produksi_padi)
 ```
-
+*hasil*
+Berdasarkan hasil di atas, variabel iklim yang tidak menunjukkan dampak signifikan terhadap produksi padi karena nilai p untuk semua variabel (Curah_hujan, Suhu, Penyinaran_Matahari, Kecepatan_Angin, dan Kelembapan) jauh lebih besar dari 0.05.
 
 ### Prediksi data testing dengan model
 ```{r}
@@ -1761,9 +2693,7 @@ predict_ps_padi_glm <- predict(glm_produksi_padi, newdata = test_ps_padi_glm, ty
 # Menampilkan hasil prediksi
 head(predict_ps_padi_glm)
 ```
-```{r}
-head(predict_ps_padi_glm)
-```
+
 
 ```{r}
 # Visualisasi Hasil
@@ -1787,7 +2717,7 @@ ggplot(data = result_ps_padi_glm, aes(x = 1:length(Produksi_1))) +
   geom_line(aes(y = Predictions_1, color = "GLM Prediction"), size = 1) +
   labs(x = "Observation", y = "Produksi") +
   scale_color_manual(values = c("Actual" = "blue", "GLM Prediction" = "red")) +
-  ggtitle("Comparison of Actual Sales and GLM Model Prediction") +
+  ggtitle("Produksi  Padi: Aktual vs Prediksi Model GLM") +
   theme_minimal()
 ```
 
@@ -1795,22 +2725,22 @@ ggplot(data = result_ps_padi_glm, aes(x = 1:length(Produksi_1))) +
 ### Evaluasi Model
 ```{r}
 # Hitung MAE (Mean Absolute Error)
-mae_value_glm_1 <- mae(test_ps_padi_glm$Produksi, predict_ps_padi_glm)
+mae_ps_padi_glm <- mae(test_ps_padi_glm$Produksi, predict_ps_padi_glm)
 
 # Hitung MSE (Mean Squared Error)
-mse_value_glm_1 <- mse(tes_ps_padi_glm$Produksi, predict_ps_padi_glm)
+mse_ps_padi_glm<- mse(test_ps_padi_glm$Produksi, predict_ps_padi_glm)
 
 # Hitung RMSE (Root Mean Square Error)
-rmse_value_glm_1 <- rmse(test_ps_padi_glm$Produksi, predict_ps_padi_glm)
+rmse_ps_padi_glm<- rmse(test_ps_padi_glm$Produksi, predict_ps_padi_glm)
 
 # Hitung MAPE (Mean Absolute Percent Error)
-mape_value_glm_1 <- mape(test_ps_padi_glm$Produksi, predict_ps_padi_glm)
+mape_ps_padi_glm <- mape(test_ps_padi_glm$Produksi, predict_ps_padi_glm)
 
 # Tampilkan hasil evaluasi
-cat(paste("MAE: ", mae_value_glm_1, "\n"))
-cat(paste("MSE: ", mse_value_glm_1, "\n"))
-cat(paste("RMSE: ", rmse_value_glm_1, "\n"))
-cat(paste("MAPE: ", mape_value_glm_1, "%\n"))
+cat(paste("MAE: ", mae_ps_padi_glm, "\n"))
+cat(paste("MSE: ", mse_ps_padi_glm, "\n"))
+cat(paste("RMSE: ", rmse_ps_padi_glm, "\n"))
+cat(paste("MAPE: ", mape_ps_padi_glm, "%\n"))
 ```
 MAE:  1272921.36158324 
 MSE:  2100608327097.84 
@@ -1829,7 +2759,7 @@ produktivitas_padi_glm
 ```{r}
 # Membagi dataset menjadi data pelatihan dan pengujian
 set.seed(123) # Set seed untuk reproduktibilitas
-split_pt_padi <- sample.split(produktivitas_padi_glm$Produksi, SplitRatio = 0.7) # 70% untuk data pelatihan, 30% untuk data pengujian
+split_pt_padi <- sample.split(produktivitas_padi_glm$Produktivitas, SplitRatio = 0.7) # 70% untuk data pelatihan, 30% untuk data pengujian
 ```
 
 ```{r}
@@ -1856,6 +2786,9 @@ glm_Produktivitas_padi <- glm(Produktivitas ~ Curah_hujan + Suhu + Penyinaran_Ma
 summary(glm_Produktivitas_padi)
 ```
 
+*hasil*
+Berdasarkan hasil di atas, variabel iklim yang menunjukkan dampak signifikan terhadap produktivitas padi adalah curah hujan dan kecepatan angin karena nilai p untuk variabel *Curah_hujan* dengan nilai p  0.02174 (*).
+*Kecepatan_Angin* dengan nilai p sekitar 0.00095 (***).
 
 ### Prediksi data testing dengan model
 ```{r}
@@ -1879,7 +2812,7 @@ ggplot(data = result_pt_padi_glm, aes(x = Produktivitas_1, y = Predictions_2)) +
   scale_x_continuous(labels = scales::comma) +
   scale_y_continuous(labels = scales::comma) +
   labs(x = "Actual Produktivitas", y = "Predicted Produktivitas") +
-  ggtitle("Comparison of Actual Produktivitas and GLM Model Prediction") +
+  ggtitle("Perbandingan Produktivitas Padi Aktual dengan Prediksi Model GLM") +
   theme_minimal()
 ```
 
@@ -1890,7 +2823,7 @@ ggplot(data = result_pt_padi_glm, aes(x = 1:length(Produktivitas_1))) +
   geom_line(aes(y = Predictions_2, color = "GLM Prediction"), size = 1) +
   labs(x = "Observation", y = "Produktivitas") +
   scale_color_manual(values = c("Actual" = "blue", "GLM Prediction" = "red")) +
-  ggtitle("Comparison of Actual Sales and GLM Model Prediction") +
+  ggtitle("Produktivitas  Padi: Aktual vs Prediksi Model GLM") +
   theme_minimal()
 ```
 
@@ -1898,22 +2831,22 @@ ggplot(data = result_pt_padi_glm, aes(x = 1:length(Produktivitas_1))) +
 ### Evaluasi Model
 ```{r}
 # Hitung MAE (Mean Absolute Error)
-mae_value_glm_2 <- mae(test_pt_padi_glm$Produktivitas, predict_pt_padi_glm)
+mae_pt_padi_glm  <- mae(test_pt_padi_glm$Produktivitas, predict_pt_padi_glm)
 
 # Hitung MSE (Mean Squared Error)
-mse_value_glm_2 <- mse(test_pt_padi_glm$Produktivitas, predict_pt_padi_glm)
+mse_pt_padi_glm  <- mse(test_pt_padi_glm$Produktivitas, predict_pt_padi_glm)
 
 # Hitung RMSE (Root Mean Square Error)
-rmse_value_glm_2 <- rmse(test_pt_padi_glm$Produktivitas, predict_pt_padi_glm)
+rmse_pt_padi_glm  <- rmse(test_pt_padi_glm$Produktivitas, predict_pt_padi_glm)
 
 # Hitung MAPE (Mean Absolute Percent Error)
-mape_value_glm_2 <- mape(test_pt_padi_glm$Produktivitas, predict_pt_padi_glm)
+mape_pt_padi_glm  <- mape(test_pt_padi_glm$Produktivitas, predict_pt_padi_glm)
 
 # Tampilkan hasil evaluasi
-cat(paste("MAE: ", mae_value_glm_2, "\n"))
-cat(paste("MSE: ", mse_value_glm_2, "\n"))
-cat(paste("RMSE: ", rmse_value_glm_2, "\n"))
-cat(paste("MAPE: ", mape_value_glm_2, "%\n"))
+cat(paste("MAE: ", mae_pt_padi_glm , "\n"))
+cat(paste("MSE: ", mse_pt_padi_glm , "\n"))
+cat(paste("RMSE: ", rmse_pt_padi_glm , "\n"))
+cat(paste("MAPE: ", mape_pt_padi_glm, "%\n"))
 ```
 
 
@@ -1954,7 +2887,9 @@ glm_produksi_jagung <- glm(Produksi ~ Curah_hujan + Suhu + Penyinaran_Matahari+ 
 ```{r}
 summary(glm_produksi_jagung)
 ```
-
+*hasil* 
+Berdasarkan hasil di atas, variabel iklim yang menunjukkan dampak signifikan terhadap produksi jagung adalah variabel kecepatan angin dan kelembapan karena nilai p-value untuk variabel 
+*Kecepatan_Angin* dengan nilai p sekitar 0.00146 (** ) dan  *kelembapan* dengan nilai p-value 0.00605 (**) yg lebih kecil dari 0,05
 
 ### Prediksi data testing dengan model
 ```{r}
@@ -1966,9 +2901,7 @@ predict_ps_jagung_glm <- predict(glm_produksi_jagung, newdata = test_ps_jagung_g
 # Menampilkan hasil prediksi
 head(predict_ps_jagung_glm)
 ```
-```{r}
-head(predict_ps_jagung_glm)
-```
+
 
 ```{r}
 # Visualisasi Hasil
@@ -1981,7 +2914,7 @@ ggplot(data = result_ps_jagung_glm, aes(x = Produksi_2, y = Predictions_3)) +
   scale_x_continuous(labels = scales::comma) +
   scale_y_continuous(labels = scales::comma) +
   labs(x = "Actual Produksi", y = "Predicted Produksi") +
-  ggtitle("Comparison of Actual Produksi and GLM Model Prediction") +
+  ggtitle("Perbandingan Produksi Jagung Aktual dengan Prediksi Model GLM") +
   theme_minimal()
 ```
 
@@ -1992,7 +2925,7 @@ ggplot(data = result_ps_jagung_glm, aes(x = 1:length(Produksi_2))) +
   geom_line(aes(y = Predictions_3, color = "GLM Prediction"), size = 1) +
   labs(x = "Observation", y = "Produksi") +
   scale_color_manual(values = c("Actual" = "blue", "GLM Prediction" = "red")) +
-  ggtitle("Comparison of Actual Sales and GLM Model Prediction") +
+  ggtitle("Produksi  Jagung: Aktual vs Prediksi Model GLM") +
   theme_minimal()
 ```
 
@@ -2000,27 +2933,24 @@ ggplot(data = result_ps_jagung_glm, aes(x = 1:length(Produksi_2))) +
 ### Evaluasi Model
 ```{r}
 # Hitung MAE (Mean Absolute Error)
-mae_value_glm_3 <- mae(test_ps_jagung_glm$Produksi, predict_ps_jagung_glm)
+mae_ps_jagung_glm  <- mae(test_ps_jagung_glm$Produksi, predict_ps_jagung_glm)
 
 # Hitung MSE (Mean Squared Error)
-mse_value_glm_3 <- mse(tes_ps_jagung_glm$Produksi, predict_ps_jagung_glm)
+mse_ps_jagung_glm  <- mse(test_ps_jagung_glm$Produksi, predict_ps_jagung_glm)
 
 # Hitung RMSE (Root Mean Square Error)
-rmse_value_glm_3 <- rmse(test_ps_jagung_glm$Produksi, predict_ps_jagung_glm)
+rmse_ps_jagung_glm  <- rmse(test_ps_jagung_glm$Produksi, predict_ps_jagung_glm)
 
 # Hitung MAPE (Mean Absolute Percent Error)
-mape_value_glm_3 <- mape(test_ps_jagung_glm$Produksi, predict_ps_jagung_glm)
+mape_ps_jagung_glm  <- mape(test_ps_jagung_glm$Produksi, predict_ps_jagung_glm)
 
 # Tampilkan hasil evaluasi
-cat(paste("MAE: ", mae_value_glm_3, "\n"))
-cat(paste("MSE: ", mse_value_glm_3, "\n"))
-cat(paste("RMSE: ", rmse_value_glm_3, "\n"))
-cat(paste("MAPE: ", mape_value_glm_3, "%\n"))
+cat(paste("MAE: ", mae_ps_jagung_glm , "\n"))
+cat(paste("MSE: ", mse_ps_jagung_glm , "\n"))
+cat(paste("RMSE: ", rmse_ps_jagung_glm , "\n"))
+cat(paste("MAPE: ", mape_ps_jagung_glm , "%\n"))
 ```
-MAE:  1272921.36158324 
-MSE:  2100608327097.84 
-RMSE:  1449347.55221025 
-MAPE:  160.734034463418 %
+
 
 
 ## Produktivitas jagung - GLM
@@ -2034,7 +2964,7 @@ produktivitas_jagung_glm
 ```{r}
 # Membagi dataset menjadi data pelatihan dan pengujian
 set.seed(123) # Set seed untuk reproduktibilitas
-split_pt_jagung <- sample.split(produktivitas_jagung_glm$Produksi, SplitRatio = 0.7) # 70% untuk data pelatihan, 30% untuk data pengujian
+split_pt_jagung <- sample.split(produktivitas_jagung_glm$Produktivitas, SplitRatio = 0.7) # 70% untuk data pelatihan, 30% untuk data pengujian
 ```
 
 ```{r}
@@ -2060,6 +2990,9 @@ glm_Produktivitas_jagung <- glm(Produktivitas ~ Curah_hujan + Suhu + Penyinaran_
 ```{r}
 summary(glm_Produktivitas_jagung)
 ```
+*hasil* 
+Berdasarkan hasil di atas, variabel iklim yang menunjukkan dampak signifikan terhadap produktivitas jagung adalah variabel kecepatan angin dan kelembapan karena nilai p-value untuk variabel 
+*Kecepatan_Angin* dengan nilai p sekitar 0.000686 (*** ) dan  *kelembapan* dengan nilai p-value 0.042948 (*) yg lebih kecil dari 0,05
 
 
 ### Prediksi data testing dengan model
@@ -2084,7 +3017,7 @@ ggplot(data = result_pt_jagung_glm, aes(x = Produktivitas_2, y = Predictions_4))
   scale_x_continuous(labels = scales::comma) +
   scale_y_continuous(labels = scales::comma) +
   labs(x = "Actual Produktivitas", y = "Predicted Produktivitas") +
-  ggtitle("Comparison of Actual Produktivitas and GLM Model Prediction") +
+  ggtitle("Perbandingan Produktivitas Jagung Aktual dengan Prediksi Model GLM") +
   theme_minimal()
 ```
 
@@ -2095,7 +3028,7 @@ ggplot(data = result_pt_jagung_glm, aes(x = 1:length(Produktivitas_2))) +
   geom_line(aes(y = Predictions_4, color = "GLM Prediction"), size = 1) +
   labs(x = "Observation", y = "Produktivitas") +
   scale_color_manual(values = c("Actual" = "blue", "GLM Prediction" = "red")) +
-  ggtitle("Comparison of Actual Sales and GLM Model Prediction") +
+  ggtitle("Produktivitas  Jagung: Aktual vs Prediksi Model GLM") +
   theme_minimal()
 ```
 
@@ -2103,22 +3036,22 @@ ggplot(data = result_pt_jagung_glm, aes(x = 1:length(Produktivitas_2))) +
 ### Evaluasi Model
 ```{r}
 # Hitung MAE (Mean Absolute Error)
-mae_value_glm_4 <- mae(test_pt_jagung_glm$Produktivitas, predict_pt_jagung_glm)
+mae_pt_jagung_glm <- mae(test_pt_jagung_glm$Produktivitas, predict_pt_jagung_glm)
 
 # Hitung MSE (Mean Squared Error)
-mse_value_glm_4 <- mse(test_pt_jagung_glm$Produktivitas, predict_pt_jagung_glm)
+mse_pt_jagung_glm <- mse(test_pt_jagung_glm$Produktivitas, predict_pt_jagung_glm)
 
 # Hitung RMSE (Root Mean Square Error)
-rmse_value_glm_4 <- rmse(test_pt_jagung_glm$Produktivitas, predict_pt_jagung_glm)
+rmse_pt_jagung_glm <- rmse(test_pt_jagung_glm$Produktivitas, predict_pt_jagung_glm)
 
 # Hitung MAPE (Mean Absolute Percent Error)
-mape_value_glm_4 <- mape(test_pt_jagung_glm$Produktivitas, predict_pt_jagung_glm)
+mape_pt_jagung_glm <- mape(test_pt_jagung_glm$Produktivitas, predict_pt_jagung_glm)
 
 # Tampilkan hasil evaluasi
-cat(paste("MAE: ", mae_value_glm_4, "\n"))
-cat(paste("MSE: ", mse_value_glm_4, "\n"))
-cat(paste("RMSE: ", rmse_value_glm_4, "\n"))
-cat(paste("MAPE: ", mape_value_glm_4, "%\n"))
+cat(paste("MAE: ", mae_pt_jagung_glm, "\n"))
+cat(paste("MSE: ", mse_pt_jagung_glm, "\n"))
+cat(paste("RMSE: ", rmse_pt_jagung_glm, "\n"))
+cat(paste("MAPE: ", mape_pt_jagung_glm, "%\n"))
 ```
 
 
@@ -2159,7 +3092,9 @@ glm_produksi_ubijalar <- glm(Produksi ~ Curah_hujan + Suhu + Penyinaran_Matahari
 ```{r}
 summary(glm_produksi_ubijalar)
 ```
-
+*hasil* 
+Berdasarkan hasil di atas, variabel iklim yang menunjukkan dampak signifikan terhadap produksi ubi jalar  adalah variabel kecepatan angin  karena nilai p-value untuk variabel 
+*Kecepatan_Angin* dengan nilai p sekitar 9.53e-05 (*** )  yg lebih kecil dari 0,05
 
 ### Prediksi data testing dengan model
 ```{r}
@@ -2186,7 +3121,7 @@ ggplot(data = result_ps_ubijalar_glm, aes(x = Produksi_3, y = Predictions_5)) +
   scale_x_continuous(labels = scales::comma) +
   scale_y_continuous(labels = scales::comma) +
   labs(x = "Actual Produksi", y = "Predicted Produksi") +
-  ggtitle("Comparison of Actual Produksi and GLM Model Prediction") +
+  ggtitle("Perbandingan Produksi Ubi Jalar Aktual dengan Prediksi Model GLM") +
   theme_minimal()
 ```
 
@@ -2197,7 +3132,7 @@ ggplot(data = result_ps_ubijalar_glm, aes(x = 1:length(Produksi_3))) +
   geom_line(aes(y = Predictions_5, color = "GLM Prediction"), size = 1) +
   labs(x = "Observation", y = "Produksi") +
   scale_color_manual(values = c("Actual" = "blue", "GLM Prediction" = "red")) +
-  ggtitle("Comparison of Actual Sales and GLM Model Prediction") +
+  ggtitle("Produksi  Ubi jalar : Aktual vs Prediksi Model GLM") +
   theme_minimal()
 ```
 
@@ -2205,27 +3140,24 @@ ggplot(data = result_ps_ubijalar_glm, aes(x = 1:length(Produksi_3))) +
 ### Evaluasi Model
 ```{r}
 # Hitung MAE (Mean Absolute Error)
-mae_value_glm_5 <- mae(test_ps_ubijalar_glm$Produksi, predict_ps_ubijalar_glm)
+mae_ps_ubijalar_glm <- mae(test_ps_ubijalar_glm$Produksi, predict_ps_ubijalar_glm)
 
 # Hitung MSE (Mean Squared Error)
-mse_value_glm_5 <- mse(tes_ps_ubijalar_glm$Produksi, predict_ps_ubijalar_glm)
+mse_ps_ubijalar_glm <- mse(test_ps_ubijalar_glm$Produksi, predict_ps_ubijalar_glm)
 
 # Hitung RMSE (Root Mean Square Error)
-rmse_value_glm_5 <- rmse(test_ps_ubijalar_glm$Produksi, predict_ps_ubijalar_glm)
+rmse_ps_ubijalar_glm <- rmse(test_ps_ubijalar_glm$Produksi, predict_ps_ubijalar_glm)
 
 # Hitung MAPE (Mean Absolute Percent Error)
-mape_value_glm_5 <- mape(test_ps_ubijalar_glm$Produksi, predict_ps_ubijalar_glm)
+mape_ps_ubijalar_glm <- mape(test_ps_ubijalar_glm$Produksi, predict_ps_ubijalar_glm)
 
 # Tampilkan hasil evaluasi
-cat(paste("MAE: ", mae_value_glm_5, "\n"))
-cat(paste("MSE: ", mse_value_glm_5, "\n"))
-cat(paste("RMSE: ", rmse_value_glm_5, "\n"))
-cat(paste("MAPE: ", mape_value_glm_5, "%\n"))
+cat(paste("MAE: ", mae_ps_ubijalar_glm, "\n"))
+cat(paste("MSE: ", mse_ps_ubijalar_glm, "\n"))
+cat(paste("RMSE: ", rmse_ps_ubijalar_glm, "\n"))
+cat(paste("MAPE: ", mape_ps_ubijalar_glm, "%\n"))
 ```
-MAE:  1272921.36158324 
-MSE:  2100608327097.84 
-RMSE:  1449347.55221025 
-MAPE:  160.734034463418 %
+
 
 
 ## Produktivitas ubijalar - GLM
@@ -2239,7 +3171,7 @@ produktivitas_ubijalar_glm
 ```{r}
 # Membagi dataset menjadi data pelatihan dan pengujian
 set.seed(123) # Set seed untuk reproduktibilitas
-split_pt_ubijalar <- sample.split(produktivitas_ubijalar_glm$Produksi, SplitRatio = 0.7) # 70% untuk data pelatihan, 30% untuk data pengujian
+split_pt_ubijalar <- sample.split(produktivitas_ubijalar_glm$Produktivitas, SplitRatio = 0.7) # 70% untuk data pelatihan, 30% untuk data pengujian
 ```
 
 ```{r}
@@ -2265,7 +3197,8 @@ glm_Produktivitas_ubijalar <- glm(Produktivitas ~ Curah_hujan + Suhu + Penyinara
 ```{r}
 summary(glm_Produktivitas_ubijalar)
 ```
-
+*hasil* 
+Berdasarkan hasil di atas, variabel iklim yang menunjukkan dampak signifikan terhadap produktivitas ubi jalar adalah variabel kecepatan angin  karena nilai p-value untuk variabel *Kecepatan_Angin* dengan nilai p sekitar 0.00959 (** ) yg lebih kecil dari 0,05
 
 ### Prediksi data testing dengan model
 ```{r}
@@ -2289,7 +3222,7 @@ ggplot(data = result_pt_ubijalar_glm, aes(x = Produktivitas_3, y = Predictions_6
   scale_x_continuous(labels = scales::comma) +
   scale_y_continuous(labels = scales::comma) +
   labs(x = "Actual Produktivitas", y = "Predicted Produktivitas") +
-  ggtitle("Comparison of Actual Produktivitas and GLM Model Prediction") +
+  ggtitle("Perbandingan Produktivitas Ubi jalar Aktual dengan Prediksi Model GLM") +
   theme_minimal()
 ```
 
@@ -2300,7 +3233,7 @@ ggplot(data = result_pt_ubijalar_glm, aes(x = 1:length(Produktivitas_3))) +
   geom_line(aes(y = Predictions_6, color = "GLM Prediction"), size = 1) +
   labs(x = "Observation", y = "Produktivitas") +
   scale_color_manual(values = c("Actual" = "blue", "GLM Prediction" = "red")) +
-  ggtitle("Comparison of Actual Sales and GLM Model Prediction") +
+  ggtitle("Produktivitas  Ubi jalar: Aktual vs Prediksi Model GLM") +
   theme_minimal()
 ```
 
@@ -2308,23 +3241,28 @@ ggplot(data = result_pt_ubijalar_glm, aes(x = 1:length(Produktivitas_3))) +
 ### Evaluasi Model
 ```{r}
 # Hitung MAE (Mean Absolute Error)
-mae_value_glm_6 <- mae(test_pt_ubijalar_glm$Produktivitas, predict_pt_ubijalar_glm)
+mae_pt_ubijalar_glm <- mae(test_pt_ubijalar_glm$Produktivitas, predict_pt_ubijalar_glm)
 
 # Hitung MSE (Mean Squared Error)
-mse_value_glm_6 <- mse(test_pt_ubijalar_glm$Produktivitas, predict_pt_ubijalar_glm)
+mse_pt_ubijalar_glm <- mse(test_pt_ubijalar_glm$Produktivitas, predict_pt_ubijalar_glm)
 
 # Hitung RMSE (Root Mean Square Error)
-rmse_value_glm_6 <- rmse(test_pt_ubijalar_glm$Produktivitas, predict_pt_ubijalar_glm)
+rmse_pt_ubijalar_glm <- rmse(test_pt_ubijalar_glm$Produktivitas, predict_pt_ubijalar_glm)
 
 # Hitung MAPE (Mean Absolute Percent Error)
-mape_value_glm_6 <- mape(test_pt_ubijalar_glm$Produktivitas, predict_pt_ubijalar_glm)
+mape_pt_ubijalar_glm <- mape(test_pt_ubijalar_glm$Produktivitas, predict_pt_ubijalar_glm)
 
 # Tampilkan hasil evaluasi
-cat(paste("MAE: ", mae_value_glm_6, "\n"))
-cat(paste("MSE: ", mse_value_glm_6, "\n"))
-cat(paste("RMSE: ", rmse_value_glm_6, "\n"))
-cat(paste("MAPE: ", mape_value_glm_6, "%\n"))
+cat(paste("MAE: ", mae_pt_ubijalar_glm, "\n"))
+cat(paste("MSE: ", mse_pt_ubijalar_glm, "\n"))
+cat(paste("RMSE: ", rmse_pt_ubijalar_glm, "\n"))
+cat(paste("MAPE: ", mape_pt_ubijalar_glm, "%\n"))
 ```
+
+MAE:  29.5611097395699 
+MSE:  2065.23113037259 
+RMSE:  45.4448141196835 
+MAPE:  0.237620241783672 %
 
 ## Produksi ubi_kayu sumatera - GLM
 
@@ -2363,7 +3301,8 @@ glm_produksi_ubikayu <- glm(Produksi ~ Curah_hujan + Suhu + Penyinaran_Matahari+
 ```{r}
 summary(glm_produksi_ubikayu)
 ```
-
+*hasil* 
+Berdasarkan hasil di atas, variabel iklim yang menunjukkan dampak signifikan terhadap produksi ubi kayu adalah variabel penyinaran matahari dan kecepatan angin  karena nilai p-value untuk variabel *Penyinaran_Matahari* dengan nilai p value 0.00805 (** ) *Kecepatan_Angin* dengan nilai p sekitar 0.00959 (** ) yg lebih kecil dari 0,05
 
 ### Prediksi data testing dengan model
 ```{r}
@@ -2390,7 +3329,7 @@ ggplot(data = result_ps_ubikayu_glm, aes(x = Produksi_4, y = Predictions_7)) +
   scale_x_continuous(labels = scales::comma) +
   scale_y_continuous(labels = scales::comma) +
   labs(x = "Actual Produksi", y = "Predicted Produksi") +
-  ggtitle("Comparison of Actual Produksi and GLM Model Prediction") +
+  ggtitle("Perbandingan Produksi Ubi Kayu Aktual dengan Prediksi Model GLM") +
   theme_minimal()
 ```
 
@@ -2401,7 +3340,7 @@ ggplot(data = result_ps_ubikayu_glm, aes(x = 1:length(Produksi_4))) +
   geom_line(aes(y = Predictions_7, color = "GLM Prediction"), size = 1) +
   labs(x = "Observation", y = "Produksi") +
   scale_color_manual(values = c("Actual" = "blue", "GLM Prediction" = "red")) +
-  ggtitle("Comparison of Actual Sales and GLM Model Prediction") +
+  ggtitle("Produksi  Ubi kayu : Aktual vs Prediksi Model GLM") +
   theme_minimal()
 ```
 
@@ -2409,27 +3348,23 @@ ggplot(data = result_ps_ubikayu_glm, aes(x = 1:length(Produksi_4))) +
 ### Evaluasi Model
 ```{r}
 # Hitung MAE (Mean Absolute Error)
-mae_value_glm_7 <- mae(test_ps_ubikayu_glm$Produksi, predict_ps_ubikayu_glm)
+mae_ps_ubikayu_glm <- mae(test_ps_ubikayu_glm$Produksi, predict_ps_ubikayu_glm)
 
 # Hitung MSE (Mean Squared Error)
-mse_value_glm_7 <- mse(tes_ps_ubikayu_glm$Produksi, predict_ps_ubikayu_glm)
+mse_ps_ubikayu_glm <- mse(test_ps_ubikayu_glm$Produksi, predict_ps_ubikayu_glm)
 
 # Hitung RMSE (Root Mean Square Error)
-rmse_value_glm_7 <- rmse(test_ps_ubikayu_glm$Produksi, predict_ps_ubikayu_glm)
+rmse_ps_ubikayu_glm <- rmse(test_ps_ubikayu_glm$Produksi, predict_ps_ubikayu_glm)
 
 # Hitung MAPE (Mean Absolute Percent Error)
-mape_value_glm_7 <- mape(test_ps_ubikayu_glm$Produksi, predict_ps_ubikayu_glm)
+mape_ps_ubikayu_glm <- mape(test_ps_ubikayu_glm$Produksi, predict_ps_ubikayu_glm)
 
 # Tampilkan hasil evaluasi
-cat(paste("MAE: ", mae_value_glm_7, "\n"))
-cat(paste("MSE: ", mse_value_glm_7, "\n"))
-cat(paste("RMSE: ", rmse_value_glm_7, "\n"))
-cat(paste("MAPE: ", mape_value_glm_7, "%\n"))
+cat(paste("MAE: ", mae_ps_ubikayu_glm, "\n"))
+cat(paste("MSE: ", mse_ps_ubikayu_glm, "\n"))
+cat(paste("RMSE: ", rmse_ps_ubikayu_glm, "\n"))
+cat(paste("MAPE: ", mape_ps_ubikayu_glm, "%\n"))
 ```
-MAE:  1272921.36158324 
-MSE:  2100608327097.84 
-RMSE:  1449347.55221025 
-MAPE:  160.734034463418 %
 
 
 ## Produktivitas ubikayu - GLM
@@ -2443,7 +3378,7 @@ produktivitas_ubikayu_glm
 ```{r}
 # Membagi dataset menjadi data pelatihan dan pengujian
 set.seed(123) # Set seed untuk reproduktibilitas
-split_pt_ubikayu <- sample.split(produktivitas_ubikayu_glm$Produksi, SplitRatio = 0.7) # 70% untuk data pelatihan, 30% untuk data pengujian
+split_pt_ubikayu <- sample.split(produktivitas_ubikayu_glm$Produktivitas, SplitRatio = 0.7) # 70% untuk data pelatihan, 30% untuk data pengujian
 ```
 
 ```{r}
@@ -2470,6 +3405,8 @@ glm_Produktivitas_ubikayu <- glm(Produktivitas ~ Curah_hujan + Suhu + Penyinaran
 summary(glm_Produktivitas_ubikayu)
 ```
 
+*hasil* 
+Berdasarkan hasil di atas, variabel iklim yang menunjukkan dampak signifikan terhadap produktivitas ubi kayu adalah variabel  kecepatan angin  karena nilai p-value *Kecepatan_Angin* dengan nilai p sekitar  0.0337  (* ) yg lebih kecil dari 0,05
 
 ### Prediksi data testing dengan model
 ```{r}
@@ -2493,7 +3430,7 @@ ggplot(data = result_pt_ubikayu_glm, aes(x = Produktivitas_4, y = Predictions_8)
   scale_x_continuous(labels = scales::comma) +
   scale_y_continuous(labels = scales::comma) +
   labs(x = "Actual Produktivitas", y = "Predicted Produktivitas") +
-  ggtitle("Comparison of Actual Produktivitas and GLM Model Prediction") +
+  ggtitle("Perbandingan Produktivitas Ubi Kayu Aktual dengan Prediksi Model GLM") +
   theme_minimal()
 ```
 
@@ -2504,7 +3441,7 @@ ggplot(data = result_pt_ubikayu_glm, aes(x = 1:length(Produktivitas_4))) +
   geom_line(aes(y = Predictions_8, color = "GLM Prediction"), size = 1) +
   labs(x = "Observation", y = "Produktivitas") +
   scale_color_manual(values = c("Actual" = "blue", "GLM Prediction" = "red")) +
-  ggtitle("Comparison of Actual Sales and GLM Model Prediction") +
+  ggtitle("Produktivitas  Ubi kayu: Aktual vs Prediksi Model GLM") +
   theme_minimal()
 ```
 
@@ -2512,22 +3449,22 @@ ggplot(data = result_pt_ubikayu_glm, aes(x = 1:length(Produktivitas_4))) +
 ### Evaluasi Model
 ```{r}
 # Hitung MAE (Mean Absolute Error)
-mae_value_glm_8 <- mae(test_pt_ubikayu_glm$Produktivitas, predict_pt_ubikayu_glm)
+mae_pt_ubikayu_glm <- mae(test_pt_ubikayu_glm$Produktivitas, predict_pt_ubikayu_glm)
 
 # Hitung MSE (Mean Squared Error)
-mse_value_glm_8 <- mse(test_pt_ubikayu_glm$Produktivitas, predict_pt_ubikayu_glm)
+mse_pt_ubikayu_glm <- mse(test_pt_ubikayu_glm$Produktivitas, predict_pt_ubikayu_glm)
 
 # Hitung RMSE (Root Mean Square Error)
-rmse_value_glm_8 <- rmse(test_pt_ubikayu_glm$Produktivitas, predict_pt_ubikayu_glm)
+rmse_pt_ubikayu_glm <- rmse(test_pt_ubikayu_glm$Produktivitas, predict_pt_ubikayu_glm)
 
 # Hitung MAPE (Mean Absolute Percent Error)
-mape_value_glm_8 <- mape(test_pt_ubikayu_glm$Produktivitas, predict_pt_ubikayu_glm)
+mape_pt_ubikayu_glm <- mape(test_pt_ubikayu_glm$Produktivitas, predict_pt_ubikayu_glm)
 
 # Tampilkan hasil evaluasi
-cat(paste("MAE: ", mae_value_glm_8, "\n"))
-cat(paste("MSE: ", mse_value_glm_8, "\n"))
-cat(paste("RMSE: ", rmse_value_glm_8, "\n"))
-cat(paste("MAPE: ", mape_value_glm_8, "%\n"))
+cat(paste("MAE: ", mae_pt_ubikayu_glm, "\n"))
+cat(paste("MSE: ", mse_pt_ubikayu_glm, "\n"))
+cat(paste("RMSE: ", rmse_pt_ubikayu_glm, "\n"))
+cat(paste("MAPE: ", mape_pt_ubikayu_glm, "%\n"))
 ```
 
 
@@ -2568,6 +3505,8 @@ glm_produksi_Kedelai <- glm(Produksi ~ Curah_hujan + Suhu + Penyinaran_Matahari+
 ```{r}
 summary(glm_produksi_Kedelai)
 ```
+*hasil*
+berdasarkan hasil di atas menunjukkan bahwa variabel iklim tidak berdampak terhadap produksi kedelai karena p value di atas 0, 05
 
 
 ### Prediksi data testing dengan model
@@ -2595,7 +3534,7 @@ ggplot(data = result_ps_Kedelai_glm, aes(x = Produksi_5, y = Predictions_9)) +
   scale_x_continuous(labels = scales::comma) +
   scale_y_continuous(labels = scales::comma) +
   labs(x = "Actual Produksi", y = "Predicted Produksi") +
-  ggtitle("Comparison of Actual Produksi and GLM Model Prediction") +
+  ggtitle("Perbandingan Produksi Kacang Kedelai Aktual dengan Prediksi Model GLM") +
   theme_minimal()
 ```
 
@@ -2606,7 +3545,7 @@ ggplot(data = result_ps_Kedelai_glm, aes(x = 1:length(Produksi_5))) +
   geom_line(aes(y = Predictions_9, color = "GLM Prediction"), size = 1) +
   labs(x = "Observation", y = "Produksi") +
   scale_color_manual(values = c("Actual" = "blue", "GLM Prediction" = "red")) +
-  ggtitle("Comparison of Actual Sales and GLM Model Prediction") +
+  ggtitle("Produksi  Kacang Kedelai: Aktual vs Prediksi Model GLM") +
   theme_minimal()
 ```
 
@@ -2614,22 +3553,22 @@ ggplot(data = result_ps_Kedelai_glm, aes(x = 1:length(Produksi_5))) +
 ### Evaluasi Model
 ```{r}
 # Hitung MAE (Mean Absolute Error)
-mae_value_glm_9 <- mae(test_ps_Kedelai_glm$Produksi, predict_ps_Kedelai_glm)
+mae_ps_kedelai_glm <- mae(test_ps_Kedelai_glm$Produksi, predict_ps_Kedelai_glm)
 
 # Hitung MSE (Mean Squared Error)
-mse_value_glm_9 <- mse(tes_ps_Kedelai_glm$Produksi, predict_ps_Kedelai_glm)
+mse_ps_kedelai_glm <- mse(test_ps_Kedelai_glm$Produksi, predict_ps_Kedelai_glm)
 
 # Hitung RMSE (Root Mean Square Error)
-rmse_value_glm_9 <- rmse(test_ps_Kedelai_glm$Produksi, predict_ps_Kedelai_glm)
+rmse_ps_kedelai_glm <- rmse(test_ps_Kedelai_glm$Produksi, predict_ps_Kedelai_glm)
 
 # Hitung MAPE (Mean Absolute Percent Error)
-mape_value_glm_9 <- mape(test_ps_Kedelai_glm$Produksi, predict_ps_Kedelai_glm)
+mape_ps_kedelai_glm <- mape(test_ps_Kedelai_glm$Produksi, predict_ps_Kedelai_glm)
 
 # Tampilkan hasil evaluasi
-cat(paste("MAE: ", mae_value_glm_9, "\n"))
-cat(paste("MSE: ", mse_value_glm_9, "\n"))
-cat(paste("RMSE: ", rmse_value_glm_9, "\n"))
-cat(paste("MAPE: ", mape_value_glm_9, "%\n"))
+cat(paste("MAE: ", mae_ps_kedelai_glm, "\n"))
+cat(paste("MSE: ", mse_ps_kedelai_glm, "\n"))
+cat(paste("RMSE: ", rmse_ps_kedelai_glm, "\n"))
+cat(paste("MAPE: ", mape_ps_kedelai_glm, "%\n"))
 ```
 
 
@@ -2645,7 +3584,7 @@ produktivitas_Kedelai_glm
 ```{r}
 # Membagi dataset menjadi data pelatihan dan pengujian
 set.seed(123) # Set seed untuk reproduktibilitas
-split_pt_Kedelai <- sample.split(produktivitas_Kedelai_glm$Produksi, SplitRatio = 0.7) # 70% untuk data pelatihan, 30% untuk data pengujian
+split_pt_Kedelai <- sample.split(produktivitas_Kedelai_glm$Produktivitas, SplitRatio = 0.7) # 70% untuk data pelatihan, 30% untuk data pengujian
 ```
 
 ```{r}
@@ -2671,7 +3610,8 @@ glm_Produktivitas_Kedelai <- glm(Produktivitas ~ Curah_hujan + Suhu + Penyinaran
 ```{r}
 summary(glm_Produktivitas_Kedelai)
 ```
-
+*hasil*
+berdasarkan hasil di atas menunjukkan bahwa variabel iklim tidak berdampak terhadap produktivitas kacang kedelai karena p value di atas 0, 05
 
 ### Prediksi data testing dengan model
 ```{r}
@@ -2695,7 +3635,7 @@ ggplot(data = result_pt_Kedelai_glm, aes(x = Produktivitas_5, y = Predictions_10
   scale_x_continuous(labels = scales::comma) +
   scale_y_continuous(labels = scales::comma) +
   labs(x = "Actual Produktivitas", y = "Predicted Produktivitas") +
-  ggtitle("Comparison of Actual Produktivitas and GLM Model Prediction") +
+  ggtitle("Perbandingan Produktivitas Kacang Kedelai Aktual dengan Prediksi Model GLM ") +
   theme_minimal()
 ```
 
@@ -2706,7 +3646,7 @@ ggplot(data = result_pt_Kedelai_glm, aes(x = 1:length(Produktivitas_5))) +
   geom_line(aes(y = Predictions_10, color = "GLM Prediction"), size = 1) +
   labs(x = "Observation", y = "Produktivitas") +
   scale_color_manual(values = c("Actual" = "blue", "GLM Prediction" = "red")) +
-  ggtitle("Comparison of Actual Sales and GLM Model Prediction") +
+  ggtitle("Produktivitas  Kacang Kedelai: Aktual vs Prediksi Model GLM") +
   theme_minimal()
 ```
 
@@ -2714,22 +3654,22 @@ ggplot(data = result_pt_Kedelai_glm, aes(x = 1:length(Produktivitas_5))) +
 ### Evaluasi Model
 ```{r}
 # Hitung MAE (Mean Absolute Error)
-mae_value_glm_10 <- mae(test_pt_Kedelai_glm$Produktivitas, predict_pt_Kedelai_glm)
+mae_pt_kedelai_glm <- mae(test_pt_Kedelai_glm$Produktivitas, predict_pt_Kedelai_glm)
 
 # Hitung MSE (Mean Squared Error)
-mse_value_glm_10 <- mse(test_pt_Kedelai_glm$Produktivitas, predict_pt_Kedelai_glm)
+mse_pt_kedelai_glm <- mse(test_pt_Kedelai_glm$Produktivitas, predict_pt_Kedelai_glm)
 
 # Hitung RMSE (Root Mean Square Error)
-rmse_value_glm_10 <- rmse(test_pt_Kedelai_glm$Produktivitas, predict_pt_Kedelai_glm)
+rmse_pt_kedelai_glm <- rmse(test_pt_Kedelai_glm$Produktivitas, predict_pt_Kedelai_glm)
 
 # Hitung MAPE (Mean Absolute Percent Error)
-mape_value_glm_10 <- mape(test_pt_Kedelai_glm$Produktivitas, predict_pt_Kedelai_glm)
+mape_pt_kedelai_glm <- mape(test_pt_Kedelai_glm$Produktivitas, predict_pt_Kedelai_glm)
 
 # Tampilkan hasil evaluasi
-cat(paste("MAE: ", mae_value_glm_10, "\n"))
-cat(paste("MSE: ", mse_value_glm_10, "\n"))
-cat(paste("RMSE: ", rmse_value_glm_10, "\n"))
-cat(paste("MAPE: ", mape_value_glm_10, "%\n"))
+cat(paste("MAE: ", mae_pt_kedelai_glm, "\n"))
+cat(paste("MSE: ", mse_pt_kedelai_glm, "\n"))
+cat(paste("RMSE: ", rmse_pt_kedelai_glm, "\n"))
+cat(paste("MAPE: ", mape_pt_kedelai_glm, "%\n"))
 ```
 
 
@@ -2771,7 +3711,8 @@ glm_produksi_kcgHijau <- glm(Produksi ~ Curah_hujan + Suhu + Penyinaran_Matahari
 ```{r}
 summary(glm_produksi_kcgHijau)
 ```
-
+*hasil* 
+Berdasarkan hasil di atas, variabel iklim yang menunjukkan tidak dampak signifikan terhadap produksi kacang hijau karena p-valuenya yg lebih besar dari 0,05
 
 ### Prediksi data testing dengan model
 ```{r}
@@ -2798,7 +3739,7 @@ ggplot(data = result_ps_kcgHijau_glm, aes(x = Produksi_6, y = Predictions_11)) +
   scale_x_continuous(labels = scales::comma) +
   scale_y_continuous(labels = scales::comma) +
   labs(x = "Actual Produksi", y = "Predicted Produksi") +
-  ggtitle("Comparison of Actual Produksi and GLM Model Prediction") +
+  ggtitle("Perbandingan Produksi Kacang Hijau Aktual dengan Prediksi Model GLM") +
   theme_minimal()
 ```
 
@@ -2809,30 +3750,41 @@ ggplot(data = result_ps_kcgHijau_glm, aes(x = 1:length(Produksi_6))) +
   geom_line(aes(y = Predictions_11, color = "GLM Prediction"), size = 1) +
   labs(x = "Observation", y = "Produksi") +
   scale_color_manual(values = c("Actual" = "blue", "GLM Prediction" = "red")) +
-  ggtitle("Comparison of Actual Sales and GLM Model Prediction") +
+  ggtitle("Produksi  Kacang Hijau : Aktual vs Prediksi Model GLM") +
   theme_minimal()
 ```
 
 
 ### Evaluasi Model
+
+```{r}
+# Fungsi untuk menghitung MAPE dengan mengabaikan nilai aktual nol
+mape_safe <- function(actual, forecasted) {
+  non_zero_indices <- actual != 0
+  actual_non_zero <- actual[non_zero_indices]
+  forecasted_non_zero <- forecasted[non_zero_indices]
+  mean(abs((actual_non_zero - forecasted_non_zero) / actual_non_zero)) * 100
+}
+```
+
 ```{r}
 # Hitung MAE (Mean Absolute Error)
-mae_value_glm_11 <- mae(test_ps_kcgHijau_glm$Produksi, predict_ps_kcgHijau_glm)
+mae_ps_kcgHijau_glm <- mae(test_ps_kcgHijau_glm$Produksi, predict_ps_kcgHijau_glm)
 
 # Hitung MSE (Mean Squared Error)
-mse_value_glm_11 <- mse(tes_ps_kcgHijau_glm$Produksi, predict_ps_kcgHijau_glm)
+mse_ps_kcgHijau_glm <- mse(test_ps_kcgHijau_glm$Produksi, predict_ps_kcgHijau_glm)
 
 # Hitung RMSE (Root Mean Square Error)
-rmse_value_glm_11 <- rmse(test_ps_kcgHijau_glm$Produksi, predict_ps_kcgHijau_glm)
+rmse_ps_kcgHijau_glm <- rmse(test_ps_kcgHijau_glm$Produksi, predict_ps_kcgHijau_glm)
 
 # Hitung MAPE (Mean Absolute Percent Error)
-mape_value_glm_11 <- mape(test_ps_kcgHijau_glm$Produksi, predict_ps_kcgHijau_glm)
+mape_ps_kcgHijau_glm <- mape_safe(test_ps_kcgHijau_glm$Produksi, predict_ps_kcgHijau_glm)
 
 # Tampilkan hasil evaluasi
-cat(paste("MAE: ", mae_value_glm_11, "\n"))
-cat(paste("MSE: ", mse_value_glm_11, "\n"))
-cat(paste("RMSE: ", rmse_value_glm_11, "\n"))
-cat(paste("MAPE: ", mape_value_glm_11, "%\n"))
+cat(paste("MAE: ", mae_ps_kcgHijau_glm, "\n"))
+cat(paste("MSE: ", mse_ps_kcgHijau_glm, "\n"))
+cat(paste("RMSE: ", rmse_ps_kcgHijau_glm, "\n"))
+cat(paste("MAPE: ", mape_ps_kcgHijau_glm, "%\n"))
 ```
 
 
@@ -2848,7 +3800,7 @@ produktivitas_kcgHijau_glm
 ```{r}
 # Membagi dataset menjadi data pelatihan dan pengujian
 set.seed(123) # Set seed untuk reproduktibilitas
-split_pt_kcgHijau <- sample.split(produktivitas_kcgHijau_glm$Produksi, SplitRatio = 0.7) # 70% untuk data pelatihan, 30% untuk data pengujian
+split_pt_kcgHijau <- sample.split(produktivitas_kcgHijau_glm$Produktivitas, SplitRatio = 0.7) # 70% untuk data pelatihan, 30% untuk data pengujian
 ```
 
 ```{r}
@@ -2874,6 +3826,8 @@ glm_Produktivitas_kcgHijau <- glm(Produktivitas ~ Curah_hujan + Suhu + Penyinara
 ```{r}
 summary(glm_Produktivitas_kcgHijau)
 ```
+*hasil* 
+Berdasarkan hasil di atas, variabel iklim yang menunjukkan dampak signifikan terhadap produktvitas kacang hijau adalah variabel  curah hujan karena nilai p-value *curah hujan* dengan nilai p sekitar  0.0174  (* ) yg lebih kecil dari 0,05
 
 
 ### Prediksi data testing dengan model
@@ -2898,7 +3852,7 @@ ggplot(data = result_pt_kcgHijau_glm, aes(x = Produktivitas_6, y = Predictions_1
   scale_x_continuous(labels = scales::comma) +
   scale_y_continuous(labels = scales::comma) +
   labs(x = "Actual Produktivitas", y = "Predicted Produktivitas") +
-  ggtitle("Comparison of Actual Produktivitas and GLM Model Prediction") +
+  ggtitle("Perbandingan Produktivitas Kacang Hijau Aktual dengan Prediksi Model GLM") +
   theme_minimal()
 ```
 
@@ -2909,30 +3863,42 @@ ggplot(data = result_pt_kcgHijau_glm, aes(x = 1:length(Produktivitas_6))) +
   geom_line(aes(y = Predictions_12, color = "GLM Prediction"), size = 1) +
   labs(x = "Observation", y = "Produktivitas") +
   scale_color_manual(values = c("Actual" = "blue", "GLM Prediction" = "red")) +
-  ggtitle("Comparison of Actual Sales and GLM Model Prediction") +
+  ggtitle("Produktivitas Kacang Hijau: Aktual vs Prediksi Model GLM") +
   theme_minimal()
 ```
 
 
+
 ### Evaluasi Model
+
+```{r}
+# Fungsi untuk menghitung MAPE dengan mengabaikan nilai aktual nol
+mape_safe <- function(actual, forecasted) {
+  non_zero_indices <- actual != 0
+  actual_non_zero <- actual[non_zero_indices]
+  forecasted_non_zero <- forecasted[non_zero_indices]
+  mean(abs((actual_non_zero - forecasted_non_zero) / actual_non_zero)) * 100
+}
+```
+
 ```{r}
 # Hitung MAE (Mean Absolute Error)
-mae_value_glm_12 <- mae(test_pt_kcgHijau_glm$Produktivitas, predict_pt_kcgHijau_glm)
+mae_pt_kcgHijau_glm <- mae(test_pt_kcgHijau_glm$Produktivitas, predict_pt_kcgHijau_glm)
 
 # Hitung MSE (Mean Squared Error)
-mse_value_glm_12 <- mse(test_pt_kcgHijau_glm$Produktivitas, predict_pt_kcgHijau_glm)
+mse_pt_kcgHijau_glm <- mse(test_pt_kcgHijau_glm$Produktivitas, predict_pt_kcgHijau_glm)
 
 # Hitung RMSE (Root Mean Square Error)
-rmse_value_glm_12 <- rmse(test_pt_kcgHijau_glm$Produktivitas, predict_pt_kcgHijau_glm)
+rmse_pt_kcgHijau_glm <- rmse(test_pt_kcgHijau_glm$Produktivitas, predict_pt_kcgHijau_glm)
 
 # Hitung MAPE (Mean Absolute Percent Error)
-mape_value_glm_12 <- mape(test_pt_kcgHijau_glm$Produktivitas, predict_pt_kcgHijau_glm)
+mape_pt_kcgHijau_glm <- mape_safe(test_pt_kcgHijau_glm$Produktivitas, predict_pt_kcgHijau_glm)
 
 # Tampilkan hasil evaluasi
-cat(paste("MAE: ", mae_value_glm_12, "\n"))
-cat(paste("MSE: ", mse_value_glm_12, "\n"))
-cat(paste("RMSE: ", rmse_value_glm_12, "\n"))
-cat(paste("MAPE: ", mape_value_glm_12, "%\n"))
+cat(paste("MAE: ", mae_pt_kcgHijau_glm, "\n"))
+cat(paste("MSE: ", mse_pt_kcgHijau_glm, "\n"))
+cat(paste("RMSE: ", rmse_pt_kcgHijau_glm, "\n"))
+cat(paste("MAPE: ", mape_pt_kcgHijau_glm, "%\n"))
 ```
 
 
@@ -2974,7 +3940,8 @@ glm_produksi_kcgtanah <- glm(Produksi ~ Curah_hujan + Suhu + Penyinaran_Matahari
 ```{r}
 summary(glm_produksi_kcgtanah)
 ```
-
+*hasil* 
+Berdasarkan hasil di atas, variabel iklim yang menunjukkan dampak signifikan terhadap produktsi kacang tanah adalah variabel  curah hujan dan kecepatn angin  karena nilai p-value *curah hujan* dengan nilai p sekitar  0.04395  (* ) dan *kecepatn agin*  dengan bilai p value  0.00033 (***) yg lebih kecil dari 0,05
 
 ### Prediksi data testing dengan model
 ```{r}
@@ -3001,7 +3968,7 @@ ggplot(data = result_ps_kcgtanah_glm, aes(x = Produksi_7, y = Predictions_13)) +
   scale_x_continuous(labels = scales::comma) +
   scale_y_continuous(labels = scales::comma) +
   labs(x = "Actual Produksi", y = "Predicted Produksi") +
-  ggtitle("Comparison of Actual Produksi and GLM Model Prediction") +
+  ggtitle("Perbandingan Produksi Kacang Tanah Aktual dengan Prediksi Model GLM") +
   theme_minimal()
 ```
 
@@ -3012,7 +3979,7 @@ ggplot(data = result_ps_kcgtanah_glm, aes(x = 1:length(Produksi_7))) +
   geom_line(aes(y = Predictions_13, color = "GLM Prediction"), size = 1) +
   labs(x = "Observation", y = "Produksi") +
   scale_color_manual(values = c("Actual" = "blue", "GLM Prediction" = "red")) +
-  ggtitle("Comparison of Actual Sales and GLM Model Prediction") +
+  ggtitle("Produksi  Kacang Tanah: Aktual vs Prediksi Model GLM") +
   theme_minimal()
 ```
 
@@ -3020,22 +3987,22 @@ ggplot(data = result_ps_kcgtanah_glm, aes(x = 1:length(Produksi_7))) +
 ### Evaluasi Model
 ```{r}
 # Hitung MAE (Mean Absolute Error)
-mae_value_glm_13 <- mae(test_ps_kcgtanah_glm$Produksi, predict_ps_kcgtanah_glm)
+mae_pt_kcgTanah_glm <- mae(test_ps_kcgtanah_glm$Produksi, predict_ps_kcgtanah_glm)
 
 # Hitung MSE (Mean Squared Error)
-mse_value_glm_13 <- mse(tes_ps_kcgtanah_glm$Produksi, predict_ps_kcgtanah_glm)
+mse_pt_kcgTanah_glm <- mse(test_ps_kcgtanah_glm$Produksi, predict_ps_kcgtanah_glm)
 
 # Hitung RMSE (Root Mean Square Error)
-rmse_value_glm_13 <- rmse(test_ps_kcgtanah_glm$Produksi, predict_ps_kcgtanah_glm)
+rmse_pt_kcgTanah_glm <- rmse(test_ps_kcgtanah_glm$Produksi, predict_ps_kcgtanah_glm)
 
 # Hitung MAPE (Mean Absolute Percent Error)
-mape_value_glm_13 <- mape(test_ps_kcgtanah_glm$Produksi, predict_ps_kcgtanah_glm)
+mape_pt_kcgTanah_glm <- mape(test_ps_kcgtanah_glm$Produksi, predict_ps_kcgtanah_glm)
 
 # Tampilkan hasil evaluasi
-cat(paste("MAE: ", mae_value_glm_13, "\n"))
-cat(paste("MSE: ", mse_value_glm_13, "\n"))
-cat(paste("RMSE: ", rmse_value_glm_13, "\n"))
-cat(paste("MAPE: ", mape_value_glm_13, "%\n"))
+cat(paste("MAE: ", mae_pt_kcgTanah_glm, "\n"))
+cat(paste("MSE: ", mse_pt_kcgTanah_glm, "\n"))
+cat(paste("RMSE: ", rmse_pt_kcgTanah_glm, "\n"))
+cat(paste("MAPE: ", mape_pt_kcgTanah_glm, "%\n"))
 ```
 
 
@@ -3051,7 +4018,7 @@ produktivitas_kcgtanah_glm
 ```{r}
 # Membagi dataset menjadi data pelatihan dan pengujian
 set.seed(123) # Set seed untuk reproduktibilitas
-split_pt_kcgtanah <- sample.split(produktivitas_kcgtanah_glm$Produksi, SplitRatio = 0.7) # 70% untuk data pelatihan, 30% untuk data pengujian
+split_pt_kcgtanah <- sample.split(produktivitas_kcgtanah_glm$Produktivitas, SplitRatio = 0.7) # 70% untuk data pelatihan, 30% untuk data pengujian
 ```
 
 ```{r}
@@ -3077,12 +4044,15 @@ glm_Produktivitas_kcgtanah <- glm(Produktivitas ~ Curah_hujan + Suhu + Penyinara
 ```{r}
 summary(glm_Produktivitas_kcgtanah)
 ```
+*hasil* 
+Berdasarkan hasil di atas, variabel iklim yang menunjukkan dampak signifikan terhadap produktivitas kacang tanah adalah variabel  kecepatn angin  karena nilai p-value *kecepatn agin*  dengan nilai p value  0.00262 (**) yg lebih kecil dari 0,05
 
 
 ### Prediksi data testing dengan model
 ```{r}
 # Melakukan prediksi dengan model GLM pada data testing
 predict_pt_kcgtanah_glm <- predict(glm_Produktivitas_kcgtanah, newdata = test_pt_kcgtanah_glm, type = "response")
+predict_pt_kcgtanah_glm
 ```
 
 ```{r}
@@ -3101,7 +4071,7 @@ ggplot(data = result_pt_kcgtanah_glm, aes(x = Produktivitas_7, y = Predictions_1
   scale_x_continuous(labels = scales::comma) +
   scale_y_continuous(labels = scales::comma) +
   labs(x = "Actual Produktivitas", y = "Predicted Produktivitas") +
-  ggtitle("Comparison of Actual Produktivitas and GLM Model Prediction") +
+  ggtitle("Perbandingan Produktivitas Kacang Tanah Aktual dengan Prediksi Model GLM") +
   theme_minimal()
 ```
 
@@ -3112,7 +4082,7 @@ ggplot(data = result_pt_kcgtanah_glm, aes(x = 1:length(Produktivitas_7))) +
   geom_line(aes(y = Predictions_14, color = "GLM Prediction"), size = 1) +
   labs(x = "Observation", y = "Produktivitas") +
   scale_color_manual(values = c("Actual" = "blue", "GLM Prediction" = "red")) +
-  ggtitle("Comparison of Actual Sales and GLM Model Prediction") +
+  ggtitle("Produktivitas  Kacang Tanah: Aktual vs Prediksi Model GLM") +
   theme_minimal()
 ```
 
@@ -3120,21 +4090,21 @@ ggplot(data = result_pt_kcgtanah_glm, aes(x = 1:length(Produktivitas_7))) +
 ### Evaluasi Model
 ```{r}
 # Hitung MAE (Mean Absolute Error)
-mae_value_glm_14 <- mae(test_pt_kcgtanah_glm$Produktivitas, predict_pt_kcgtanah_glm)
+mae_pt_kcgtanah_glm <- mae(test_pt_kcgtanah_glm$Produktivitas, predict_pt_kcgtanah_glm)
 
 # Hitung MSE (Mean Squared Error)
-mse_value_glm_14 <- mse(test_pt_kcgtanah_glm$Produktivitas, predict_pt_kcgtanah_glm)
+mse_pt_kcgtanah_glm <- mse(test_pt_kcgtanah_glm$Produktivitas, predict_pt_kcgtanah_glm)
 
 # Hitung RMSE (Root Mean Square Error)
-rmse_value_glm_14 <- rmse(test_pt_kcgtanah_glm$Produktivitas, predict_pt_kcgtanah_glm)
+rmse_pt_kcgtanah_glm <- rmse(test_pt_kcgtanah_glm$Produktivitas, predict_pt_kcgtanah_glm)
 
 # Hitung MAPE (Mean Absolute Percent Error)
-mape_value_glm_14 <- mape(test_pt_kcgtanah_glm$Produktivitas, predict_pt_kcgtanah_glm)
+mape_pt_kcgtanah_glm <- mape(test_pt_kcgtanah_glm$Produktivitas, predict_pt_kcgtanah_glm)
 
 # Tampilkan hasil evaluasi
-cat(paste("MAE: ", mae_value_glm_14, "\n"))
-cat(paste("MSE: ", mse_value_glm_14, "\n"))
-cat(paste("RMSE: ", rmse_value_glm_14, "\n"))
-cat(paste("MAPE: ", mape_value_glm_14, "%\n"))
+cat(paste("MAE: ", mae_pt_kcgtanah_glm, "\n"))
+cat(paste("MSE: ", mse_pt_kcgtanah_glm, "\n"))
+cat(paste("RMSE: ", rmse_pt_kcgtanah_glm, "\n"))
+cat(paste("MAPE: ", mape_pt_kcgtanah_glm, "%\n"))
 ```
 

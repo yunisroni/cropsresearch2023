@@ -2063,7 +2063,7 @@ F-statistic: 2.902 on 1 and 278 DF, p-value: 0.0896
 
 ## Interpretasi
 
-Terdapat dapat avg_Rainfall terhadap produksi dan produktivitas, Berdasarkan hasil analisis dengan model VAR, analisis kausalitas, dan regresi linear ini, kita dapat menyimpulkan bahwa:
+Terdapat avg_Rainfall terhadap produksi dan produktivitas, Berdasarkan hasil analisis dengan model VAR, analisis kausalitas, dan regresi linear ini, kita dapat menyimpulkan bahwa:
 
 1.  Dalam model VAR, bahwa variabel avg_rainfall berdampak pada variabel *produksi* karena p-valuen dari 2 lag yaitu lag1 dan lag5 lbih kecil dari 0,05. dan variabel avg_rainfall berdampak pada *produktivitas* karena nilai p-value di lag berdampak pada produktivitas kacang karena nilai P-Value dari 2 lag yaitu Lag1 dan lag4 lebih rendah dari 0,05.
 
