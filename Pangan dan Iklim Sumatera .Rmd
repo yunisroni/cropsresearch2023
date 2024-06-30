@@ -24,6 +24,8 @@ library(vars)
 library(glm2)
 library(Metrics)
 library(caTools)
+library(knitr)
+library(kableExtra)
 ```
 
 
@@ -82,24 +84,97 @@ colSums(is.na(data_iklim))
 
 ```{r}
 # Menghapus data NA's
-Iklim_clean <- na.omit(data_iklim)
+data_iklim_sumatera <- na.omit(data_iklim)
+summary(data_iklim_sumatera)
+```
+```{r}
+colSums(is.na(data_iklim_sumatera))
+```
+```{r}
+glimpse(data_iklim_sumatera)
+```
+
+
+```{r}
+tail(data_iklim_sumatera)
+```
+
+```{r}
+glimpse(data_iklim_sumatera)
+```
+
+```{r}
+# Q-Q plot untuk variabel 'suhu'
+qqnorm(data_iklim$Suhu)
+```
+
+
+```{r}
+qqline(data_iklim$Suhu)
+
+```
+
+
+```{r}
+# Uji Shapiro-Wilk untuk variabel 
+shapiro.test(data_iklim_sumatera$Suhu)
+shapiro.test(data_iklim_sumatera$Produksi)
+shapiro.test(data_iklim_sumatera$Produktivitas)
+shapiro.test(data_iklim_sumatera$Kecepatan_Angin)
+shapiro.test(data_iklim_sumatera$Kelembapan)
+shapiro.test(data_iklim_sumatera$Penyinaran_Matahari)
+shapiro.test(data_iklim_sumatera$Curah_hujan)
+```
+
+
+```{r}
+# Statistik deskriptif untuk variabel 'curah_hujan'
+summary(data_iklim_sumatera$Curah_hujan)
+
+```
+```{r}
+# Statistik deskriptif untuk variabel 'curah_hujan'
+summary(data_iklim_sumatera$Suhu)
+```
+```{r}
+summary(data_iklim_sumatera$Produksi)
+```
+
+
+```{r}
+# Boxplot untuk perbandingan rentang nilai 'suhu' dan 'curah_hujan'
+boxplot(data_iklim_sumatera$Suhu, data_iklim_sumatera$Curah_hujan, names = c("Suhu", "Curah Hujan"))
+
+```
+
+```{r}
+ #Boxplot untuk perbandingan rentang nilai 'suhu' dan 'curah_hujan'
+boxplot(data_iklim_sumatera$Kecepatan_Angin, data_iklim_sumatera$Penyinaran_Matahari, names = c("Kecepatan angin", "Penyinaran matahari"))
+```
+
+```{r}
+ #Boxplot untuk perbandingan rentang nilai 'suhu' dan 'curah_hujan'
+boxplot(data_iklim_sumatera$Kelembapan, data_iklim_sumatera$Penyinaran_Matahari, names = c("Kelembapan", "Penyinaran matahari"))
+```
+
+```{r}
+# Fungsi untuk Z-score Normalization
+z_score_normalize <- function(x) {
+  return((x - mean(x)) / sd(x))
+}
+```
+
+
+```{r}
+# Menerapkan Z-score Normalization untuk setiap variabel numerik dalam dataset
+Iklim_normalized <- data_iklim_sumatera %>%
+  mutate(across(where(is.numeric), z_score_normalize))
+
+# Menampilkan hasil normalisasi
 summary(Iklim_clean)
 ```
-```{r}
-colSums(is.na(Iklim_clean))
-```
-```{r}
-glimpse(Iklim_clean)
-```
 
 
-```{r}
-tail(Iklim_clean)
-```
-
-```{r}
-glimpse(Iklim_clean)
-```
 
 # 3. Eksplorasi Data Analisis (EDA)
 
@@ -292,8 +367,6 @@ granger_padi_sumatera1
 # Melakukan uji Granger Causality 
 granger_padi_sumatera3 <- causality(var_model_Padi_sumatera, cause = "Kecepatan_Angin")
 granger_padi_sumatera3
-
-#Uji Granger Causality digunakan untuk menguji apakah suatu variabel dapat digunakan untuk memprediksi variabel lain dalam model VAR
 ```
 
 ### prediksi dengan model VAR pada data testing
@@ -337,6 +410,7 @@ ggplot(data = result_ps_padi_VAR, aes(x = 1:nrow(result_ps_padi_VAR))) +
 ```
 
 
+
 ### evaluasi model
 ```{r}
 # Hitung MAE (Mean Absolute Error)
@@ -358,7 +432,10 @@ cat(paste("RMSE: ", rmse_ps_padi_VAR, "\n"))
 cat(paste("MAPE: ", mape_ps_padi_VAR, "%\n"))
 
 ```
-
+MAE:  1668546.02203614 
+MSE:  13079690918435.2 
+RMSE:  3616585.53312862 
+MAPE:  45.4414498253022 %
 
 
 ## Produktivitas Padi- VAR
@@ -1392,22 +1469,22 @@ ggplot(data = result_ps_ubikayu_VAR, aes(x = 1:nrow(result_ps_ubikayu_VAR))) +
 ### evaluasi model
 ```{r}
 # Hitung MAE (Mean Absolute Error)
-mae_value_VAR <- mae(test_ps_ubikayu_var$Produksi, predict_ps_ubikayu_var)
+mae_ps_ubikayu_VAR <- mae(test_ps_ubikayu_var$Produksi, predict_ps_ubikayu_var)
 
 # Hitung MSE (Mean Squared Error)
-mse_value_VAR <- mse(test_ps_ubikayu_var$Produksi, predict_ps_ubikayu_var)
+mse_ps_ubikayu_VAR <- mse(test_ps_ubikayu_var$Produksi, predict_ps_ubikayu_var)
 
 # Hitung RMSE (Root Mean Square Error)
-rmse_value_VAR <- rmse(test_ps_ubikayu_var$Produksi, predict_ps_ubikayu_var)
+rmse_ps_ubikayu_VAR <- rmse(test_ps_ubikayu_var$Produksi, predict_ps_ubikayu_var)
 
 # Hitung MAPE (Mean Absolute Percent Error)
-mape_value_VAR <- mape(test_ps_ubikayu_var$Produksi, predict_ps_ubikayu_var)
+mape_ps_ubikayu_VAR <- mape(test_ps_ubikayu_var$Produksi, predict_ps_ubikayu_var)
 
 # Tampilkan hasil evaluasi
-cat(paste("MAE: ", mae_value_VAR, "\n"))
-cat(paste("MSE: ", mse_value_VAR, "\n"))
-cat(paste("RMSE: ", rmse_value_VAR, "\n"))
-cat(paste("MAPE: ", mape_value_VAR, "%\n"))
+cat(paste("MAE: ", mae_ps_ubikayu_VAR, "\n"))
+cat(paste("MSE: ", mse_ps_ubikayu_VAR, "\n"))
+cat(paste("RMSE: ", rmse_ps_ubikayu_VAR, "\n"))
+cat(paste("MAPE: ", mape_ps_ubikayu_VAR, "%\n"))
 
 ```
 
@@ -1887,7 +1964,7 @@ ggplot(data = result_pt_kedelai_VAR, aes(x = Produktivitas_actual5, y = Produkti
   scale_x_continuous(labels = scales::comma) +
   scale_y_continuous(labels = scales::comma) +
   labs(x = "Actual Produktivitas", y = "Predicted Produktivitas") +
-  ggtitle("Perbandingan Produktivitas kacang kedelai Aktual dengan Prediksi Model VAR") +
+  ggtitle("Perbandingan Produktivitas kedelai Aktual dgn Prediksi Model VAR") +
   theme_minimal()
 ```
 
@@ -1918,10 +1995,10 @@ rmse_pt_kedelai_VAR <- rmse(test_pt_kedelai_var$Produktivitas, predict_pt_kedela
 mape_pt_kedelai_VAR <- mape(test_pt_kedelai_var$Produktivitas, predict_pt_kedelai_var)
 
 # Tampilkan hasil evaluasi
-cat(paste("MAE: ", mae_pt_kedelai_VAR, "\n"))
-cat(paste("MSE: ", mse_pt_kedelai_VAR, "\n"))
-cat(paste("RMSE: ", rmse_pt_kedelai_VAR, "\n"))
-cat(paste("MAPE: ", mape_pt_kedelai_VAR, "%\n"))
+cat(paste("MAE Produktivitas Kedelai model VAR : ", mae_pt_kedelai_VAR, "\n"))
+cat(paste("MSE Produktivitas Kedelai model VAR: ", mse_pt_kedelai_VAR, "\n"))
+cat(paste("RMSE Produktivitas Kedelai model VAR: ", rmse_pt_kedelai_VAR, "\n"))
+cat(paste("MAPE Produktivitas Kedelai model VAR: ", mape_pt_kedelai_VAR, "%\n"))
 
 ```
 
@@ -2057,7 +2134,7 @@ ggplot(data = result_ps_kcgHijau_VAR, aes(x = Produksi_actual6, y = Produksi_pre
   scale_x_continuous(labels = scales::comma) +
   scale_y_continuous(labels = scales::comma) +
   labs(x = "Actual Produksi", y = "Predicted Produksi") +
-  ggtitle("Perbandingan Produksi kacang Hijau Aktual dengan Prediksi Model VAR") +
+  ggtitle("Perbandingan Produksi kacang Hijau Aktual dgn Prediksi Model VAR") +
   theme_minimal()
 ```
 
@@ -2232,7 +2309,7 @@ ggplot(data = result_pt_kcgHijau_VAR, aes(x = Produktivitas_actual6, y = Produkt
   scale_x_continuous(labels = scales::comma) +
   scale_y_continuous(labels = scales::comma) +
   labs(x = "Actual Produktivitas", y = "Predicted Produktivitas") +
-  ggtitle("Perbandingan Produktivitas kacang Hijau Aktual dengan Prediksi Model VAR") +
+  ggtitle("Perbandingan Produktivitas kacang Hijau Aktual dgn Prediksi Model VAR") +
   theme_minimal()
 ```
 
@@ -2408,7 +2485,7 @@ ggplot(data = result_ps_kcgtanah_VAR, aes(x = Produksi_actual7, y = Produksi_pre
   scale_x_continuous(labels = scales::comma) +
   scale_y_continuous(labels = scales::comma) +
   labs(x = "Actual Produksi", y = "Predicted Produksi") +
-  ggtitle("Perbandingan Produksi kacang tanah Aktual dengan Prediksi Model VAR") +
+  ggtitle("Perbandingan Produksi kacang tanah Aktual dgn Prediksi Model VAR") +
   theme_minimal()
 ```
 
@@ -2494,7 +2571,6 @@ lag_kacangtanah_sumatera2
 
 ### VAR Model Iklim terhadap produktivitas kacang tanah sumatera
 ```{r}
-
 var_model_kacangtanah_sumatera2 <- VAR(ts_kacangtanah_sumatera2, p = lag_kacangtanah_sumatera2$selection[1], type = "both") # jumlah order dari model VAR
 summary(var_model_kacangtanah_sumatera2)
 ```
@@ -2591,7 +2667,7 @@ ggplot(data = result_pt_kcgtanah_VAR, aes(x = Produktivitas_actual7, y = Produkt
   scale_x_continuous(labels = scales::comma) +
   scale_y_continuous(labels = scales::comma) +
   labs(x = "Actual Produktivitas", y = "Predicted Produktivitas") +
-  ggtitle("Perbandingan Produktivitas kacang tanah Aktual dengan Prediksi Model VAR") +
+  ggtitle("Perbandingan Produktivitas kacang tanah Aktual dgn Prediksi Model VAR") +
   theme_minimal()
 ```
 
@@ -2621,22 +2697,22 @@ mape_safe <- function(actual, forecasted) {
 
 ```{r}
 # Hitung MAE (Mean Absolute Error)
-mae_value_VAR <- mae(test_pt_kcgTanah_var$Produktivitas, predict_pt_kcgtanah_var)
+mae_pt_kcgTanah_VAR <- mae(test_pt_kcgTanah_var$Produktivitas, predict_pt_kcgtanah_var)
 
 # Hitung MSE (Mean Squared Error)
-mse_value_VAR <- mse(test_pt_kcgTanah_var$Produktivitas, predict_pt_kcgtanah_var)
+mse_pt_kcgTanah_VAR <- mse(test_pt_kcgTanah_var$Produktivitas, predict_pt_kcgtanah_var)
 
 # Hitung RMSE (Root Mean Square Error)
-rmse_value_VAR <- rmse(test_pt_kcgTanah_var$Produktivitas, predict_pt_kcgtanah_var)
+rmse_pt_kcgTanah_VAR <- rmse(test_pt_kcgTanah_var$Produktivitas, predict_pt_kcgtanah_var)
 
 # Hitung MAPE (Mean Absolute Percent Error)
-mape_value_VAR <- mape_safe(test_pt_kcgTanah_var$Produktivitas, predict_pt_kcgtanah_var)
+mape_pt_kcgTanah_VAR <- mape_safe(test_pt_kcgTanah_var$Produktivitas, predict_pt_kcgtanah_var)
 
 # Tampilkan hasil evaluasi
-cat(paste("MAE: ", mae_value_VAR, "\n"))
-cat(paste("MSE: ", mse_value_VAR, "\n"))
-cat(paste("RMSE: ", rmse_value_VAR, "\n"))
-cat(paste("MAPE: ", mape_value_VAR, "%\n"))
+cat(paste("MAE: ", mae_pt_kcgTanah_VAR, "\n"))
+cat(paste("MSE: ", mse_pt_kcgTanah_VAR, "\n"))
+cat(paste("RMSE: ", rmse_pt_kcgTanah_VAR, "\n"))
+cat(paste("MAPE: ", mape_pt_kcgTanah_VAR, "%\n"))
 
 ```
 
@@ -2706,7 +2782,7 @@ ggplot(data = result_ps_padi_glm, aes(x = Produksi_1, y = Predictions_1)) +
   scale_x_continuous(labels = scales::comma) +
   scale_y_continuous(labels = scales::comma) +
   labs(x = "Actual Produksi", y = "Predicted Produksi") +
-  ggtitle("Comparison of Actual Produksi and GLM Model Prediction") +
+  ggtitle("Perbandingan Produksi Padi Aktual dengan Prediksi Model GLM") +
   theme_minimal()
 ```
 
@@ -2787,8 +2863,7 @@ summary(glm_Produktivitas_padi)
 ```
 
 *hasil*
-Berdasarkan hasil di atas, variabel iklim yang menunjukkan dampak signifikan terhadap produktivitas padi adalah curah hujan dan kecepatan angin karena nilai p untuk variabel *Curah_hujan* dengan nilai p  0.02174 (*).
-*Kecepatan_Angin* dengan nilai p sekitar 0.00095 (***).
+Berdasarkan hasil di atas, variabel iklim yang menunjukkan dampak signifikan terhadap produktivitas padi adalah curah hujan dan kecepatan angin karena nilai p untuk variabel *Curah_hujan* dengan nilai p  0.02174 (* ) dan *Kecepatan_Angin* dengan nilai p sekitar 0.00095 (***).
 
 ### Prediksi data testing dengan model
 ```{r}
@@ -3222,7 +3297,7 @@ ggplot(data = result_pt_ubijalar_glm, aes(x = Produktivitas_3, y = Predictions_6
   scale_x_continuous(labels = scales::comma) +
   scale_y_continuous(labels = scales::comma) +
   labs(x = "Actual Produktivitas", y = "Predicted Produktivitas") +
-  ggtitle("Perbandingan Produktivitas Ubi jalar Aktual dengan Prediksi Model GLM") +
+  ggtitle("Perbandingan Produktivitas Ubijalar Aktual dgn Prediksi Model GLM") +
   theme_minimal()
 ```
 
@@ -3302,7 +3377,7 @@ glm_produksi_ubikayu <- glm(Produksi ~ Curah_hujan + Suhu + Penyinaran_Matahari+
 summary(glm_produksi_ubikayu)
 ```
 *hasil* 
-Berdasarkan hasil di atas, variabel iklim yang menunjukkan dampak signifikan terhadap produksi ubi kayu adalah variabel penyinaran matahari dan kecepatan angin  karena nilai p-value untuk variabel *Penyinaran_Matahari* dengan nilai p value 0.00805 (** ) *Kecepatan_Angin* dengan nilai p sekitar 0.00959 (** ) yg lebih kecil dari 0,05
+Berdasarkan hasil di atas, variabel iklim yang menunjukkan dampak signifikan terhadap produksi ubi kayu adalah variabel penyinaran matahari dan kecepatan angin  karena nilai p-value untuk variabel *Penyinaran_Matahari* dengan nilai p value 0.00805 (** ) *Kecepatan_Angin* dengan nilai p sekitar 0.04790 (* ) yg lebih kecil dari 0,05
 
 ### Prediksi data testing dengan model
 ```{r}
@@ -3329,7 +3404,7 @@ ggplot(data = result_ps_ubikayu_glm, aes(x = Produksi_4, y = Predictions_7)) +
   scale_x_continuous(labels = scales::comma) +
   scale_y_continuous(labels = scales::comma) +
   labs(x = "Actual Produksi", y = "Predicted Produksi") +
-  ggtitle("Perbandingan Produksi Ubi Kayu Aktual dengan Prediksi Model GLM") +
+  ggtitle("Perbandingan Produksi Ubikayu Aktual dengan Prediksi Model GLM") +
   theme_minimal()
 ```
 
@@ -3430,7 +3505,7 @@ ggplot(data = result_pt_ubikayu_glm, aes(x = Produktivitas_4, y = Predictions_8)
   scale_x_continuous(labels = scales::comma) +
   scale_y_continuous(labels = scales::comma) +
   labs(x = "Actual Produktivitas", y = "Predicted Produktivitas") +
-  ggtitle("Perbandingan Produktivitas Ubi Kayu Aktual dengan Prediksi Model GLM") +
+  ggtitle("Perbandingan Produktivitas UbiKayu Aktual dgn Prediksi Model GLM") +
   theme_minimal()
 ```
 
@@ -3534,7 +3609,7 @@ ggplot(data = result_ps_Kedelai_glm, aes(x = Produksi_5, y = Predictions_9)) +
   scale_x_continuous(labels = scales::comma) +
   scale_y_continuous(labels = scales::comma) +
   labs(x = "Actual Produksi", y = "Predicted Produksi") +
-  ggtitle("Perbandingan Produksi Kacang Kedelai Aktual dengan Prediksi Model GLM") +
+  ggtitle("Perbandingan Produksi Kedelai Aktual dengan Prediksi Model GLM") +
   theme_minimal()
 ```
 
@@ -3611,7 +3686,7 @@ glm_Produktivitas_Kedelai <- glm(Produktivitas ~ Curah_hujan + Suhu + Penyinaran
 summary(glm_Produktivitas_Kedelai)
 ```
 *hasil*
-berdasarkan hasil di atas menunjukkan bahwa variabel iklim tidak berdampak terhadap produktivitas kacang kedelai karena p value di atas 0, 05
+berdasarkan hasil di atas menunjukkan bahwa variabel iklim tidak berdampak terhadap produktivitas kacang kedelai karena p value di atas 0,05
 
 ### Prediksi data testing dengan model
 ```{r}
@@ -3635,7 +3710,7 @@ ggplot(data = result_pt_Kedelai_glm, aes(x = Produktivitas_5, y = Predictions_10
   scale_x_continuous(labels = scales::comma) +
   scale_y_continuous(labels = scales::comma) +
   labs(x = "Actual Produktivitas", y = "Predicted Produktivitas") +
-  ggtitle("Perbandingan Produktivitas Kacang Kedelai Aktual dengan Prediksi Model GLM ") +
+  ggtitle("Perbandingan Produktivitas Kedelai Aktual dgn Prediksi Model GLM ") +
   theme_minimal()
 ```
 
@@ -3666,10 +3741,10 @@ rmse_pt_kedelai_glm <- rmse(test_pt_Kedelai_glm$Produktivitas, predict_pt_Kedela
 mape_pt_kedelai_glm <- mape(test_pt_Kedelai_glm$Produktivitas, predict_pt_Kedelai_glm)
 
 # Tampilkan hasil evaluasi
-cat(paste("MAE: ", mae_pt_kedelai_glm, "\n"))
-cat(paste("MSE: ", mse_pt_kedelai_glm, "\n"))
-cat(paste("RMSE: ", rmse_pt_kedelai_glm, "\n"))
-cat(paste("MAPE: ", mape_pt_kedelai_glm, "%\n"))
+cat(paste("MAE Produktivitas Kedelai model GLM : ", mae_pt_kedelai_glm, "\n"))
+cat(paste("MSE Produktivitas Kedelai model GLM : ", mse_pt_kedelai_glm, "\n"))
+cat(paste("RMSE Produktivitas Kedelai model GLM : ", rmse_pt_kedelai_glm, "\n"))
+cat(paste("MAPE Produktivitas Kedelai model GLM : ", mape_pt_kedelai_glm, "%\n"))
 ```
 
 
@@ -3739,7 +3814,7 @@ ggplot(data = result_ps_kcgHijau_glm, aes(x = Produksi_6, y = Predictions_11)) +
   scale_x_continuous(labels = scales::comma) +
   scale_y_continuous(labels = scales::comma) +
   labs(x = "Actual Produksi", y = "Predicted Produksi") +
-  ggtitle("Perbandingan Produksi Kacang Hijau Aktual dengan Prediksi Model GLM") +
+  ggtitle("Perbandingan ProduksiKacang Hijau Aktual dgn Prediksi Model GLM") +
   theme_minimal()
 ```
 
@@ -3852,7 +3927,7 @@ ggplot(data = result_pt_kcgHijau_glm, aes(x = Produktivitas_6, y = Predictions_1
   scale_x_continuous(labels = scales::comma) +
   scale_y_continuous(labels = scales::comma) +
   labs(x = "Actual Produktivitas", y = "Predicted Produktivitas") +
-  ggtitle("Perbandingan Produktivitas Kacang Hijau Aktual dengan Prediksi Model GLM") +
+  ggtitle("Perbandingan Produktivitas Kacang Hijau Aktual dgn Prediksi Model GLM") +
   theme_minimal()
 ```
 
@@ -3941,7 +4016,7 @@ glm_produksi_kcgtanah <- glm(Produksi ~ Curah_hujan + Suhu + Penyinaran_Matahari
 summary(glm_produksi_kcgtanah)
 ```
 *hasil* 
-Berdasarkan hasil di atas, variabel iklim yang menunjukkan dampak signifikan terhadap produktsi kacang tanah adalah variabel  curah hujan dan kecepatn angin  karena nilai p-value *curah hujan* dengan nilai p sekitar  0.04395  (* ) dan *kecepatn agin*  dengan bilai p value  0.00033 (***) yg lebih kecil dari 0,05
+Berdasarkan hasil di atas, variabel iklim yang menunjukkan dampak signifikan terhadap produktsi kacang tanah adalah variabel  curah hujan dan kecepatn angin  karena nilai p-value *curah hujan* dengan nilai p sekitar  0.04395  (* ) dan *kecepatan angin*  dengan bilai p value  0.00033 (***) yg lebih kecil dari 0,05
 
 ### Prediksi data testing dengan model
 ```{r}
@@ -3968,7 +4043,7 @@ ggplot(data = result_ps_kcgtanah_glm, aes(x = Produksi_7, y = Predictions_13)) +
   scale_x_continuous(labels = scales::comma) +
   scale_y_continuous(labels = scales::comma) +
   labs(x = "Actual Produksi", y = "Predicted Produksi") +
-  ggtitle("Perbandingan Produksi Kacang Tanah Aktual dengan Prediksi Model GLM") +
+  ggtitle("Perbandingan Produksi Kacang Tanah Aktual dgn Prediksi Model GLM") +
   theme_minimal()
 ```
 
@@ -3987,22 +4062,22 @@ ggplot(data = result_ps_kcgtanah_glm, aes(x = 1:length(Produksi_7))) +
 ### Evaluasi Model
 ```{r}
 # Hitung MAE (Mean Absolute Error)
-mae_pt_kcgTanah_glm <- mae(test_ps_kcgtanah_glm$Produksi, predict_ps_kcgtanah_glm)
+mae_ps_kcgTanah_glm <- mae(test_ps_kcgtanah_glm$Produksi, predict_ps_kcgtanah_glm)
 
 # Hitung MSE (Mean Squared Error)
-mse_pt_kcgTanah_glm <- mse(test_ps_kcgtanah_glm$Produksi, predict_ps_kcgtanah_glm)
+mse_ps_kcgTanah_glm <- mse(test_ps_kcgtanah_glm$Produksi, predict_ps_kcgtanah_glm)
 
 # Hitung RMSE (Root Mean Square Error)
-rmse_pt_kcgTanah_glm <- rmse(test_ps_kcgtanah_glm$Produksi, predict_ps_kcgtanah_glm)
+rmse_ps_kcgTanah_glm <- rmse(test_ps_kcgtanah_glm$Produksi, predict_ps_kcgtanah_glm)
 
 # Hitung MAPE (Mean Absolute Percent Error)
-mape_pt_kcgTanah_glm <- mape(test_ps_kcgtanah_glm$Produksi, predict_ps_kcgtanah_glm)
+mape_ps_kcgTanah_glm <- mape(test_ps_kcgtanah_glm$Produksi, predict_ps_kcgtanah_glm)
 
 # Tampilkan hasil evaluasi
-cat(paste("MAE: ", mae_pt_kcgTanah_glm, "\n"))
-cat(paste("MSE: ", mse_pt_kcgTanah_glm, "\n"))
-cat(paste("RMSE: ", rmse_pt_kcgTanah_glm, "\n"))
-cat(paste("MAPE: ", mape_pt_kcgTanah_glm, "%\n"))
+cat(paste("MAE: ", mae_ps_kcgTanah_glm, "\n"))
+cat(paste("MSE: ", mse_ps_kcgTanah_glm, "\n"))
+cat(paste("RMSE: ", rmse_ps_kcgTanah_glm, "\n"))
+cat(paste("MAPE: ", mape_ps_kcgTanah_glm, "%\n"))
 ```
 
 
@@ -4045,7 +4120,7 @@ glm_Produktivitas_kcgtanah <- glm(Produktivitas ~ Curah_hujan + Suhu + Penyinara
 summary(glm_Produktivitas_kcgtanah)
 ```
 *hasil* 
-Berdasarkan hasil di atas, variabel iklim yang menunjukkan dampak signifikan terhadap produktivitas kacang tanah adalah variabel  kecepatn angin  karena nilai p-value *kecepatn agin*  dengan nilai p value  0.00262 (**) yg lebih kecil dari 0,05
+Berdasarkan hasil di atas, variabel iklim yang menunjukkan dampak signifikan terhadap produktivitas kacang tanah adalah variabel  kecepatn angin  karena nilai p-value *kecepatn angin*  dengan nilai p value  0.00262 (**) yg lebih kecil dari 0,05
 
 
 ### Prediksi data testing dengan model
@@ -4071,7 +4146,7 @@ ggplot(data = result_pt_kcgtanah_glm, aes(x = Produktivitas_7, y = Predictions_1
   scale_x_continuous(labels = scales::comma) +
   scale_y_continuous(labels = scales::comma) +
   labs(x = "Actual Produktivitas", y = "Predicted Produktivitas") +
-  ggtitle("Perbandingan Produktivitas Kacang Tanah Aktual dengan Prediksi Model GLM") +
+  ggtitle("Perbandingan Produktivitas Kcg Tanah Aktual dgn Prediksi Model GLM") +
   theme_minimal()
 ```
 
@@ -4106,5 +4181,275 @@ cat(paste("MAE: ", mae_pt_kcgtanah_glm, "\n"))
 cat(paste("MSE: ", mse_pt_kcgtanah_glm, "\n"))
 cat(paste("RMSE: ", rmse_pt_kcgtanah_glm, "\n"))
 cat(paste("MAPE: ", mape_pt_kcgtanah_glm, "%\n"))
+```
+
+
+
+## Evaluasi Model VAR dan GLM
+```{r}
+### Produksi padi
+evaluasi_model_ps_padi <- data.frame(
+  No = c(1:2),
+  Model = c("Model VAR", "Model GLM"),
+  MSE = c(mae_ps_padi_VAR, mae_ps_padi_glm),
+  RSME = c(mse_ps_padi_VAR, mse_ps_padi_glm),
+  MAE = c(rmse_ps_padi_VAR, rmse_ps_padi_glm),
+  MAPE = c(mape_ps_padi_VAR, mape_ps_padi_glm),
+  stringsAsFactors = FALSE
+  
+)
+evaluasi_model_ps_padi
+```
+
+
+```{r}
+### Produktivitas padi
+evaluasi_model_pt_padi <- data.frame(
+  No = c(1:2),
+  Model = c("Model VAR", "Model GLM"),
+  MSE = c(mae_pt_padi_VAR, mae_pt_padi_glm),
+  RSME = c(mse_pt_padi_VAR, mse_pt_padi_glm),
+  MAE = c(rmse_pt_padi_VAR, rmse_pt_padi_glm),
+  MAPE = c(mape_pt_padi_VAR, mape_pt_padi_glm),
+  stringsAsFactors = FALSE
+  
+)
+evaluasi_model_pt_padi
+```
+
+
+```{r}
+### Produksi jagung
+evaluasi_model_ps_jagung <- data.frame(
+  No = c(1:2),
+  Model = c("Model VAR", "Model GLM"),
+  MSE = c(mae_ps_jagung_VAR, mae_ps_jagung_glm),
+  RSME = c(mse_ps_jagung_VAR, mse_ps_jagung_glm),
+  MAE = c(rmse_ps_jagung_VAR, rmse_ps_jagung_glm),
+  MAPE = c(mape_ps_jagung_VAR, mape_ps_jagung_glm),
+  stringsAsFactors = FALSE
+  
+)
+evaluasi_model_ps_jagung
+```
+
+
+```{r}
+### Produktivitas jagung
+evaluasi_model_pt_jagung <- data.frame(
+  No = c(1:2),
+  Model = c("Model VAR", "Model GLM"),
+  MSE = c(mae_pt_jagung_VAR, mae_pt_jagung_glm),
+  RSME = c(mse_pt_jagung_VAR, mse_pt_jagung_glm),
+  MAE = c(rmse_pt_jagung_VAR, rmse_pt_jagung_glm),
+  MAPE = c(mape_pt_jagung_VAR, mape_pt_jagung_glm),
+  stringsAsFactors = FALSE
+  
+)
+evaluasi_model_pt_jagung
+```
+
+
+```{r}
+### Produksi ubijalar
+evaluasi_model_ps_ubijalar <- data.frame(
+  No = c(1:2),
+  Model = c("Model VAR", "Model GLM"),
+  MSE = c(mae_ps_ubijalar_VAR, mae_ps_ubijalar_glm),
+  RSME = c(mse_ps_ubijalar_VAR, mse_ps_ubijalar_glm),
+  MAE = c(rmse_ps_ubijalar_VAR, rmse_ps_ubijalar_glm),
+  MAPE = c(mape_ps_ubijalar_VAR, mape_ps_ubijalar_glm),
+  stringsAsFactors = FALSE
+  
+)
+evaluasi_model_ps_ubijalar
+```
+
+
+```{r}
+### Produktivitas ubijalar
+evaluasi_model_pt_ubijalar <- data.frame(
+  No = c(1:2),
+  Model = c("Model VAR", "Model GLM"),
+  MSE = c(mae_pt_ubijalar_VAR, mae_pt_ubijalar_glm),
+  RSME = c(mse_pt_ubijalar_VAR, mse_pt_ubijalar_glm),
+  MAE = c(rmse_pt_ubijalar_VAR, rmse_pt_ubijalar_glm),
+  MAPE = c(mape_pt_ubijalar_VAR, mape_pt_ubijalar_glm),
+  stringsAsFactors = FALSE
+  
+)
+evaluasi_model_pt_ubijalar
+```
+
+```{r}
+### Produksi ubikayu
+evaluasi_model_ps_ubikayu <- data.frame(
+  No = c(1:2),
+  Model = c("Model VAR", "Model GLM"),
+  MSE = c(mae_ps_ubikayu_VAR, mae_ps_ubikayu_glm),
+  RSME = c(mse_ps_ubikayu_VAR, mse_ps_ubikayu_glm),
+  MAE = c(rmse_ps_ubikayu_VAR, rmse_ps_ubikayu_glm),
+  MAPE = c(mape_ps_ubikayu_VAR, mape_ps_ubikayu_glm),
+  stringsAsFactors = FALSE
+  
+)
+evaluasi_model_ps_ubikayu
+```
+
+
+```{r}
+### Produktivitas ubikayu
+evaluasi_model_pt_ubikayu <- data.frame(
+  No = c(1:2),
+  Model = c("Model VAR", "Model GLM"),
+  MSE = c(mae_pt_ubikayu_VAR, mae_pt_ubikayu_glm),
+  RSME = c(mse_pt_ubikayu_VAR, mse_pt_ubikayu_glm),
+  MAE = c(rmse_pt_ubikayu_VAR, rmse_pt_ubikayu_glm),
+  MAPE = c(mape_pt_ubikayu_VAR, mape_pt_ubikayu_glm),
+  stringsAsFactors = FALSE
+  
+)
+evaluasi_model_pt_ubikayu
+```
+
+```{r}
+### Produksi kedelai
+evaluasi_model_ps_kedelai <- data.frame(
+  No = c(1:2),
+  Model = c("Model VAR", "Model GLM"),
+  MSE = c(mae_ps_kedelai_VAR, mae_ps_kedelai_glm),
+  RSME = c(mse_ps_kedelai_VAR, mse_ps_kedelai_glm),
+  MAE = c(rmse_ps_kedelai_VAR, rmse_ps_kedelai_glm),
+  MAPE = c(mape_ps_kedelai_VAR, mape_ps_kedelai_glm),
+  stringsAsFactors = FALSE
+  
+)
+evaluasi_model_ps_kedelai
+```
+
+
+```{r}
+### Produktivitas kedelai
+evaluasi_model_pt_kedelai <- data.frame(
+  No = c(1:2),
+  Model = c("Model VAR", "Model GLM"),
+  MSE = c(mae_pt_kedelai_VAR, mae_pt_kedelai_glm),
+  RSME = c(mse_pt_kedelai_VAR, mse_pt_kedelai_glm),
+  MAE = c(rmse_pt_kedelai_VAR, rmse_pt_kedelai_glm),
+  MAPE = c(mape_pt_kedelai_VAR, mape_pt_kedelai_glm),
+  stringsAsFactors = FALSE
+  
+)
+evaluasi_model_pt_kedelai
+```
+
+```{r}
+### Produksi kacang Hijau
+evaluasi_model_ps_kcgHijau <- data.frame(
+  No = c(1:2),
+  Model = c("Model VAR", "Model GLM"),
+  MSE = c(mae_ps_kcgHijau_VAR, mae_ps_kcgHijau_glm),
+  RSME = c(mse_ps_kcgHijau_VAR, mse_ps_kcgHijau_glm),
+  MAE = c(rmse_ps_kcgHijau_VAR, rmse_ps_kcgHijau_glm),
+  MAPE = c(mape_ps_kcgHijau_VAR, mape_ps_kcgHijau_glm),
+  stringsAsFactors = FALSE
+  
+)
+evaluasi_model_ps_kcgHijau
+```
+
+
+```{r}
+### Produktivitas Kacang Hijau
+evaluasi_model_pt_kcgHijau <- data.frame(
+  No = c(1:2),
+  Model = c("Model VAR", "Model GLM"),
+  MSE = c(mae_pt_kcgHijau_VAR, mae_pt_kcgHijau_glm),
+  RSME = c(mse_pt_kcgHijau_VAR, mse_pt_kcgHijau_glm),
+  MAE = c(rmse_pt_kcgHijau_VAR, rmse_pt_kcgHijau_glm),
+  MAPE = c(mape_pt_kcgHijau_VAR, mape_pt_kcgHijau_glm),
+  stringsAsFactors = FALSE
+  
+)
+evaluasi_model_pt_kcgHijau
+```
+
+```{r}
+### Produksi kacang Tanah
+evaluasi_model_ps_kcgTanah <- data.frame(
+  No = c(1:2),
+  Model = c("Model VAR", "Model GLM"),
+  MSE = c(mae_ps_kcgTanah_VAR, mae_ps_kcgTanah_glm),
+  RSME = c(mse_ps_kcgTanah_VAR, mse_ps_kcgTanah_glm),
+  MAE = c(rmse_ps_kcgTanah_VAR, rmse_ps_kcgTanah_glm),
+  MAPE = c(mape_ps_kcgTanah_VAR, mape_ps_kcgTanah_glm),
+  stringsAsFactors = FALSE
+  
+)
+evaluasi_model_ps_kcgTanah
+```
+
+
+```{r}
+### Produktivitas Kacang Tanah
+evaluasi_model_pt_kcgTanah <- data.frame(
+  No = c(1:2),
+  Model = c("Model VAR", "Model GLM"),
+  MSE = c(mae_pt_kcgTanah_VAR, mae_pt_kcgtanah_glm),
+  RSME = c(mse_pt_kcgTanah_VAR, mse_pt_kcgtanah_glm),
+  MAE = c(rmse_pt_kcgTanah_VAR, rmse_pt_kcgtanah_glm),
+  MAPE = c(mape_pt_kcgTanah_VAR, mape_pt_kcgtanah_glm),
+  stringsAsFactors = FALSE
+  
+)
+evaluasi_model_pt_kcgTanah
+```
+
+
+```{r}
+# Membuat data frame besar yang berisi semua hasil evaluasi
+evaluasi_model_komoditas <- data.frame(
+  Komoditas = c("Produksi Padi", "Produksi Jagung", "Produksi Ubi Jalar", "Produksi Ubi Kayu", "Produksi Kedelai", "Produksi Kacang Hijau", "Produksi Kacang Tanah"),
+  MSE_VAR = c(mae_ps_padi_VAR, mae_ps_jagung_VAR, mae_ps_ubijalar_VAR, mae_ps_ubikayu_VAR, mae_ps_kedelai_VAR, mae_ps_kcgHijau_VAR, mae_ps_kcgTanah_VAR),
+  MSE_GLM = c(mae_ps_padi_glm, mae_ps_jagung_glm, mae_ps_ubijalar_glm, mae_ps_ubikayu_glm, mae_ps_kedelai_glm, mae_ps_kcgHijau_glm, mae_ps_kcgTanah_glm),
+  RMSE_VAR = c(mse_ps_padi_VAR, mse_ps_jagung_VAR, mse_ps_ubijalar_VAR, mse_ps_ubikayu_VAR, mse_ps_kedelai_VAR, mse_ps_kcgHijau_VAR, mse_ps_kcgTanah_VAR),
+  RMSE_GLM = c(mse_ps_padi_glm, mse_ps_jagung_glm, mse_ps_ubijalar_glm, mse_ps_ubikayu_glm, mse_ps_kedelai_glm, mse_ps_kcgHijau_glm, mse_ps_kcgTanah_glm),
+  MAE_VAR = c(rmse_ps_padi_VAR, rmse_ps_jagung_VAR, rmse_ps_ubijalar_VAR, rmse_ps_ubikayu_VAR, rmse_ps_kedelai_VAR, rmse_ps_kcgHijau_VAR, rmse_ps_kcgTanah_VAR),
+  MAE_GLM = c(rmse_ps_padi_glm, rmse_ps_jagung_glm, rmse_ps_ubijalar_glm, rmse_ps_ubikayu_glm, rmse_ps_kedelai_glm, rmse_ps_kcgHijau_glm, rmse_ps_kcgTanah_glm),
+  MAPE_VAR = c(mape_ps_padi_VAR, mape_ps_jagung_VAR, mape_ps_ubijalar_VAR, mape_ps_ubikayu_VAR, mape_ps_kedelai_VAR, mape_ps_kcgHijau_VAR, mape_ps_kcgTanah_VAR),
+  MAPE_GLM = c(mape_ps_padi_glm, mape_ps_jagung_glm, mape_ps_ubijalar_glm, mape_ps_ubikayu_glm, mape_ps_kedelai_glm, mape_ps_kcgHijau_glm, mape_ps_kcgTanah_glm),
+  stringsAsFactors = FALSE
+)
+
+# Tambahkan judul menggunakan kableExtra
+
+kable(evaluasi_model_komoditas, caption = "Evaluasi Model VAR dan GLM terhadap Berbagai Komoditas") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"), full_width = F) %>%
+  add_header_above(c(" " = 1, "Perbandingan tingkat akurasi model VAR dan GLM pada produksi pangan" = 8))
+
+```
+
+
+```{r}
+# Membuat data frame besar yang berisi semua hasil evaluasi
+evaluasi_model_produktivitas <- data.frame(
+  Komoditas = c("Produktivitas Padi", "Produktivitas Jagung", "Produktivitas Ubi Jalar", "Produktivitas Ubi Kayu", "Produktivitas Kedelai", "Produktivitas Kacang Hijau", "Produktivitas Kacang Tanah"),
+  MSE_VAR = c(mae_pt_padi_VAR, mae_pt_jagung_VAR, mae_pt_ubijalar_VAR, mae_pt_ubikayu_VAR, mae_pt_kedelai_VAR, mae_pt_kcgHijau_VAR, mae_pt_kcgTanah_VAR),
+  MSE_GLM = c(mae_pt_padi_glm, mae_pt_jagung_glm, mae_pt_ubijalar_glm, mae_pt_ubikayu_glm, mae_pt_kedelai_glm, mae_pt_kcgHijau_glm, mae_pt_kcgtanah_glm),
+  RMSE_VAR = c(mse_pt_padi_VAR, mse_pt_jagung_VAR, mse_pt_ubijalar_VAR, mse_pt_ubikayu_VAR, mse_pt_kedelai_VAR, mse_pt_kcgHijau_VAR, mse_pt_kcgTanah_VAR),
+  RMSE_GLM = c(mse_pt_padi_glm, mse_pt_jagung_glm, mse_pt_ubijalar_glm, mse_pt_ubikayu_glm, mse_pt_kedelai_glm, mse_pt_kcgHijau_glm, mse_pt_kcgtanah_glm),
+  MAE_VAR = c(rmse_pt_padi_VAR, rmse_pt_jagung_VAR, rmse_pt_ubijalar_VAR, rmse_pt_ubikayu_VAR, rmse_pt_kedelai_VAR, rmse_pt_kcgHijau_VAR, rmse_pt_kcgTanah_VAR),
+  MAE_GLM = c(rmse_pt_padi_glm, rmse_pt_jagung_glm, rmse_pt_ubijalar_glm, rmse_pt_ubikayu_glm, rmse_pt_kedelai_glm, rmse_pt_kcgHijau_glm, rmse_pt_kcgtanah_glm),
+  MAPE_VAR = c(mape_pt_padi_VAR, mape_pt_jagung_VAR, mape_pt_ubijalar_VAR, mape_pt_ubikayu_VAR, mape_pt_kedelai_VAR, mape_pt_kcgHijau_VAR, mape_pt_kcgTanah_VAR),
+  MAPE_GLM = c(mape_pt_padi_glm, mape_pt_jagung_glm, mape_pt_ubijalar_glm, mape_pt_ubikayu_glm, mape_pt_kedelai_glm, mape_pt_kcgHijau_glm, mape_pt_kcgtanah_glm),
+  stringsAsFactors = FALSE
+)
+
+# Tambahkan judul menggunakan kableExtra
+
+kable(evaluasi_model_produktivitas, caption = "Evaluasi Model VAR dan GLM terhadap Berbagai Komoditas") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"), full_width = F) %>%
+  add_header_above(c(" " = 1, "Perbandingan tingkat akurasi model VAR dan GLM pada Produktivitas pangan" = 8))
+
 ```
 

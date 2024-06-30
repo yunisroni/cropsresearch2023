@@ -79,6 +79,9 @@ summary(Palawija_CLEAN)
 colSums(is.na(Palawija_CLEAN))
 ```
 
+
+
+
 ## Eksplorasi Data Analisis (EDA)
 
 ### Jumlah Produksi Tanaman Palawija per Provinsi
