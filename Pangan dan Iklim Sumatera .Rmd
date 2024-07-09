@@ -4388,49 +4388,6 @@ kable(evaluasi_model_komoditas, caption = "Evaluasi Model VAR dan GLM terhadap B
 
 ```
 
-```{r}
-# Melihat statistik deskriptif dari variabel produksi pada data uji
-summary(test_ps_padi_var$Produksi)
-
-```
-output:
-  Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
-     959   460980  1888501  2341581  3553295 18511853 
-     
-```{r}
-summary(test_ps_padi_glm$Produksi)
-```
-outptu:
- Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
-    430  493203 1961287 1810102 3192197 4044829 
-
-
-```{r}
-# Menghitung statistik dasar
-mean_produksi_var <- mean(test_ps_padi_var$Produksi)
-sd_produksi_var <- sd(test_ps_padi_var$Produksi)
-min_produksi_var <- min(test_ps_padi_var$Produksi)
-max_produksi_var <- max(test_ps_padi_var$Produksi)
-
-mean_produksi_glm <- mean(test_ps_padi_glm$Produksi)
-sd_produksi_glm <- sd(test_ps_padi_glm$Produksi)
-min_produksi_glm <- min(test_ps_padi_glm$Produksi)
-max_produksi_glm <- max(test_ps_padi_glm$Produksi)
-
-# Menampilkan statistik dasar
-cat("Statistik Produksi Padi (VAR):\n")
-cat("Mean: ", mean_produksi_var, "\n")
-cat("Standard Deviation: ", sd_produksi_var, "\n")
-cat("Minimum: ", min_produksi_var, "\n")
-cat("Maximum: ", max_produksi_var, "\n")
-
-cat("\nStatistik Produksi Padi (GLM):\n")
-cat("Mean: ", mean_produksi_glm, "\n")
-cat("Standard Deviation: ", sd_produksi_glm, "\n")
-cat("Minimum: ", min_produksi_glm, "\n")
-cat("Maximum: ", max_produksi_glm, "\n")
-
-```
 
 
 ```{r}
@@ -4505,4 +4462,103 @@ print(rata_rata2)
 ```
 
 
+```{r}
+# Membuat data frame besar yang berisi semua hasil evaluasi
+evaluasi_model_komoditas <- data.frame(
+  Komoditas = c("Produksi Padi", "Produksi Jagung", "Produksi Ubi Jalar", "Produksi Ubi Kayu", "Produksi Kedelai", "Produksi Kacang Hijau", "Produksi Kacang Tanah"),
+  MAE_VAR = c(mae_ps_padi_VAR, mae_ps_jagung_VAR, mae_ps_ubijalar_VAR, mae_ps_ubikayu_VAR, mae_ps_kedelai_VAR, mae_ps_kcgHijau_VAR, mae_ps_kcgTanah_VAR),
+  MAE_GLM = c(mae_ps_padi_glm, mae_ps_jagung_glm, mae_ps_ubijalar_glm, mae_ps_ubikayu_glm, mae_ps_kedelai_glm, mae_ps_kcgHijau_glm, mae_ps_kcgTanah_glm),
+  MSE_VAR = c(mse_ps_padi_VAR, mse_ps_jagung_VAR, mse_ps_ubijalar_VAR, mse_ps_ubikayu_VAR, mse_ps_kedelai_VAR, mse_ps_kcgHijau_VAR, mse_ps_kcgTanah_VAR),
+  MSE_GLM = c(mse_ps_padi_glm, mse_ps_jagung_glm, mse_ps_ubijalar_glm, mse_ps_ubikayu_glm, mse_ps_kedelai_glm, mse_ps_kcgHijau_glm, mse_ps_kcgTanah_glm),
+  RMSE_VAR = c(rmse_ps_padi_VAR, rmse_ps_jagung_VAR, rmse_ps_ubijalar_VAR, rmse_ps_ubikayu_VAR, rmse_ps_kedelai_VAR, rmse_ps_kcgHijau_VAR, rmse_ps_kcgTanah_VAR),
+  RMSE_GLM = c(rmse_ps_padi_glm, rmse_ps_jagung_glm, rmse_ps_ubijalar_glm, rmse_ps_ubikayu_glm, rmse_ps_kedelai_glm, rmse_ps_kcgHijau_glm, rmse_ps_kcgTanah_glm),
+  MAPE_VAR = c(mape_ps_padi_VAR, mape_ps_jagung_VAR, mape_ps_ubijalar_VAR, mape_ps_ubikayu_VAR, mape_ps_kedelai_VAR, mape_ps_kcgHijau_VAR, mape_ps_kcgTanah_VAR),
+  MAPE_GLM = c(mape_ps_padi_glm, mape_ps_jagung_glm, mape_ps_ubijalar_glm, mape_ps_ubikayu_glm, mape_ps_kedelai_glm, mape_ps_kcgHijau_glm, mape_ps_kcgTanah_glm),
+  stringsAsFactors = FALSE
+)
+
+# Simpan data frame ke file CSV
+write.csv(evaluasi_model_komoditas, "evaluasi_model_komoditas.csv", row.names = FALSE)
+```
+
+```{r}
+getwd()
+```
+
+```{r}
+# Membuat data frame besar yang berisi semua hasil evaluasi
+evaluasi_model_produktivitas <- data.frame(
+  Komoditas = c("Produktivitas Padi", "Produktivitas Jagung", "Produktivitas Ubi Jalar", "Produktivitas Ubi Kayu", "Produktivitas Kedelai", "Produktivitas Kacang Hijau", "Produktivitas Kacang Tanah"),
+  MAE_VAR = c(mae_pt_padi_VAR, mae_pt_jagung_VAR, mae_pt_ubijalar_VAR, mae_pt_ubikayu_VAR, mae_pt_kedelai_VAR, mae_pt_kcgHijau_VAR, mae_pt_kcgTanah_VAR),
+  MAE_GLM = c(mae_pt_padi_glm, mae_pt_jagung_glm, mae_pt_ubijalar_glm, mae_pt_ubikayu_glm, mae_pt_kedelai_glm, mae_pt_kcgHijau_glm, mae_pt_kcgtanah_glm),
+  MSE_VAR = c(mse_pt_padi_VAR, mse_pt_jagung_VAR, mse_pt_ubijalar_VAR, mse_pt_ubikayu_VAR, mse_pt_kedelai_VAR, mse_pt_kcgHijau_VAR, mse_pt_kcgTanah_VAR),
+  MSE_GLM = c(mse_pt_padi_glm, mse_pt_jagung_glm, mse_pt_ubijalar_glm, mse_pt_ubikayu_glm, mse_pt_kedelai_glm, mse_pt_kcgHijau_glm, mse_pt_kcgtanah_glm),
+  RMSE_VAR = c(rmse_pt_padi_VAR, rmse_pt_jagung_VAR, rmse_pt_ubijalar_VAR, rmse_pt_ubikayu_VAR, rmse_pt_kedelai_VAR, rmse_pt_kcgHijau_VAR, rmse_pt_kcgTanah_VAR),
+  RMSE_GLM = c(rmse_pt_padi_glm, rmse_pt_jagung_glm, rmse_pt_ubijalar_glm, rmse_pt_ubikayu_glm, rmse_pt_kedelai_glm, rmse_pt_kcgHijau_glm, rmse_pt_kcgtanah_glm),
+  MAPE_VAR = c(mape_pt_padi_VAR, mape_pt_jagung_VAR, mape_pt_ubijalar_VAR, mape_pt_ubikayu_VAR, mape_pt_kedelai_VAR, mape_pt_kcgHijau_VAR, mape_pt_kcgTanah_VAR),
+  MAPE_GLM = c(mape_pt_padi_glm, mape_pt_jagung_glm, mape_pt_ubijalar_glm, mape_pt_ubikayu_glm, mape_pt_kedelai_glm, mape_pt_kcgHijau_glm, mape_pt_kcgtanah_glm),
+  stringsAsFactors = FALSE
+)
+
+# Simpan data frame ke file CSV
+write.csv(evaluasi_model_produktivitas, "evaluasi_model_produktivitas.csv", row.names = FALSE)
+
+```
+```{r}
+library(openxlsx)
+```
+
+```{r}
+library(openxlsx)
+
+# Membuat data frame besar yang berisi semua hasil evaluasi
+evaluasi_model_produktivitas <- data.frame(
+  Komoditas = c("Produktivitas Padi", "Produktivitas Jagung", "Produktivitas Ubi Jalar", "Produktivitas Ubi Kayu", "Produktivitas Kedelai", "Produktivitas Kacang Hijau", "Produktivitas Kacang Tanah"),
+  MAE_VAR = c(mae_pt_padi_VAR, mae_pt_jagung_VAR, mae_pt_ubijalar_VAR, mae_pt_ubikayu_VAR, mae_pt_kedelai_VAR, mae_pt_kcgHijau_VAR, mae_pt_kcgTanah_VAR),
+  MAE_GLM = c(mae_pt_padi_glm, mae_pt_jagung_glm, mae_pt_ubijalar_glm, mae_pt_ubikayu_glm, mae_pt_kedelai_glm, mae_pt_kcgHijau_glm, mae_pt_kcgtanah_glm),
+  MSE_VAR = c(mse_pt_padi_VAR, mse_pt_jagung_VAR, mse_pt_ubijalar_VAR, mse_pt_ubikayu_VAR, mse_pt_kedelai_VAR, mse_pt_kcgHijau_VAR, mse_pt_kcgTanah_VAR),
+  MSE_GLM = c(mse_pt_padi_glm, mse_pt_jagung_glm, mse_pt_ubijalar_glm, mse_pt_ubikayu_glm, mse_pt_kedelai_glm, mse_pt_kcgHijau_glm, mse_pt_kcgtanah_glm),
+  RMSE_VAR = c(rmse_pt_padi_VAR, rmse_pt_jagung_VAR, rmse_pt_ubijalar_VAR, rmse_pt_ubikayu_VAR, rmse_pt_kedelai_VAR, rmse_pt_kcgHijau_VAR, rmse_pt_kcgTanah_VAR),
+  RMSE_GLM = c(rmse_pt_padi_glm, rmse_pt_jagung_glm, rmse_pt_ubijalar_glm, rmse_pt_ubikayu_glm, rmse_pt_kedelai_glm, rmse_pt_kcgHijau_glm, rmse_pt_kcgtanah_glm),
+  MAPE_VAR = c(mape_pt_padi_VAR, mape_pt_jagung_VAR, mape_pt_ubijalar_VAR, mape_pt_ubikayu_VAR, mape_pt_kedelai_VAR, mape_pt_kcgHijau_VAR, mape_pt_kcgTanah_VAR),
+  MAPE_GLM = c(mape_pt_padi_glm, mape_pt_jagung_glm, mape_pt_ubijalar_glm, mape_pt_ubikayu_glm, mape_pt_kedelai_glm, mape_pt_kcgHijau_glm, mape_pt_kcgtanah_glm),
+  stringsAsFactors = FALSE
+)
+
+# Simpan data frame ke file Excel
+write.xlsx(evaluasi_model_produktivitas, "evaluasi_model_produktivitas.xlsx")
+
+```
+
+
+```{r}
+# Instal paket openxlsx jika belum terinstal
+if (!requireNamespace("openxlsx", quietly = TRUE)) {
+  install.packages("openxlsx")
+}
+
+# Memuat paket openxlsx
+library(openxlsx)
+
+# Membuat data frame besar yang berisi semua hasil evaluasi
+evaluasi_model_komoditas <- data.frame(
+  Komoditas = c("Produksi Padi", "Produksi Jagung", "Produksi Ubi Jalar", "Produksi Ubi Kayu", "Produksi Kedelai", "Produksi Kacang Hijau", "Produksi Kacang Tanah"),
+  MAE_VAR = c(mae_ps_padi_VAR, mae_ps_jagung_VAR, mae_ps_ubijalar_VAR, mae_ps_ubikayu_VAR, mae_ps_kedelai_VAR, mae_ps_kcgHijau_VAR, mae_ps_kcgTanah_VAR),
+  MAE_GLM = c(mae_ps_padi_glm, mae_ps_jagung_glm, mae_ps_ubijalar_glm, mae_ps_ubikayu_glm, mae_ps_kedelai_glm, mae_ps_kcgHijau_glm, mae_ps_kcgTanah_glm),
+  MSE_VAR = c(mse_ps_padi_VAR, mse_ps_jagung_VAR, mse_ps_ubijalar_VAR, mse_ps_ubikayu_VAR, mse_ps_kedelai_VAR, mse_ps_kcgHijau_VAR, mse_ps_kcgTanah_VAR),
+  MSE_GLM = c(mse_ps_padi_glm, mse_ps_jagung_glm, mse_ps_ubijalar_glm, mse_ps_ubikayu_glm, mse_ps_kedelai_glm, mse_ps_kcgHijau_glm, mse_ps_kcgTanah_glm),
+  RMSE_VAR = c(rmse_ps_padi_VAR, rmse_ps_jagung_VAR, rmse_ps_ubijalar_VAR, rmse_ps_ubikayu_VAR, rmse_ps_kedelai_VAR, rmse_ps_kcgHijau_VAR, rmse_ps_kcgTanah_VAR),
+  RMSE_GLM = c(rmse_ps_padi_glm, rmse_ps_jagung_glm, rmse_ps_ubijalar_glm, rmse_ps_ubikayu_glm, rmse_ps_kedelai_glm, rmse_ps_kcgHijau_glm, rmse_ps_kcgTanah_glm),
+  MAPE_VAR = c(mape_ps_padi_VAR, mape_ps_jagung_VAR, mape_ps_ubijalar_VAR, mape_ps_ubikayu_VAR, mape_ps_kedelai_VAR, mape_ps_kcgHijau_VAR, mape_ps_kcgTanah_VAR),
+  MAPE_GLM = c(mape_ps_padi_glm, mape_ps_jagung_glm, mape_ps_ubijalar_glm, mape_ps_ubikayu_glm, mape_ps_kedelai_glm, mape_ps_kcgHijau_glm, mape_ps_kcgTanah_glm),
+  stringsAsFactors = FALSE
+)
+
+# Menyimpan dataframe ke file Excel
+write.xlsx(evaluasi_model_komoditas, file = "evaluasi_model_komoditas.xlsx", sheetName = "Evaluasi Model", rowNames = FALSE)
+
+# Pesan sukses
+cat("Data frame berhasil disimpan ke file evaluasi_model_komoditas.xlsx")
+
+```
 
