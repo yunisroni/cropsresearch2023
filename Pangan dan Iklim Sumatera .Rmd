@@ -142,19 +142,32 @@ summary(data_iklim_sumatera$Produksi)
 
 
 ```{r}
-# Boxplot untuk perbandingan rentang nilai 'suhu' dan 'curah_hujan'
-boxplot(data_iklim_sumatera$Suhu, data_iklim_sumatera$Curah_hujan, names = c("Suhu", "Curah Hujan"))
-
+# Boxplot untuk perbandingan rentang nilai 'suhu' dan 'curah_hujan
+# Boxplot untuk perbandingan rentang nilai 'suhu'
+boxplot(data_iklim_sumatera$Suhu, main = "Boxplot Suhu", ylab = "Nilai Suhu", xlab = "Suhu", names = c("Suhu"))
 ```
 
 ```{r}
- #Boxplot untuk perbandingan rentang nilai 'suhu' dan 'curah_hujan'
-boxplot(data_iklim_sumatera$Kecepatan_Angin, data_iklim_sumatera$Penyinaran_Matahari, names = c("Kecepatan angin", "Penyinaran matahari"))
+boxplot(data_iklim_sumatera$Curah_hujan, main = "Boxplot Curah hujan", ylab = "Nilai", xlab = "Curah hujan", names = c("Curah hujan"))
+```
+
+
+```{r}
+# Boxplot untuk perbandingan rentang nilai 'Kelembapan' dan 'curah_hujan
+# Boxplot untuk perbandingan rentang nilai 'Kelembapan'
+boxplot(data_iklim_sumatera$Kelembapan, main = "Boxplot Kelembapan", ylab = "Nilai Kelembapan", xlab = "Kelembapan", names = c("Kelembapan"))
 ```
 
 ```{r}
- #Boxplot untuk perbandingan rentang nilai 'suhu' dan 'curah_hujan'
-boxplot(data_iklim_sumatera$Kelembapan, data_iklim_sumatera$Penyinaran_Matahari, names = c("Kelembapan", "Penyinaran matahari"))
+# Boxplot untuk perbandingan rentang nilai 'Penyinaran Matahari' dan 'curah_hujan
+# Boxplot untuk perbandingan rentang nilai 'Penyinaran Matahari'
+boxplot(data_iklim_sumatera$Penyinaran_Matahari, main = "Boxplot Penyinaran Matahari", ylab = "Nilai Penyinaran Matahari", xlab = "Penyinaran Matahari", names = c("Penyinaran Matahari"))
+```
+
+```{r}
+# Boxplot untuk perbandingan rentang nilai 'Kecepatan Angin' dan 'curah_hujan
+# Boxplot untuk perbandingan rentang nilai 'Kecepatan Angin'
+boxplot(data_iklim_sumatera$Kecepatan_Angin, main = "Boxplot Kecepatan Angin", ylab = "Nilai Kecepatan Angin", xlab = "Kecepatan Angin", names = c("Kecepatan Angin"))
 ```
 
 ```{r}
@@ -312,8 +325,7 @@ summary(var_model_Padi_sumatera)
 ```
 
 *Hasil*
-Berdasarkan hasil di atas menunjukkan bahwa variabel yg berdampak terhadap *produksi padi* adalah variabel *penyinaran matahari* di lag 1 (p-vauenya 0.0133 * ) dan *kecepatan angin* di lag 3 (p-valuenya 0.0341 *)
-
+Berdasarkan hasil di atas menunjukkan bahwa variabel yg berdampak terhadap *produksi padi* adalah variabel *penyinaran matahari* di lag 1 (p-vauenya 0.0133 *) dan *kecepatan angin* di lag 3 (p-valuenya 0.0341 *)
 
 
 ### Uji Kolersi Pearson padi terhadap variabel iklim
@@ -440,7 +452,7 @@ mse_ps_padi_VAR <- mse(test_ps_padi_var$Produksi, predict_ps_padi_var)
 rmse_ps_padi_VAR <- rmse(test_ps_padi_var$Produksi, predict_ps_padi_var)
 
 # Hitung MAPE (Mean Absolute Percent Error)
-mape_ps_padi_VAR <- mape(test_ps_padi_var$Produksi, predict_ps_padi_var)
+mape_ps_padi_VAR <- mape(test_ps_padi_var$Produksi, predict_ps_padi_var)* 100
 
 # Tampilkan hasil evaluasi
 cat(paste("MAE_Produksi_Padi_VAR: ", mae_ps_padi_VAR, "\n"))
@@ -449,10 +461,7 @@ cat(paste("RMSE_Produksi_Padi_VAR: ", rmse_ps_padi_VAR, "\n"))
 cat(paste("MAPE_Produksi_Padi_VAR: ", mape_ps_padi_VAR, "%\n"))
 
 ```
-MAE:  1668546.02203614 
-MSE:  13079690918435.2 
-RMSE:  3616585.53312862 
-MAPE:  45.4414498253022 %
+
 
 
 ```{r}
@@ -630,7 +639,7 @@ mse_pt_padi_VAR <- mse(test_pt_padi_var$Produktivitas, predict_pt_padi_var)
 rmse_pt_padi_VAR <- rmse(test_pt_padi_var$Produktivitas, predict_pt_padi_var)
 
 # Hitung MAPE (Mean Absolute Percent Error)
-mape_pt_padi_VAR <- mape(test_pt_padi_var$Produktivitas, predict_pt_padi_var)
+mape_pt_padi_VAR <- mape(test_pt_padi_var$Produktivitas, predict_pt_padi_var) * 100
 
 # Tampilkan hasil evaluasi
 cat(paste("MAE: ", mae_pt_padi_VAR, "\n"))
@@ -639,6 +648,7 @@ cat(paste("RMSE: ", rmse_pt_padi_VAR, "\n"))
 cat(paste("MAPE: ", mape_pt_padi_VAR, "%\n"))
 
 ```
+
 
 
 ## Produksi Jagung - VAR
@@ -810,14 +820,14 @@ ggplot(data = result_ps_jagung_VAR, aes(x = 1:nrow(result_ps_jagung_VAR))) +
 # Hitung MAE (Mean Absolute Error)
 mae_ps_jagung_VAR <- mae(test_ps_jagung_var$Produksi, predict_ps_jagung_var)
 
-# Hitung MSE (Mean Squared Error)
+# Hitung MSE (Mean Squared Error
 mse_ps_jagung_VAR <- mse(test_ps_jagung_var$Produksi, predict_ps_jagung_var)
 
 # Hitung RMSE (Root Mean Square Error)
 rmse_ps_jagung_VAR <- rmse(test_ps_jagung_var$Produksi, predict_ps_jagung_var)
 
 # Hitung MAPE (Mean Absolute Percent Error)
-mape_ps_jagung_VAR <- mape(test_ps_jagung_var$Produksi, predict_ps_jagung_var)
+mape_ps_jagung_VAR <- mape(test_ps_jagung_var$Produksi, predict_ps_jagung_var)* 100
 
 # Tampilkan hasil evaluasi
 cat(paste("MAE Produksi jagung VAR: ", mae_ps_jagung_VAR, "\n"))
@@ -826,10 +836,6 @@ cat(paste("RMSE Produksi jagung VAR: ", rmse_ps_jagung_VAR, "\n"))
 cat(paste("MAPE Produksi jagung VAR: ", mape_ps_jagung_VAR, "%\n"))
 
 ```
-MAE:  484125.303087091 
-MSE:  296893420585.519 
-RMSE:  544879.271568959 
-MAPE:  207.554933164884 %
 
 
 ## Produktivitas Jagung - VAR
@@ -1001,7 +1007,7 @@ mse_pt_jagung_VAR <- mse(test_pt_jagung_var$Produktivitas, predict_pt_jagung_var
 rmse_pt_jagung_VAR <- rmse(test_pt_jagung_var$Produktivitas, predict_pt_jagung_var)
 
 # Hitung MAPE (Mean Absolute Percent Error)
-mape_pt_jagung_VAR <- mape(test_pt_jagung_var$Produktivitas, predict_pt_jagung_var)
+mape_pt_jagung_VAR <- mape(test_pt_jagung_var$Produktivitas, predict_pt_jagung_var) * 100
 
 # Tampilkan hasil evaluasi
 cat(paste("MAE: ", mae_pt_jagung_VAR, "\n"))
@@ -1188,7 +1194,7 @@ mse_ps_ubijalar_VAR <- mse(test_ps_ubijalar_var$Produksi, predict_ps_ubijalar_va
 rmse_ps_ubijalar_VAR <- rmse(test_ps_ubijalar_var$Produksi, predict_ps_ubijalar_var)
 
 # Hitung MAPE (Mean Absolute Percent Error)
-mape_ps_ubijalar_VAR <- mape(test_ps_ubijalar_var$Produksi, predict_ps_ubijalar_var)
+mape_ps_ubijalar_VAR <- mape(test_ps_ubijalar_var$Produksi, predict_ps_ubijalar_var) * 100
 
 # Tampilkan hasil evaluasi
 cat(paste("MAE Produksi ubi jalar VAR: ", mae_ps_ubijalar_VAR, "\n"))
@@ -1369,7 +1375,7 @@ mse_pt_ubijalar_VAR <- mse(test_pt_ubijalar_var$Produktivitas, predict_pt_ubijal
 rmse_pt_ubijalar_VAR <- rmse(test_pt_ubijalar_var$Produktivitas, predict_pt_ubijalar_var)
 
 # Hitung MAPE (Mean Absolute Percent Error)
-mape_pt_ubijalar_VAR <- mape(test_pt_ubijalar_var$Produktivitas, predict_pt_ubijalar_var)
+mape_pt_ubijalar_VAR <- mape(test_pt_ubijalar_var$Produktivitas, predict_pt_ubijalar_var)* 100
 
 # Tampilkan hasil evaluasi
 cat(paste("MAE: ", mae_pt_ubijalar_VAR, "\n"))
@@ -1559,7 +1565,7 @@ mse_ps_ubikayu_VAR <- mse(test_ps_ubikayu_var$Produksi, predict_ps_ubikayu_var)
 rmse_ps_ubikayu_VAR <- rmse(test_ps_ubikayu_var$Produksi, predict_ps_ubikayu_var)
 
 # Hitung MAPE (Mean Absolute Percent Error)
-mape_ps_ubikayu_VAR <- mape(test_ps_ubikayu_var$Produksi, predict_ps_ubikayu_var)
+mape_ps_ubikayu_VAR <- mape(test_ps_ubikayu_var$Produksi, predict_ps_ubikayu_var) * 100
 
 # Tampilkan hasil evaluasi
 cat(paste("MAE: ", mae_ps_ubikayu_VAR, "\n"))
@@ -1741,7 +1747,7 @@ mse_pt_ubikayu_VAR <- mse(test_pt_ubikayu_var$Produktivitas, predict_pt_ubikayu_
 rmse_pt_ubikayu_VAR <- rmse(test_pt_ubikayu_var$Produktivitas, predict_pt_ubikayu_var)
 
 # Hitung MAPE (Mean Absolute Percent Error)
-mape_pt_ubikayu_VAR <- mape(test_pt_ubikayu_var$Produktivitas, predict_pt_ubikayu_var)
+mape_pt_ubikayu_VAR <- mape(test_pt_ubikayu_var$Produktivitas, predict_pt_ubikayu_var) * 100
 
 # Tampilkan hasil evaluasi
 cat(paste("MAE: ", mae_pt_ubikayu_VAR, "\n"))
@@ -1931,7 +1937,7 @@ mse_ps_kedelai_VAR <- mse(test_ps_kedelai_var$Produksi, predict_ps_kedelai_var)
 rmse_ps_kedelai_VAR <- rmse(test_ps_kedelai_var$Produksi, predict_ps_kedelai_var)
 
 # Hitung MAPE (Mean Absolute Percent Error)
-mape_ps_kedelai_VAR <- mape(test_ps_kedelai_var$Produksi, predict_ps_kedelai_var)
+mape_ps_kedelai_VAR <- mape(test_ps_kedelai_var$Produksi, predict_ps_kedelai_var) * 100
 
 # Tampilkan hasil evaluasi
 cat(paste("MAE: ", mae_ps_kedelai_VAR, "\n"))
@@ -1940,10 +1946,8 @@ cat(paste("RMSE: ", rmse_ps_kedelai_VAR, "\n"))
 cat(paste("MAPE: ", mape_ps_kedelai_VAR, "%\n"))
 
 ```
-MAE:  12060.5047969441 
-MSE:  236779460.085206 
-RMSE:  15387.6398477871 
-MAPE:  1140.54782874017 %
+
+
 
 ## Produktivitas Kacang kedelai - VAR
 
@@ -2110,7 +2114,7 @@ mse_pt_kedelai_VAR <- mse(test_pt_kedelai_var$Produktivitas, predict_pt_kedelai_
 rmse_pt_kedelai_VAR <- rmse(test_pt_kedelai_var$Produktivitas, predict_pt_kedelai_var)
 
 # Hitung MAPE (Mean Absolute Percent Error)
-mape_pt_kedelai_VAR <- mape(test_pt_kedelai_var$Produktivitas, predict_pt_kedelai_var)
+mape_pt_kedelai_VAR <- mape(test_pt_kedelai_var$Produktivitas, predict_pt_kedelai_var) * 100
 
 # Tampilkan hasil evaluasi
 cat(paste("MAE Produktivitas Kedelai model VAR : ", mae_pt_kedelai_VAR, "\n"))
@@ -2302,7 +2306,7 @@ mse_ps_kcgHijau_VAR <- mse(test_ps_kcgHijau_var$Produksi, predict_ps_kcgHijau_va
 rmse_ps_kcgHijau_VAR <- rmse(test_ps_kcgHijau_var$Produksi, predict_ps_kcgHijau_var)
 
 # Hitung MAPE (Mean Absolute Percent Error)
-mape_ps_kcgHijau_VAR <- mape_safe(test_ps_kcgHijau_var$Produksi, predict_ps_kcgHijau_var)
+mape_ps_kcgHijau_VAR <- mape_safe(test_ps_kcgHijau_var$Produksi, predict_ps_kcgHijau_var) * 100
 
 # Tampilkan hasil evaluasi
 cat(paste("MAE Produksi kacang hijau VAR: ", mae_ps_kcgHijau_VAR, "\n"))
@@ -2311,10 +2315,11 @@ cat(paste("RMSE Produksi kacang hijau VAR: ", rmse_ps_kcgHijau_VAR, "\n"))
 cat(paste("MAPE Produksi kacang hijau VAR: ", mape_ps_kcgHijau_VAR, "%\n"))
 
 ```
-MAE:  710.615429058764 
-MSE:  836106.640078754 
-RMSE:  914.388670139101 
-MAPE:  121.422334413924 %
+MAE Produksi kacang hijau VAR:  710.615429058764 
+MSE Produksi kacang hijau VAR:  836106.640078754 
+RMSE Produksi kacang hijau VAR:  914.388670139101 
+MAPE Produksi kacang hijau VAR:  12142.2334413924 %
+
 
 ## Analisis Iklim terhadap Produktivitas Kacang Hijau Sumatera
 
@@ -2485,7 +2490,7 @@ mse_pt_kcgHijau_VAR <- mse(test_pt_kcgHijau_var$Produktivitas, predict_pt_kcgHij
 rmse_pt_kcgHijau_VAR <- rmse(test_pt_kcgHijau_var$Produktivitas, predict_pt_kcgHijau_var)
 
 # Hitung MAPE (Mean Absolute Percent Error)
-mape_pt_kcgHijau_VAR <- mape_safe(test_pt_kcgHijau_var$Produktivitas, predict_pt_kcgHijau_var)
+mape_pt_kcgHijau_VAR <- mape_safe(test_pt_kcgHijau_var$Produktivitas, predict_pt_kcgHijau_var) * 100
 
 # Tampilkan hasil evaluasi
 cat(paste("MAE: ", mae_pt_kcgHijau_VAR, "\n"))
@@ -2494,6 +2499,10 @@ cat(paste("RMSE: ", rmse_pt_kcgHijau_VAR, "\n"))
 cat(paste("MAPE: ", mape_pt_kcgHijau_VAR, "%\n"))
 
 ```
+MAE:  1.26677114552346 
+MSE:  8.10820365425123 
+RMSE:  2.84749076455943 
+MAPE:  509.411998731743 %
 
 
 ## Produksi Kacang Tanah - VAR
@@ -2679,7 +2688,7 @@ mse_ps_kcgTanah_VAR <- mse(test_ps_kcgTanah_var$Produksi, predict_ps_kcgtanah_va
 rmse_ps_kcgTanah_VAR <- rmse(test_ps_kcgTanah_var$Produksi, predict_ps_kcgtanah_var)
 
 # Hitung MAPE (Mean Absolute Percent Error)
-mape_ps_kcgTanah_VAR <- mape_safe(test_ps_kcgTanah_var$Produksi, predict_ps_kcgtanah_var)
+mape_ps_kcgTanah_VAR <- mape_safe(test_ps_kcgTanah_var$Produksi, predict_ps_kcgtanah_var)* 100
 
 # Tampilkan hasil evaluasi
 cat(paste("MAE: ", mae_ps_kcgTanah_VAR, "\n"))
@@ -2688,10 +2697,7 @@ cat(paste("RMSE: ", rmse_ps_kcgTanah_VAR, "\n"))
 cat(paste("MAPE: ", mape_ps_kcgTanah_VAR, "%\n"))
 
 ```
-MAE:  3707.23376698402 
-MSE:  16269796.9449438 
-RMSE:  4033.58363554592 
-MAPE:  863.587792692339 %
+
 
 ##  Produktivitas Kacang tanah - VAR
 
@@ -2872,7 +2878,7 @@ mse_pt_kcgTanah_VAR <- mse(test_pt_kcgTanah_var$Produktivitas, predict_pt_kcgtan
 rmse_pt_kcgTanah_VAR <- rmse(test_pt_kcgTanah_var$Produktivitas, predict_pt_kcgtanah_var)
 
 # Hitung MAPE (Mean Absolute Percent Error)
-mape_pt_kcgTanah_VAR <- mape_safe(test_pt_kcgTanah_var$Produktivitas, predict_pt_kcgtanah_var)
+mape_pt_kcgTanah_VAR <- mape_safe(test_pt_kcgTanah_var$Produktivitas, predict_pt_kcgtanah_var) * 100
 
 # Tampilkan hasil evaluasi
 cat(paste("MAE: ", mae_pt_kcgTanah_VAR, "\n"))
@@ -2976,7 +2982,7 @@ mse_ps_padi_glm<- mse(test_ps_padi_glm$Produksi, predict_ps_padi_glm)
 rmse_ps_padi_glm<- rmse(test_ps_padi_glm$Produksi, predict_ps_padi_glm)
 
 # Hitung MAPE (Mean Absolute Percent Error)
-mape_ps_padi_glm <- mape(test_ps_padi_glm$Produksi, predict_ps_padi_glm)
+mape_ps_padi_glm <- mape(test_ps_padi_glm$Produksi, predict_ps_padi_glm) * 100
 
 # Tampilkan hasil evaluasi
 cat(paste("MAE: ", mae_ps_padi_glm, "\n"))
@@ -2984,10 +2990,7 @@ cat(paste("MSE: ", mse_ps_padi_glm, "\n"))
 cat(paste("RMSE: ", rmse_ps_padi_glm, "\n"))
 cat(paste("MAPE: ", mape_ps_padi_glm, "%\n"))
 ```
-MAE:  1272921.36158324 
-MSE:  2100608327097.84 
-RMSE:  1449347.55221025 
-MAPE:  160.734034463418 %
+
 
 
 ## Produktivitas Padi - GLM
@@ -3082,7 +3085,7 @@ mse_pt_padi_glm  <- mse(test_pt_padi_glm$Produktivitas, predict_pt_padi_glm)
 rmse_pt_padi_glm  <- rmse(test_pt_padi_glm$Produktivitas, predict_pt_padi_glm)
 
 # Hitung MAPE (Mean Absolute Percent Error)
-mape_pt_padi_glm  <- mape(test_pt_padi_glm$Produktivitas, predict_pt_padi_glm)
+mape_pt_padi_glm  <- mape(test_pt_padi_glm$Produktivitas, predict_pt_padi_glm) * 100
 
 # Tampilkan hasil evaluasi
 cat(paste("MAE: ", mae_pt_padi_glm , "\n"))
@@ -3184,7 +3187,7 @@ mse_ps_jagung_glm  <- mse(test_ps_jagung_glm$Produksi, predict_ps_jagung_glm)
 rmse_ps_jagung_glm  <- rmse(test_ps_jagung_glm$Produksi, predict_ps_jagung_glm)
 
 # Hitung MAPE (Mean Absolute Percent Error)
-mape_ps_jagung_glm  <- mape(test_ps_jagung_glm$Produksi, predict_ps_jagung_glm)
+mape_ps_jagung_glm  <- mape(test_ps_jagung_glm$Produksi, predict_ps_jagung_glm) * 100
 
 # Tampilkan hasil evaluasi
 cat(paste("MAE: ", mae_ps_jagung_glm , "\n"))
@@ -3193,10 +3196,7 @@ cat(paste("RMSE: ", rmse_ps_jagung_glm , "\n"))
 cat(paste("MAPE: ", mape_ps_jagung_glm , "%\n"))
 ```
 
-MAE:  3707.23376698402 
-MSE:  16269796.9449438 
-RMSE:  4033.58363554592 
-MAPE:  863.587792692339 %
+
 
 ## Produktivitas jagung - GLM
 ```{r}
@@ -3290,7 +3290,7 @@ mse_pt_jagung_glm <- mse(test_pt_jagung_glm$Produktivitas, predict_pt_jagung_glm
 rmse_pt_jagung_glm <- rmse(test_pt_jagung_glm$Produktivitas, predict_pt_jagung_glm)
 
 # Hitung MAPE (Mean Absolute Percent Error)
-mape_pt_jagung_glm <- mape(test_pt_jagung_glm$Produktivitas, predict_pt_jagung_glm)
+mape_pt_jagung_glm <- mape(test_pt_jagung_glm$Produktivitas, predict_pt_jagung_glm) * 100
 
 # Tampilkan hasil evaluasi
 cat(paste("MAE: ", mae_pt_jagung_glm, "\n"))
@@ -3394,7 +3394,7 @@ mse_ps_ubijalar_glm <- mse(test_ps_ubijalar_glm$Produksi, predict_ps_ubijalar_gl
 rmse_ps_ubijalar_glm <- rmse(test_ps_ubijalar_glm$Produksi, predict_ps_ubijalar_glm)
 
 # Hitung MAPE (Mean Absolute Percent Error)
-mape_ps_ubijalar_glm <- mape(test_ps_ubijalar_glm$Produksi, predict_ps_ubijalar_glm)
+mape_ps_ubijalar_glm <- mape(test_ps_ubijalar_glm$Produksi, predict_ps_ubijalar_glm) * 100
 
 # Tampilkan hasil evaluasi
 cat(paste("MAE: ", mae_ps_ubijalar_glm, "\n"))
@@ -3495,7 +3495,7 @@ mse_pt_ubijalar_glm <- mse(test_pt_ubijalar_glm$Produktivitas, predict_pt_ubijal
 rmse_pt_ubijalar_glm <- rmse(test_pt_ubijalar_glm$Produktivitas, predict_pt_ubijalar_glm)
 
 # Hitung MAPE (Mean Absolute Percent Error)
-mape_pt_ubijalar_glm <- mape(test_pt_ubijalar_glm$Produktivitas, predict_pt_ubijalar_glm)
+mape_pt_ubijalar_glm <- mape(test_pt_ubijalar_glm$Produktivitas, predict_pt_ubijalar_glm) * 100
 
 # Tampilkan hasil evaluasi
 cat(paste("MAE: ", mae_pt_ubijalar_glm, "\n"))
@@ -3504,10 +3504,7 @@ cat(paste("RMSE: ", rmse_pt_ubijalar_glm, "\n"))
 cat(paste("MAPE: ", mape_pt_ubijalar_glm, "%\n"))
 ```
 
-MAE:  29.5611097395699 
-MSE:  2065.23113037259 
-RMSE:  45.4448141196835 
-MAPE:  0.237620241783672 %
+
 
 ## Produksi ubi_kayu sumatera - GLM
 
@@ -3602,7 +3599,7 @@ mse_ps_ubikayu_glm <- mse(test_ps_ubikayu_glm$Produksi, predict_ps_ubikayu_glm)
 rmse_ps_ubikayu_glm <- rmse(test_ps_ubikayu_glm$Produksi, predict_ps_ubikayu_glm)
 
 # Hitung MAPE (Mean Absolute Percent Error)
-mape_ps_ubikayu_glm <- mape(test_ps_ubikayu_glm$Produksi, predict_ps_ubikayu_glm)
+mape_ps_ubikayu_glm <- mape(test_ps_ubikayu_glm$Produksi, predict_ps_ubikayu_glm) * 100
 
 # Tampilkan hasil evaluasi
 cat(paste("MAE: ", mae_ps_ubikayu_glm, "\n"))
@@ -3703,7 +3700,7 @@ mse_pt_ubikayu_glm <- mse(test_pt_ubikayu_glm$Produktivitas, predict_pt_ubikayu_
 rmse_pt_ubikayu_glm <- rmse(test_pt_ubikayu_glm$Produktivitas, predict_pt_ubikayu_glm)
 
 # Hitung MAPE (Mean Absolute Percent Error)
-mape_pt_ubikayu_glm <- mape(test_pt_ubikayu_glm$Produktivitas, predict_pt_ubikayu_glm)
+mape_pt_ubikayu_glm <- mape(test_pt_ubikayu_glm$Produktivitas, predict_pt_ubikayu_glm)* 100
 
 # Tampilkan hasil evaluasi
 cat(paste("MAE: ", mae_pt_ubikayu_glm, "\n"))
@@ -3807,7 +3804,7 @@ mse_ps_kedelai_glm <- mse(test_ps_Kedelai_glm$Produksi, predict_ps_Kedelai_glm)
 rmse_ps_kedelai_glm <- rmse(test_ps_Kedelai_glm$Produksi, predict_ps_Kedelai_glm)
 
 # Hitung MAPE (Mean Absolute Percent Error)
-mape_ps_kedelai_glm <- mape(test_ps_Kedelai_glm$Produksi, predict_ps_Kedelai_glm)
+mape_ps_kedelai_glm <- mape(test_ps_Kedelai_glm$Produksi, predict_ps_Kedelai_glm) * 100
 
 # Tampilkan hasil evaluasi
 cat(paste("MAE: ", mae_ps_kedelai_glm, "\n"))
@@ -3908,7 +3905,7 @@ mse_pt_kedelai_glm <- mse(test_pt_Kedelai_glm$Produktivitas, predict_pt_Kedelai_
 rmse_pt_kedelai_glm <- rmse(test_pt_Kedelai_glm$Produktivitas, predict_pt_Kedelai_glm)
 
 # Hitung MAPE (Mean Absolute Percent Error)
-mape_pt_kedelai_glm <- mape(test_pt_Kedelai_glm$Produktivitas, predict_pt_Kedelai_glm)
+mape_pt_kedelai_glm <- mape(test_pt_Kedelai_glm$Produktivitas, predict_pt_Kedelai_glm) * 100
 
 # Tampilkan hasil evaluasi
 cat(paste("MAE Produktivitas Kedelai model GLM : ", mae_pt_kedelai_glm, "\n"))
@@ -4023,7 +4020,7 @@ mse_ps_kcgHijau_glm <- mse(test_ps_kcgHijau_glm$Produksi, predict_ps_kcgHijau_gl
 rmse_ps_kcgHijau_glm <- rmse(test_ps_kcgHijau_glm$Produksi, predict_ps_kcgHijau_glm)
 
 # Hitung MAPE (Mean Absolute Percent Error)
-mape_ps_kcgHijau_glm <- mape_safe(test_ps_kcgHijau_glm$Produksi, predict_ps_kcgHijau_glm)
+mape_ps_kcgHijau_glm <- mape_safe(test_ps_kcgHijau_glm$Produksi, predict_ps_kcgHijau_glm) * 100
 
 # Tampilkan hasil evaluasi
 cat(paste("MAE: ", mae_ps_kcgHijau_glm, "\n"))
@@ -4137,7 +4134,7 @@ mse_pt_kcgHijau_glm <- mse(test_pt_kcgHijau_glm$Produktivitas, predict_pt_kcgHij
 rmse_pt_kcgHijau_glm <- rmse(test_pt_kcgHijau_glm$Produktivitas, predict_pt_kcgHijau_glm)
 
 # Hitung MAPE (Mean Absolute Percent Error)
-mape_pt_kcgHijau_glm <- mape_safe(test_pt_kcgHijau_glm$Produktivitas, predict_pt_kcgHijau_glm)
+mape_pt_kcgHijau_glm <- mape_safe(test_pt_kcgHijau_glm$Produktivitas, predict_pt_kcgHijau_glm)* 100
 
 # Tampilkan hasil evaluasi
 cat(paste("MAE: ", mae_pt_kcgHijau_glm, "\n"))
@@ -4241,7 +4238,7 @@ mse_ps_kcgTanah_glm <- mse(test_ps_kcgtanah_glm$Produksi, predict_ps_kcgtanah_gl
 rmse_ps_kcgTanah_glm <- rmse(test_ps_kcgtanah_glm$Produksi, predict_ps_kcgtanah_glm)
 
 # Hitung MAPE (Mean Absolute Percent Error)
-mape_ps_kcgTanah_glm <- mape(test_ps_kcgtanah_glm$Produksi, predict_ps_kcgtanah_glm)
+mape_ps_kcgTanah_glm <- mape(test_ps_kcgtanah_glm$Produksi, predict_ps_kcgtanah_glm) * 100
 
 # Tampilkan hasil evaluasi
 cat(paste("MAE: ", mae_ps_kcgTanah_glm, "\n"))
@@ -4344,7 +4341,7 @@ mse_pt_kcgtanah_glm <- mse(test_pt_kcgtanah_glm$Produktivitas, predict_pt_kcgtan
 rmse_pt_kcgtanah_glm <- rmse(test_pt_kcgtanah_glm$Produktivitas, predict_pt_kcgtanah_glm)
 
 # Hitung MAPE (Mean Absolute Percent Error)
-mape_pt_kcgtanah_glm <- mape(test_pt_kcgtanah_glm$Produktivitas, predict_pt_kcgtanah_glm)
+mape_pt_kcgtanah_glm <- mape(test_pt_kcgtanah_glm$Produktivitas, predict_pt_kcgtanah_glm) * 100
 
 # Tampilkan hasil evaluasi
 cat(paste("MAE: ", mae_pt_kcgtanah_glm, "\n"))
@@ -4424,16 +4421,14 @@ evaluasi <- data.frame(
   MSE_GLM = c(2100608327098, 316235176012, 2126308576, 7930588906750, 219919199, 1804888, 16802547),
   RMSE_VAR = c(3616585.5331, 544879.2716, 45856.6478, 2437055.6530, 15387.6398, 914.3887, 4033.5836),
   RMSE_GLM = c(1449347.552, 562347.914, 46111.914, 2816130.130, 14829.673, 1343.461, 4099.091),
-  MAPE_VAR = c(45.441450, 207.554933, 5.485922, 35.500147, 1140.547829, 121.422334, 863.587793),
-  MAPE_GLM = c(160.734035, 106.811311, 1.801089, 28.510007, 771.872941, 1171.229906, 2.932129)
+  MAPE_VAR = c(4544.1450, 20755.4933, 548.5922, 3550.0147, 114054.7829, 12142.2334, 86358.7793),
+  MAPE_GLM = c(16073.4035, 10681.1311, 180.1089, 2851.0007, 77187.2941, 117122.9906, 293.2129)
 )
 ```
-
 
 ```{r}
 # Menghitung rata-rata untuk setiap kolom evaluasi
 rata_rata <- apply(evaluasi[, 2:ncol(evaluasi)], 2, mean)
-
 # Menampilkan rata-rata
 print(rata_rata)
 ```
@@ -4448,15 +4443,14 @@ evaluasi_produktivitas <- data.frame(
   MSE_GLM = c(30.866903, 59.943596, 2065.231130, 2997.238270, 1.691344, 3.287843, 1.439757),
   RMSE_VAR = c(8.005407, 14.293436, 59.138834, 86.780345, 2.554705, 2.847491, 1.225452),
   RMSE_GLM = c(5.555799, 7.742325, 45.444814, 54.747039, 1.300517, 1.813241, 1.199899),
-  MAPE_VAR = c(0.1687786, 0.3506395, 0.3548572, 0.3129015, 0.1620053, 5.0941200, 8.8439225),
-  MAPE_GLM = c(0.1075922, 0.1814903, 0.2376202, 0.2278829, 0.0905099, 9.5518736, 0.0883603)
+  MAPE_VAR = c(16.87786,35.06395, 35.48572, 31.29015, 16.20053, 509.41200, 884.39225),
+  MAPE_GLM = c(10.75922, 18.14903, 23.76202, 22.78829, 9.05099, 955.18736, 8.83603)
 )
 ```
 
 ```{r}
 # Menghitung rata-rata untuk setiap kolom evaluasi
 rata_rata2 <- apply(evaluasi_produktivitas[, 2:ncol(evaluasi_produktivitas)], 2, mean)
-
 # Menampilkan rata-rata
 print(rata_rata2)
 ```
